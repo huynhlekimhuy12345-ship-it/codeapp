@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Helmet - Kỷ Nguyên An Toàn Mới</title>
+    
+    <!-- Chosen Palette: Dark Mode (Charcoal Grey #121212) với Neon Blue (#00D4FF) và Emerald (#10b981) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#121212',
+                        card: '#1e1e1e',
+                        neonBlue: '#00D4FF',
+                        neonGreen: '#39FF14',
+                        neonRed: '#FF3131',
+                        neonPurple: '#BC13FE'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: #e2e8f0; scroll-behavior: smooth; }
+        .neon-border { border: 1px solid #00D4FF; box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .neon-text { text-shadow: 0 0 5px #00D4FF; }
+        .chart-container { position: relative; width: 100%; height: 350px; max-width: 600px; margin: auto; }
+        .glass { background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(14px); }
+        .feature-card:hover { transform: translateY(-6px); border-color: #00D4FF; }
+        .roadmap-line { position: absolute; left: 50%; width: 2px; height: 100%; background: #333; transform: translateX(-50%); }
+        /* Mượt chuyển ảnh */
+        .img-fade { transition: transform 0.6s ease, opacity 0.4s ease; }
+        .img-fade:hover { transform: scale(1.05); opacity: 1; }
+
+        /* Animation cho Scan */
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+        .scan-line {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #00D4FF, transparent);
+            box-shadow: 0 0 15px #00D4FF;
+            animation: scan 3s infinite linear;
+            position: absolute;
+            width: 100%;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <!-- Điều hướng -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-gray-800">
+        <div class="max-w-77xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="font-bold text-xl tracking-tighter text-neonBlue uppercase">Smart Helmet <span class="text-white">Pro</span></div>
+            <div class="hidden md:flex space-x-6 text-sm uppercase tracking-widest font-semibold">
+                <a href="#features" class="hover:text-neonBlue transition">Chức năng</a>
+                <a href="#scan" class="hover:text-neonBlue transition text-neonGreen">Quét Bảo Trì</a>
+                <a href="#specs" class="hover:text-neonBlue transition">Thông số</a>
+                <a href="#reviews" class="hover:text-neonBlue transition">Đánh giá</a>
+                <a href="#roadmap" class="hover:text-neonBlue transition">Lộ trình</a>
+                <a href="#support" class="hover:text-neonBlue transition">Bảo hành</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Phần Hero -->
+    <header class="relative pt-32 pb-20 px-6 text-center overflow-hidden">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=1400&q=80')] bg-cover bg-center opacity-40"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black"></div>
+
+        <div class="relative max-w-6xl mx-auto">
+            <div class="inline-block px-4 py-1 border border-neonGreen text-neonGreen text-xs font-bold rounded-full mb-6 uppercase tracking-widest">Sản phẩm thử nghiệm tại FPT 2026</div>
+            <h1 class="text-5xl md:text-7xl font-black mb-6 neon-text leading-tight uppercase">Bảo vệ thông minh<br>Trải nghiệm đỉnh cao</h1>
+            <p class="max-w-3xl mx-auto text-gray-300 text-lg mb-10 leading-relaxed">Smart Helmet Pro tích hợp hệ thống túi khí, màn hình HUD và AI giám sát hành vi, biến mỗi chuyến đi thành một trải nghiệm an toàn tuyệt đối và đầy phong cách.</p>
+            
+            <div class="flex flex-col md:flex-row justify-center gap-4 mt-10">
+                <a href="#features" class="inline-flex items-center justify-center px-10 py-4 bg-neonBlue text-black font-bold rounded-full shadow-lg shadow-neonBlue/40 hover:bg-white transition">Tìm hiểu ngay</a>
+                <a href="#scan" class="inline-flex items-center justify-center px-10 py-4 border border-neonGreen rounded-full text-neonGreen hover:bg-neonGreen/10 transition">Quét lỗi mũ</a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16">
+                <div class="relative rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
+                    <img src="img/mubaohiem.png" onerror="this.src='https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000&auto=format&fit=crop'"
+                         alt="Mũ bảo hiểm carbon" class="w-full h-96 object-cover img-fade">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-8">
+                        <span class="text-neonBlue font-bold uppercase tracking-widest text-xs mb-2">Vỏ Carbon Siêu Nhẹ</span>
+                        <h3 class="text-2xl font-bold text-white uppercase">[Mũ bảo hiểm Carbon cao cấp]</h3>
+                    </div>
+                </div>
+                <div class="relative rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
+                    <img src="img/Screenshot 2026-03-16 150133.png" onerror="this.src='https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=1000&auto=format&fit=crop'"
+                         alt="Góc nhìn camera tích hợp" class="w-full h-96 object-cover img-fade">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-8">
+                        <span class="text-neonGreen font-bold uppercase tracking-widest text-xs mb-2">Hệ thống Camera 360</span>
+                        <h3 class="text-2xl font-bold text-white uppercase">[Góc nhìn camera tích hợp]</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 space-y-32">
+        
+        <!-- PHẦN SCAN MŨ BẢO HIỂM (NEW) -->
+        <section id="scan" class="scroll-mt-24">
+            <div class="bg-card/50 border border-neonGreen/30 rounded-3xl p-8 md:p-12 overflow-hidden relative">
+                <div class="flex flex-col lg:flex-row gap-12 items-center">
+                    <div class="w-full lg:w-1/2 relative">
+                        <div id="scanContainer" class="relative rounded-2xl overflow-hidden border-2 border-gray-800">
+                            <div id="scanBar" class="scan-line hidden"></div>
+                            <img id="helmetImage" src="img/mubaohiem.png" onerror="this.src='https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000&auto=format&fit=crop'" class="w-full h-[400px] object-cover grayscale opacity-50 transition-all duration-700">
+                            <div id="overlay" class="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-500">
+                                <button onclick="startScan()" class="px-8 py-3 bg-neonGreen text-black font-black uppercase rounded-full hover:scale-105 transition active:scale-95 shadow-lg shadow-neonGreen/20">Bắt đầu quét AI</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full lg:w-1/2 space-y-6">
+                        <h2 class="text-3xl font-black text-neonGreen uppercase italic">AI Maintenance Scan</h2>
+                        <p class="text-gray-400">Hệ thống AI quét qua các lớp sợi Carbon và các linh kiện điện tử để phát hiện vết nứt ngầm, độ mòn của pin và tình trạng túi khí.</p>
+                        
+                        <div id="scanResults" class="space-y-4 hidden">
+                            <div class="p-4 bg-dark/80 rounded-xl border-l-4 border-neonGreen">
+                                <h4 class="text-white font-bold text-sm uppercase">Cấu trúc vỏ: <span class="text-neonGreen">HOÀN HẢO</span></h4>
+                                <p class="text-xs text-gray-500">Không phát hiện vết nứt vi mô (Micro-cracks).</p>
+                            </div>
+                            <div class="p-4 bg-dark/80 rounded-xl border-l-4 border-neonBlue">
+                                <h4 class="text-white font-bold text-sm uppercase">Hệ thống điện tử: <span class="text-neonBlue">ỔN ĐỊNH</span></h4>
+                                <p class="text-xs text-gray-500">Pin Lithium-Air đạt 98% sức khỏe. Sensor nhạy.</p>
+                            </div>
+                            <div class="p-4 bg-dark/80 rounded-xl border-l-4 border-neonPurple">
+                                <h4 class="text-white font-bold text-sm uppercase">Hệ thống Airbag: <span class="text-neonPurple">CẦN KIỂM TRA</span></h4>
+                                <p class="text-xs text-gray-500">Bình khí SOS cần được hiệu chuẩn sau 24 tháng.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="scanStatusText" class="text-neonBlue font-mono text-sm uppercase animate-pulse">Chưa thực hiện quét...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Danh sách chức năng -->
+        <section id="features" class="scroll-mt-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-extrabold mb-4 uppercase">Chức năng đột phá</h2>
+                <div class="w-24 h-1 bg-neonBlue mx-auto"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="feature-card bg-card p-8 rounded-2xl border border-gray-800 transition-all duration-300">
+                    <div class="text-4xl mb-6">🛡️</div>
+                    <h3 class="text-xl font-bold text-neonBlue mb-3">Túi Khí Airbag 360°</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Hệ thống cảm biến gia tốc phát hiện va chạm mạnh và kích hoạt túi khí chỉ trong 0.05 giây, giảm 90% chấn thương vùng đầu gáy.</p>
+                </div>
+                <div class="feature-card bg-card p-8 rounded-2xl border border-gray-800 transition-all duration-300">
+                    <div class="text-4xl mb-6">🧠</div>
+                    <h3 class="text-xl font-bold text-neonBlue mb-3">AI Giám Sát Sinh Trắc</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Camera AI đo tần suất nháy mắt và nhịp tim qua thái dương để phát hiện sớm dấu hiệu mệt mỏi hoặc đột quỵ khi đang lái xe.</p>
+                </div>
+                <div class="feature-card bg-card p-8 rounded-2xl border border-gray-800 transition-all duration-300">
+                    <div class="text-4xl mb-6">📡</div>
+                    <h3 class="text-xl font-bold text-neonBlue mb-3">SOS & Liên lạc Vệ tinh</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Tự động kết nối vệ tinh khi đi vào vùng không có sóng di động để gửi tin nhắn cứu hộ trong tình huống khẩn cấp.</p>
+                </div>
+                <div class="feature-card bg-card p-8 rounded-2xl border border-gray-800 transition-all duration-300">
+                    <div class="text-4xl mb-6">🕶️</div>
+                    <h3 class="text-xl font-bold text-neonBlue mb-3">Kính HUD Tương Tác</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Màn hình trong suốt hiển thị bản đồ AR, cuộc gọi đến và tốc độ xe ngay trên tầm mắt, giúp tập trung 100% vào lộ trình.</p>
+                </div>
+                <div class="feature-card bg-card p-8 rounded-2xl border border-gray-800 transition-all duration-300">
+                    <div class="text-4xl mb-6">🔊</div>
+                    <h3 class="text-xl font-bold text-neonBlue mb-3">Âm Thanh Harman Kardon</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Trải nghiệm âm thanh vòm đỉnh cao với công nghệ triệt tiêu tiếng ồn môi trường (Active Noise Cancellation) cực kỳ thông minh.</p>
+                </div>
+                <div class="feature-card bg-card p-8 rounded-2xl border border-gray-800 transition-all duration-300">
+                    <div class="text-4xl mb-6">☀️</div>
+                    <h3 class="text-xl font-bold text-neonBlue mb-3">Sạc Năng Lượng Mặt Trời</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Tích hợp lớp màng pin mặt trời mỏng trên đỉnh mũ, giúp kéo dài thời gian sử dụng thêm 4h khi di chuyển dưới trời nắng.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Biểu đồ phân tích an toàn -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="bg-card p-10 rounded-3xl border border-gray-800 shadow-2xl">
+                <h3 class="text-2xl font-bold text-center mb-8 uppercase">Phân tích hiệu năng an toàn</h3>
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+            <div class="space-y-8">
+                <h2 class="text-4xl font-black text-neonBlue uppercase italic">Vượt trội tiêu chuẩn</h2>
+                <p class="text-gray-400 text-lg leading-relaxed">So với các dòng mũ bảo hiểm truyền thống, Smart Helmet Pro thiết lập một tiêu chuẩn hoàn toàn mới về bảo hộ chủ động thông qua AI và túi khí tích hợp.</p>
+                <div class="p-6 bg-dark/50 rounded-xl border border-gray-800">
+                    <div class="text-3xl font-bold text-neonGreen mb-1">98/100</div>
+                    <div class="text-xs uppercase text-gray-500 font-bold">Chỉ số bảo vệ vật lý</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bảng thông số kỹ thuật -->
+        <section id="specs" class="scroll-mt-24">
+            <h2 class="text-3xl font-bold mb-10 text-center uppercase tracking-widest">Thông số kỹ thuật chi tiết</h2>
+            <div class="overflow-x-auto bg-card rounded-2xl border border-gray-800">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-gray-800 bg-black/20">
+                            <th class="p-6 text-neonBlue font-bold uppercase tracking-tighter">Thành phần</th>
+                            <th class="p-6 text-neonBlue font-bold uppercase tracking-tighter">Chi tiết kỹ thuật</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-400">
+                        <tr class="border-b border-gray-800">
+                            <td class="p-6 font-bold text-white">Chất liệu vỏ</td>
+                            <td class="p-6">Carbon Fiber T800 kết hợp lót EPS 5 lớp mật độ cao</td>
+                        </tr>
+                        <tr class="border-b border-gray-800">
+                            <td class="p-6 font-bold text-white">Vi xử lý</td>
+                            <td class="p-6">Octa-core AI Chipset chuyên dụng cho xử lý hình ảnh thời gian thực</td>
+                        </tr>
+                        <tr class="border-b border-gray-800">
+                            <td class="p-6 font-bold text-white">Kết nối</td>
+                            <td class="p-6">Bluetooth 5.3, Wi-Fi 6, GPS, Glonass, Mesh Intercom 2.0</td>
+                        </tr>
+                        <tr class="border-b border-gray-800">
+                            <td class="p-6 font-bold text-white">Camera</td>
+                            <td class="p-6">Dual Cam 4K (Trước/Sau) - Ổn định hình ảnh điện tử EIS</td>
+                        </tr>
+                        <tr class="border-b border-gray-800">
+                            <td class="p-6 font-bold text-white">Trọng lượng</td>
+                            <td class="p-6">1.450g (Đã bao gồm pin và các module điện tử)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 font-bold text-white">Chống nước</td>
+                            <td class="p-6">Tiêu chuẩn IP68 (Hoạt động tốt trong mưa lớn)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- PHẦN ĐÁNH GIÁ TỪ NGƯỜI DÙNG (NEW) -->
+        <section id="reviews" class="scroll-mt-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-extrabold mb-4 uppercase">Cộng đồng tin tưởng</h2>
+                <div class="w-24 h-1 bg-neonBlue mx-auto"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                <!-- Comment 1 -->
+                <div class="bg-card p-6 rounded-2xl border border-gray-800 italic relative">
+                    <div class="text-neonBlue text-4xl absolute -top-4 -left-2">“</div>
+                    <p class="text-gray-300 mb-4 pt-4">Màn hình HUD cực kỳ sáng và sắc nét, tôi không còn phải cúi xuống nhìn điện thoại khi đi phượt nữa. Cực kỳ an toàn!</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-neonBlue/20 border border-neonBlue"></div>
+                        <div>
+                            <h5 class="font-bold text-sm">Trần Hoàng Nam</h5>
+                            <p class="text-xs text-neonBlue">Tay lái Motor đường dài</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Comment 2 -->
+                <div class="bg-card p-6 rounded-2xl border border-gray-800 italic relative">
+                    <div class="text-neonBlue text-4xl absolute -top-4 -left-2">“</div>
+                    <p class="text-gray-300 mb-4 pt-4">Vỏ Carbon thực sự rất nhẹ, cảm giác đội thoải mái suốt 4 tiếng đồng hồ mà không bị mỏi cổ như mũ cũ.</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-neonGreen/20 border border-neonGreen"></div>
+                        <div>
+                            <h5 class="font-bold text-sm">Lê Minh Anh</h5>
+                            <p class="text-xs text-neonGreen">Người dùng công nghệ</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Comment 3 -->
+                <div class="bg-card p-6 rounded-2xl border border-gray-800 italic relative">
+                    <div class="text-neonBlue text-4xl absolute -top-4 -left-2">“</div>
+                    <p class="text-gray-300 mb-4 pt-4">Hệ thống túi khí đã cứu tôi một bàn thua trông thấy khi va chạm trên phố. Đáng giá từng xu bỏ ra.</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-neonRed/20 border border-neonRed"></div>
+                        <div>
+                            <h5 class="font-bold text-sm">Nguyễn Quốc Thái</h5>
+                            <p class="text-xs text-neonRed">Khách hàng VIP</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form gửi comment -->
+            <div class="max-w-2xl mx-auto bg-dark border border-gray-800 p-8 rounded-3xl">
+                <h3 class="text-xl font-bold mb-6 text-center uppercase">Để lại cảm nghĩ của bạn</h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" placeholder="Tên của bạn" class="bg-card border border-gray-700 p-3 rounded-xl outline-none focus:border-neonBlue transition text-sm">
+                        <div class="flex items-center gap-2 px-3 bg-card border border-gray-700 rounded-xl">
+                            <span class="text-xs text-gray-500">Đánh giá:</span>
+                            <span class="text-yellow-500">★★★★★</span>
+                        </div>
+                    </div>
+                    <textarea placeholder="Chia sẻ trải nghiệm của bạn về Smart Helmet Pro..." class="w-full bg-card border border-gray-700 p-3 rounded-xl outline-none focus:border-neonBlue transition text-sm min-h-[100px]"></textarea>
+                    <button class="w-full py-3 bg-gray-800 text-white font-bold rounded-xl hover:bg-neonBlue hover:text-black transition">Gửi bình luận</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hệ sinh thái App -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="order-2 lg:order-1 rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
+                <img style="width: 100%; height: 100%; object-fit: cover; object-position: top;"
+                     src="img/Screenshot 2026-03-16 155751.png" onerror="this.src='https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop'"
+                     alt="Giao diện ứng dụng SmartApp"
+                     class="w-full h-[520px] object-cover object-top">
+            </div>
+            <div class="order-1 lg:order-2 space-y-8">
+                <h2 class="text-4xl font-black text-neonGreen uppercase italic">Hệ sinh thái SmartApp</h2>
+                <p class="text-gray-400 text-lg leading-relaxed">Mũ bảo hiểm của bạn sẽ trở nên mạnh mẽ hơn khi kết hợp cùng ứng dụng di động độc quyền. Mọi dữ liệu hành trình đều nằm trong tay bạn.</p>
+                <ul class="space-y-4 text-gray-300">
+                    <li class="flex items-start gap-3">
+                        <span class="mt-1 text-neonBlue">●</span>
+                        <span>Xem lại video hành trình 4K trực tuyến.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="mt-1 text-neonBlue">●</span>
+                        <span>Tùy chỉnh màu sắc đèn LED RGB trên thân mũ.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="mt-1 text-neonBlue">●</span>
+                        <span>Cập nhật phần mềm (OTA) thường xuyên.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="mt-1 text-neonBlue">●</span>
+                        <span>Nhật ký hành trình và đánh giá độ an toàn lái xe.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Lộ trình phát triển -->
+        <section id="roadmap" class="scroll-mt-24 relative py-10">
+            <h2 class="text-4xl font-bold text-center mb-20 uppercase">Lộ trình phát triển</h2>
+            <div class="roadmap-line hidden md:block"></div>
+            <div class="space-y-12">
+                <div class="flex flex-col md:flex-row items-center w-full">
+                    <div class="md:w-1/2 md:pr-12 text-right">
+                        <h4 class="text-neonBlue font-bold text-xl uppercase">Q1 2026: Nghiên cứu</h4>
+                        <p class="text-gray-500 text-sm">Hoàn thiện mô hình AI nhận diện vật cản và thử nghiệm túi khí.</p>
+                    </div>
+                    <div class="w-4 h-4 bg-neonBlue rounded-full z-10 my-4 md:my-0"></div>
+                    <div class="md:w-1/2 md:pl-12"></div>
+                </div>
+                <div class="flex flex-col md:flex-row items-center w-full">
+                    <div class="md:w-1/2 md:pr-12"></div>
+                    <div class="w-4 h-4 bg-neonGreen rounded-full z-10 my-4 md:my-0"></div>
+                    <div class="md:w-1/2 md:pl-12 text-left">
+                        <h4 class="text-neonGreen font-bold text-xl uppercase">Q2 2027: Alpha Launch</h4>
+                        <p class="text-gray-500 text-sm">Ra mắt bản thử nghiệm giới hạn tại sự kiện TechExpo.</p>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row items-center w-full">
+                    <div class="md:w-1/2 md:pr-12 text-right">
+                        <h4 class="text-neonPurple font-bold text-xl uppercase">Q3 2028: Global Release</h4>
+                        <p class="text-gray-500 text-sm">Mở bán chính thức phiên bản thương mại trên toàn cầu.</p>
+                    </div>
+                    <div class="w-4 h-4 bg-neonPurple rounded-full z-10 my-4 md:my-0"></div>
+                    <div class="md:w-1/2 md:pl-12"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="bg-card/30 p-10 rounded-3xl border border-gray-800">
+            <h2 class="text-3xl font-bold mb-10 text-center uppercase">Câu hỏi thường gặp</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="font-bold text-neonBlue mb-2">Hỏi: Túi khí có thể tái sử dụng không?</h4>
+                    <p class="text-sm text-gray-400">Đáp: Có, sau khi kích hoạt, bạn có thể gửi mũ đến trung tâm bảo hành để thay thế bình khí và gấp lại túi khí.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-neonBlue mb-2">Hỏi: Mũ có nặng không khi tích hợp nhiều pin?</h4>
+                    <p class="text-sm text-gray-400">Đáp: Với sợi Carbon T800, mũ chỉ nặng 1.45kg, tương đương các dòng mũ Fullface cao cấp thông thường.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-neonBlue mb-2">Hỏi: Pin sử dụng được trong bao lâu?</h4>
+                    <p class="text-sm text-gray-400">Đáp: Pin hoạt động liên tục 16 giờ với mọi tính năng bật. Sạc nhanh 30 phút cho 4 giờ sử dụng.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-neonBlue mb-2">Hỏi: HUD có gây mất tập trung không?</h4>
+                    <p class="text-sm text-gray-400">Đáp: Không, HUD được thiết kế ở tiêu cự xa vô cực, giúp thông tin hiển thị như đang trôi nổi phía trên đường đi.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bảo hành & Liên hệ -->
+        <section id="support" class="bg-card rounded-3xl overflow-hidden border border-gray-800 shadow-2xl">
+            <div class="grid grid-cols-1 lg:grid-cols-2">
+                <div class="p-12 lg:p-20">
+                    <h2 class="text-3xl font-black mb-8 text-neonBlue uppercase tracking-tighter">BẢO HÀNH & TƯ VẤN</h2>
+                    <div class="space-y-6 mb-12">
+                        <div class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-neonBlue/10 rounded flex items-center justify-center text-neonBlue shrink-0 font-bold">✓</div>
+                            <div>
+                                <h4 class="font-bold">Bảo hành VIP 24 tháng</h4>
+                                <p class="text-sm text-gray-500">Thay thế linh kiện điện tử miễn phí và hỗ trợ phần mềm trọn đời.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-neonBlue/10 rounded flex items-center justify-center text-neonBlue shrink-0 font-bold">✓</div>
+                            <div>
+                                <h4 class="font-bold">Mượn mũ thay thế</h4>
+                                <p class="text-sm text-gray-500">Cung cấp mũ tạm thời trong thời gian bảo hành để không gián đoạn hành trình.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="h-40 border border-dashed border-gray-700 rounded-xl flex items-center justify-center">
+                        <span class="text-xs font-bold uppercase text-gray-600">[Chứng nhận an toàn DOT/ECE]</span>
+                    </div>
+                </div>
+                <div class="p-12 lg:p-20 bg-black/40">
+                    <h3 class="text-xl font-bold mb-6 uppercase tracking-widest">Đăng ký tư vấn</h3>
+                    <form id="contactForm" class="space-y-5">
+                        <input type="text" placeholder="Tên của bạn" class="w-full bg-dark border border-gray-700 rounded-xl p-4 focus:border-neonBlue outline-none transition" required>
+                        <input type="email" placeholder="Email liên hệ" class="w-full bg-dark border border-gray-700 rounded-xl p-4 focus:border-neonBlue outline-none transition" required>
+                        <select class="w-full bg-dark border border-gray-700 rounded-xl p-4 focus:border-neonBlue outline-none transition">
+                            <option>Tư vấn đặt hàng sớm</option>
+                            <option>Hỗ trợ kỹ thuật</option>
+                            <option>Hợp tác đại lý</option>
+                        </select>
+                        <textarea placeholder="Ghi chú thêm..." rows="4" class="w-full bg-dark border border-gray-700 rounded-xl p-4 focus:border-neonBlue outline-none transition" required></textarea>
+                        <button type="submit" class="w-full py-4 bg-neonBlue text-dark font-black uppercase rounded-xl hover:bg-white transition-all transform active:scale-95 shadow-lg shadow-neonBlue/20">Gửi yêu cầu</button>
+                    </form>
+                    <div id="formStatus" class="mt-6 text-center hidden p-4 rounded-xl bg-green-900/40 text-neonGreen font-bold border border-neonGreen/30 animate-pulse">
+                        Gửi thành công! Chúng tôi sẽ liên hệ sớm.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="py-20 border-t border-gray-800 text-center">
+        <div class="text-neonBlue font-black text-2xl mb-4 tracking-tighter uppercase">Smart Helmet Pro</div>
+        <p class="text-gray-500 text-sm mb-6">Sản phẩm thuộc hệ sinh thái AI Protective Gear Co.</p>
+        <div class="flex justify-center space-x-8 text-gray-400 font-bold uppercase text-xs tracking-widest">
+            <a href="#" class="hover:text-neonBlue transition">Chính sách</a>
+            <a href="#" class="hover:text-neonBlue transition">Điều khoản</a>
+            <a href="#" class="hover:text-neonBlue transition">Hợp tác</a>
+        </div>
+    </footer>
+
+    <script>
+        // Tính năng Quét (Scan)
+        function startScan() {
+            const bar = document.getElementById('scanBar');
+            const overlay = document.getElementById('overlay');
+            const img = document.getElementById('helmetImage');
+            const statusText = document.getElementById('scanStatusText');
+            const results = document.getElementById('scanResults');
+
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 500);
+            
+            bar.classList.remove('hidden');
+            img.classList.remove('grayscale', 'opacity-50');
+            statusText.innerText = "Đang quét cấu trúc Carbon...";
+
+            setTimeout(() => {
+                statusText.innerText = "Kiểm tra hệ thống điện tử...";
+                statusText.style.color = "#39FF14";
+            }, 2000);
+
+            setTimeout(() => {
+                bar.classList.add('hidden');
+                statusText.innerText = "QUÉT HOÀN TẤT - PHÁT HIỆN 1 VẤN ĐỀ";
+                statusText.classList.remove('animate-pulse');
+                results.classList.remove('hidden');
+                results.classList.add('animate-fadeIn');
+            }, 5000);
+        }
+
+        window.onload = function() {
+            const canvasElement = document.getElementById('performanceChart');
+            if (canvasElement) {
+                const ctx = canvasElement.getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Cứng cáp', 'AI Thông minh', 'Kết nối 5G', 'Pin năng lượng', 'Kính HUD AR', 'Khử nhiễu âm'],
+                        datasets: [{
+                            label: 'Smart Helmet Pro',
+                            data: [98, 92, 95, 85, 90, 88],
+                            backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                            borderColor: '#00D4FF',
+                            pointBackgroundColor: '#00D4FF',
+                            borderWidth: 3
+                        }, {
+                            label: 'Mũ Fullface thường',
+                            data: [85, 5, 5, 0, 5, 45],
+                            backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                            borderColor: '#4b5563',
+                            pointBackgroundColor: '#4b5563',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: '#333' },
+                                grid: { color: '#333' },
+                                pointLabels: { color: '#aaa', font: { size: 12, weight: 'bold' } },
+                                ticks: { display: false },
+                                suggestedMin: 0,
+                                suggestedMax: 100
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#fff', font: { size: 14 } } }
+                        }
+                    }
+                });
+            }
+
+            const contactForm = document.getElementById('contactForm');
+            if (contactForm) {
+                contactForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const status = document.getElementById('formStatus');
+                    if (status) {
+                        status.classList.remove('hidden');
+                        this.reset();
+                        setTimeout(() => {
+                            status.classList.add('hidden');
+                        }, 6000);
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>
