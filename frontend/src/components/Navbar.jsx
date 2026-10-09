@@ -18,6 +18,7 @@ export default function Navbar() {
           <NavLink to="/" end>Trang chủ</NavLink>
           <NavLink to="/gioi-thieu">Giới thiệu</NavLink>
           <NavLink to="/cua-hang">Sản phẩm</NavLink>
+          <NavLink to="/bo-suu-tap">Bộ sưu tập</NavLink>
           <NavLink to="/blog">Blog</NavLink>
           <NavLink to="/lien-he">Liên hệ</NavLink>
           {user && <NavLink to="/don-hang">Đơn hàng</NavLink>}

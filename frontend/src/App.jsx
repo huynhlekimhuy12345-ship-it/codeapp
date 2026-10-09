@@ -13,6 +13,7 @@ import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
 import Contact from './pages/Contact';
 import ProductDetail from './pages/ProductDetail';
+import Collection from './pages/Collection';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<BlogDetail />} />
           <Route path="/lien-he" element={<Contact />} />
           <Route path="/san-pham/:id" element={<ProductDetail />} />
+          <Route path="/bo-suu-tap" element={<Collection />} />
           <Route path="/gio-hang" element={<Cart />} />
           <Route path="/dang-nhap" element={<Login />} />
           <Route path="/dang-ky" element={<Register />} />

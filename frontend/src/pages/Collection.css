@@ -1,0 +1,206 @@
+/* ===== Trang Bộ sưu tập — 3D nền + HTML phủ ===== */
+
+.collection-stage {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.collection-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.collection-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* HUD: chấm chỉ báo phase — HTML thuần */
+.collection-hud {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 22px;
+  pointer-events: none;
+}
+.hud-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(232, 217, 189, 0.45);
+  transition: color 0.3s;
+}
+.hud-dot i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(232, 217, 189, 0.3);
+  transition: 0.3s;
+}
+.hud-dot.on { color: var(--amber-light); }
+.hud-dot.on i {
+  background: var(--amber-light);
+  box-shadow: 0 0 12px rgba(232, 181, 106, 0.9);
+}
+
+/* Phase 1: hero copy */
+.collection-hero {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24px;
+  pointer-events: none;
+}
+.collection-hero .btn { pointer-events: auto; }
+.collection-hero .hero-title { text-align: center; }
+
+/* Gợi ý cuộn */
+.collection-hint {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(232, 217, 189, 0.75);
+  font-size: 0.82rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.collection-hint i {
+  width: 22px;
+  height: 34px;
+  border: 2px solid rgba(232, 181, 106, 0.6);
+  border-radius: 12px;
+  position: relative;
+  display: block;
+}
+.collection-hint i::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--amber-light);
+  animation: hintWheel 1.6s ease-in-out infinite;
+}
+@keyframes hintWheel {
+  0% { transform: translateY(0); opacity: 1; }
+  70% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+/* Phase 3: thẻ thông tin sản phẩm */
+.collection-cards {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.collection-card {
+  position: absolute;
+  left: 50%;
+  bottom: 7vh;
+  transform: translate(-50%, 26px);
+  width: min(400px, 88vw);
+  padding: 22px 26px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+}
+.collection-card.active {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.collection-card h3 {
+  color: #fff8ec;
+  font-size: 1.35rem;
+  margin: 6px 0 4px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.cc-index {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: var(--amber-light);
+}
+.cc-cat {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-bottom: 10px;
+}
+.cc-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--amber-light);
+  margin-bottom: 14px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Trạng thái đang tải scene */
+.collection-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  background: radial-gradient(ellipse at center, rgba(24, 15, 8, 0.4), rgba(12, 8, 5, 0.85));
+}
+
+/* Chế độ tĩnh / không WebGL */
+.collection-lead {
+  color: var(--muted);
+  margin-bottom: 24px;
+  max-width: 640px;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding-bottom: 40px;
+}
+.collection-card.static {
+  position: static;
+  transform: none;
+  opacity: 1;
+  width: auto;
+  pointer-events: auto;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .collection-hud { top: 74px; gap: 14px; }
+  .hud-dot { font-size: 0.68rem; letter-spacing: 1px; }
+  .collection-card { bottom: 5vh; padding: 18px 20px; }
+  .collection-card h3 { font-size: 1.15rem; }
+  .cc-price { font-size: 1.3rem; }
+}
