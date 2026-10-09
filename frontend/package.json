@@ -1,0 +1,1 @@
+{"dependencies":{"react":"^18.3.1","react-dom":"^18.3.1","react-router-dom":"^6.26.0"},"description":"Frontend website bán đồ da - React + Vite","devDependencies":{"@vitejs/plugin-react":"^4.3.1","vite":"^5.4.0"},"name":"leather-shop-frontend","private":true,"scripts":{"build":"vite build","dev":"vite","preview":"vite preview"},"type":"module","version":"1.0.0"}
