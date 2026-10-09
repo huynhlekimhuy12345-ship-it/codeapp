@@ -40,7 +40,7 @@ export default function Shop() {
 
   return (
     <div className="container page">
-      <h2 style={{ marginBottom: 20, color: 'var(--brown-800)' }}>Cửa hàng</h2>
+      <h2 className="page-title">Cửa hàng</h2>
       <div className="filters">
         <input
           className="search" placeholder="🔍 Tìm ví da, túi xách..."

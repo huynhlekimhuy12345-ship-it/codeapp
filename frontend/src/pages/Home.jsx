@@ -14,13 +14,17 @@ export default function Home() {
 
   return (
     <>
-      <div className="hero">
+      <div className="hero-3d">
         <div className="container">
-          <h1>Đồ da thật <em>cao cấp</em>,<br />bền đẹp theo năm tháng</h1>
-          <p>Ví da, túi xách, thắt lưng, giày da và phụ kiện làm từ da bò thật 100% — khâu tay tỉ mỉ, bảo hành 12 tháng.</p>
-          <Link to="/cua-hang" className="btn btn-primary">Mua sắm ngay</Link>
-          <Link to="/cua-hang" className="btn btn-outline" style={{ color: '#f5ead8', borderColor: '#f5ead8' }}>Xem danh mục</Link>
+          <span className="hero-kicker">Xưởng đồ da thủ công</span>
+          <h1 className="hero-title">Đồ da thật <em>cao cấp</em>,<br />bền đẹp theo năm tháng</h1>
+          <p className="hero-sub">Ví da, túi xách, thắt lưng, giày da và phụ kiện làm từ da bò thật 100% — khâu tay tỉ mỉ, bảo hành 12 tháng.</p>
+          <div className="hero-cta">
+            <Link to="/cua-hang" className="btn btn-primary">Mua sắm ngay</Link>
+            <Link to="/cua-hang" className="btn btn-outline">Xem danh mục</Link>
+          </div>
         </div>
+        <div className="hero-scroll">Cuộn xuống</div>
       </div>
 
       <div className="container">

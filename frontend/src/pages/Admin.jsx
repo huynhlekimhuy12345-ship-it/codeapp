@@ -258,7 +258,7 @@ export default function Admin() {
   const [tab, setTab] = useState('products');
   return (
     <div className="container page">
-      <h2 style={{ marginBottom: 20, color: 'var(--brown-800)' }}>Bảng quản trị</h2>
+      <h2 className="page-title">Bảng quản trị</h2>
       <div className="admin-tabs">
         <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>🛍️ Sản phẩm</button>
         <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>📂 Danh mục</button>

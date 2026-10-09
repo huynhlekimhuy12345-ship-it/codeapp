@@ -36,7 +36,7 @@ export default function MyOrders() {
 
   return (
     <div className="container page">
-      <h2 style={{ marginBottom: 20, color: 'var(--brown-800)' }}>Đơn hàng của tôi</h2>
+      <h2 className="page-title">Đơn hàng của tôi</h2>
       {orders.length === 0 ? (
         <div className="empty">
           <p>Bạn chưa có đơn hàng nào.</p>

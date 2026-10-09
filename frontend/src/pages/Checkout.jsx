@@ -37,7 +37,7 @@ export default function Checkout() {
 
   return (
     <div className="container page">
-      <h2 style={{ marginBottom: 20, color: 'var(--brown-800)' }}>Thanh toán</h2>
+      <h2 className="page-title">Thanh toán</h2>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }} className="checkout-grid">
         <form className="form-card" style={{ maxWidth: 'none', margin: 0 }} onSubmit={submit}>
           <h2>Thông tin giao hàng</h2>

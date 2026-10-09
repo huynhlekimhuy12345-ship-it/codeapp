@@ -20,7 +20,7 @@ export default function Cart() {
 
   return (
     <div className="container page">
-      <h2 style={{ marginBottom: 20, color: 'var(--brown-800)' }}>Giỏ hàng</h2>
+      <h2 className="page-title">Giỏ hàng</h2>
       <div className="cart-table">
         {cart.map((i) => (
           <div className="cart-row" key={i.product_id}>
