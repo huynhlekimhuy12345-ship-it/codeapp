@@ -40,13 +40,18 @@ export default function App() {
   const location = useLocation();
   // Trang quản trị dùng nền 3D tối giản để tập trung thao tác
   const variant = location.pathname.startsWith('/admin') ? 'subtle' : 'hero';
+  // Trang Bộ sưu tập có canvas 3D riêng che kín màn hình → tắt Scene3D
+  // nền chung để đỡ tốn GPU (nhất là shader compile lần đầu)
+  const hideGlobalScene = location.pathname.startsWith('/bo-suu-tap');
 
   return (
     <>
       {/* Nền 3D toàn màn hình — chỉ vẽ nền, mọi chữ/nút là HTML/CSS bên trên */}
-      <Suspense fallback={null}>
-        <Scene3D key={variant} variant={variant} />
-      </Suspense>
+      {!hideGlobalScene && (
+        <Suspense fallback={null}>
+          <Scene3D key={variant} variant={variant} />
+        </Suspense>
+      )}
       <div className="page-veil" aria-hidden="true" />
       <Navbar />
       <main>

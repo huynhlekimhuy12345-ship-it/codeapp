@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
+import { useStore } from '../context/StoreContext';
 import './Collection.css';
 
 /**
@@ -17,8 +18,9 @@ import './Collection.css';
  *
  *
  * ★ MODEL 3D THẬT (.glb) ĐÃ ĐƯỢC GẮN (thư mục public/models/):
- *   - Túi hero: bag.glb — briefcase da của reyshapes (CC0), CÓ SẴN animation
- *     "open"/"closed" → ScrollTrigger scrub trực tiếp qua AnimationMixer.
+ *   - Túi hero: bag.glb — "Briefcase" da của Poly by Google (CC BY 3.0),
+ *     model tĩnh (không animation) → phase 2 dùng hiệu ứng nghiêng túi
+ *     + camera dolly để gợi cảm giác mở nắp.
  *   - watch.glb — "Wrist Watch" của Poly by Google (CC BY 3.0).
  *   - wallet.glb — "A Wallet" của senior design (CC BY).
  *   - key.glb — "Key" của Quaternius (CC0).
@@ -40,13 +42,20 @@ const FALLBACK_PRODUCTS = [
    0 ví da, 1 dây đồng hồ, 2 bao da chìa khóa, 3 bao hộ chiếu,
    4 đựng thẻ, 5 thắt lưng.
    Các hàm dựng chi tiết (buildWallet, buildWatchStrap, ...) nằm trong
-   effect dựng scene vì cần THREE — xem khối "HÌNH KHỐI SẢN PHẨM CHI TIẾT". */
+   effect dựng scene vì cần THREE — xem khối "HÌNH KHỐI SẢN PHẨM CHI TIẾT".
+ * NÂNG CẤP TRỰC QUAN: RoomEnvironment + ACES + studio 3 điểm + vignette.
+ * INSPECTOR 3D: nút "Xem 3D" trên mỗi thẻ (hoặc bấm trực tiếp vào sản phẩm
+ * 3D) mở overlay toàn màn hình: xoay/kéo/phóng to model thật bằng
+ * OrbitControls, kèm panel thông tin + thêm vào giỏ hàng.
+ */
 
 const PHASE_LABELS = ['Mở đầu', 'Khám phá', 'Bộ sưu tập'];
 
 export default function Collection() {
   const [products, setProducts] = useState(null); // null = đang tải API
   const [ready, setReady] = useState(false);     // scene 3D đã dựng xong
+  const [inspectIdx, setInspectIdx] = useState(null); // index SP đang mở inspector 3D
+  const { addToCart } = useStore();
 
   // Chế độ hiển thị quyết định ngay từ đầu (trước khi dựng scene)
   const [webglOK] = useState(() => {
@@ -70,6 +79,22 @@ export default function Collection() {
   const hintRef = useRef(null);
   const cardsRef = useRef([]);
   const dotsRef = useRef([]);
+  const inspectOpenRef = useRef(false); // inspector mở → vòng render chính tạm nghỉ
+  const modelsRef = useRef([]);         // object 3D thật (model .glb / procedural) theo index SP
+
+  /* Mở / đóng inspector 3D: khóa cuộn body khi mở */
+  const openInspector = (i) => {
+    inspectOpenRef.current = true;
+    document.body.style.overflow = 'hidden';
+    setInspectIdx(i);
+  };
+  const closeInspector = () => {
+    inspectOpenRef.current = false;
+    document.body.style.overflow = '';
+    setInspectIdx(null);
+  };
+  // An toàn: nếu rời trang khi inspector đang mở thì trả lại cuộn body
+  useEffect(() => () => { document.body.style.overflow = ''; }, []);
 
   /* 1. Tải DỮ LIỆU THẬT từ API backend */
   useEffect(() => {
@@ -97,12 +122,13 @@ export default function Collection() {
 
     (async () => {
       // Lazy-load: tách three + gsap thành chunk riêng, không chặn lần vẽ đầu
-      const [THREE, gsapMod, stMod, rbgMod, gltfMod] = await Promise.all([
+      const [THREE, gsapMod, stMod, rbgMod, gltfMod, roomMod] = await Promise.all([
         import('three'),
         import('gsap'),
         import('gsap/ScrollTrigger'),
         import('three/examples/jsm/geometries/RoundedBoxGeometry.js'),
         import('three/examples/jsm/loaders/GLTFLoader.js'),
+        import('three/examples/jsm/environments/RoomEnvironment.js'),
       ]);
       if (state.disposed) return;
       const gsap = gsapMod.gsap;
@@ -165,11 +191,22 @@ export default function Collection() {
       renderer.setSize(host.clientWidth, host.clientHeight);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // Tone mapping điện ảnh → màu da/kim loại sâu và "sang" hơn
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.95;
       host.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x140d07); // nền tối espresso, che nền chung
       scene.fog = new THREE.FogExp2(0x140d07, 0.026);
+
+      // Environment map: RoomEnvironment cho phản chiếu PBR chân thực
+      // trên da và chi tiết kim loại. Giữ intensity vừa phải để không
+      // cháy sáng, mất màu nâu da bò đặc trưng.
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new roomMod.RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.45;
+      pmrem.dispose();
 
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -179,22 +216,28 @@ export default function Collection() {
       );
       camera.position.set(0, 0.9, 10);
 
-      /* ---------- Ánh sáng studio ấm ---------- */
-      scene.add(new THREE.AmbientLight(0x6b4a2e, 1.25));
-      const key = new THREE.PointLight(0xe8a54b, 900, 60);
-      key.position.set(5, 6, 7);
+      /* ---------- Ánh sáng studio 3 điểm (ấm, sang) ---------- */
+      // Key: đèn chính hướng, đổ bóng mềm
+      const key = new THREE.DirectionalLight(0xffe3b8, 1.7);
+      key.position.set(5, 7, 6);
+      key.castShadow = true;
+      key.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048);
+      key.shadow.camera.left = -7;
+      key.shadow.camera.right = 7;
+      key.shadow.camera.top = 7;
+      key.shadow.camera.bottom = -7;
+      key.shadow.bias = -0.0004;
       scene.add(key);
-      const rim = new THREE.PointLight(0xc96a35, 650, 55);
-      rim.position.set(-6, 2.5, -4);
+      // Fill: làm mềm vùng tối, ánh nâu ấm nhẹ từ bên trái
+      const fill = new THREE.DirectionalLight(0xc98d5e, 0.4);
+      fill.position.set(-6, 2, 5);
+      scene.add(fill);
+      // Rim: viền vàng ấm từ phía sau → tách sản phẩm khỏi nền tối
+      const rim = new THREE.DirectionalLight(0xff9d4d, 1.1);
+      rim.position.set(-3, 4, -7);
       scene.add(rim);
-      const top = new THREE.DirectionalLight(0xf2c57c, 0.9);
-      top.position.set(0, 8, 3);
-      top.castShadow = true;
-      top.shadow.camera.left = -7;
-      top.shadow.camera.right = 7;
-      top.shadow.camera.top = 7;
-      top.shadow.camera.bottom = -7;
-      scene.add(top);
+      // Ambient rất nhẹ (environment map đã lo phần lớn ánh sáng môi trường)
+      scene.add(new THREE.AmbientLight(0x6b4a2e, 0.35));
 
       /* Sàn hứng bóng đổ */
       const ground = new THREE.Mesh(
@@ -205,6 +248,32 @@ export default function Collection() {
       ground.position.y = -2.4;
       ground.receiveShadow = true;
       scene.add(ground);
+
+      /* Bóng tiếp xúc mềm (fake AO): quầng tối radial dưới vùng sản phẩm
+         phase 3, giúp sản phẩm "đứng" có chiều sâu trên nền */
+      const shadowTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 256;
+        const ctx = c.getContext('2d');
+        const grd = ctx.createRadialGradient(128, 128, 8, 128, 128, 128);
+        grd.addColorStop(0, 'rgba(0,0,0,0.55)');
+        grd.addColorStop(0.55, 'rgba(0,0,0,0.22)');
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 256, 256);
+        return new THREE.CanvasTexture(c);
+      })();
+      const contactShadow = new THREE.Mesh(
+        new THREE.PlaneGeometry(11, 3.6),
+        new THREE.MeshBasicMaterial({
+          map: shadowTex,
+          transparent: true,
+          depthWrite: false,
+        })
+      );
+      contactShadow.rotation.x = -Math.PI / 2;
+      contactShadow.position.y = -1.32;
+      scene.add(contactShadow);
 
       const leather = (color, rough = 0.72) =>
         new THREE.MeshStandardMaterial({
@@ -281,19 +350,19 @@ export default function Collection() {
       scene.add(bag);
 
       /* ============================================================
-       * ★ MODEL THẬT — túi hero: thử thay túi procedural ở trên bằng
-       *   model briefcase da thật (public/models/bag.glb) có sẵn sẵn
-       *   animation "open"/"closed". Tải lỗi → giữ nguyên túi procedural.
-       *   Muốn dùng model khác: thay file bag.glb, giữ nguyên tên.
+       * ★ MODEL THẬT — túi hero (nạp nền, KHÔNG chặn timeline):
+       *   Túi procedural ở trên được dùng ngay để dựng scene/timeline;
+       *   khi bag.glb ("Briefcase" của Poly by Google, CC BY 3.0) tải xong
+       *   sẽ thay thế mesh. Model này tĩnh (không animation) nên phase 2
+       *   dùng hiệu ứng nghiêng túi + camera dolly để gợi cảm giác mở nắp.
+       *   Tải lỗi → giữ nguyên túi procedural.
        * ============================================================ */
-      let bagMixer = null;
-      let openAction = null;
-      let openClip = null;
-      const openProxy = { p: 0 }; // tiến trình mở nắp, timeline cuộn điều khiển
-      try {
-        const bagGltf = await gltfLoader.loadAsync('/models/bag.glb');
-        // Dọn các mesh procedural, GIỮ LẠI Group cha `bag` và mảng `bagMats`
-        // để timeline cuộn (lùi/mờ túi phase 3) hoạt động không đổi
+      const bagFade = { o: 1 }; // độ mờ túi phase 3 (proxy để swap model không ảnh hưởng)
+      let bagIsModel = false; // true khi bag.glb đã swap vào (model tĩnh)
+      const swapInBagModel = (bagGltf) => {
+        if (state.disposed) return;
+        bagIsModel = true;
+        // Dọn các mesh procedural, GIỮ LẠI Group cha `bag`
         for (const child of [...bag.children]) {
           bag.remove(child);
           child.traverse((o) => {
@@ -302,31 +371,26 @@ export default function Collection() {
         }
         bagMats.length = 0;
         const bagModel = normalizeModel(bagGltf.scene, 3.4);
+        // Tô lại màu da bò đậm cho model túi
+        // → làm TRƯỚC khi thu thập materials để giữ transparent/opacity
+        tintModel(bagModel, {
+          mode: 'palette',
+          tones: [0x6b4226, 0x7a4a2c, 0x5a3a22],
+        });
         bagModel.traverse((o) => {
           if (o.isMesh) {
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             mats.forEach((m) => {
               m.transparent = true; // để phase 3 làm mờ túi như cũ
+              m.opacity = bagFade.o; // đồng bộ độ mờ hiện tại của timeline
               if (!bagMats.includes(m)) bagMats.push(m);
             });
           }
         });
         bag.add(bagModel);
-        // Gắn animation mở nắp có sẵn trong model
-        const clips = bagGltf.animations || [];
-        if (clips.length) {
-          bagMixer = new THREE.AnimationMixer(bagModel);
-          openClip =
-            clips.find((a) => /open/i.test(a.name)) || clips[0];
-          openAction = bagMixer.clipAction(openClip);
-          openAction.play();
-          openAction.paused = true; // timeline cuộn sẽ scrub action.time thủ công
-          openAction.time = 0;
-          bagMixer.update(0);
-        }
-      } catch {
-        // Tải model thất bại → giữ nguyên túi procedural đã dựng ở trên
-      }
+      };
+      // Nạp nền: không await ở đây để scene/timeline dựng ngay lập tức
+      gltfLoader.loadAsync('/models/bag.glb').then(swapInBagModel).catch(() => {});
 
       /* ============================================================
        * HÌNH KHỐI SẢN PHẨM CHI TIẾT — dựng từ hình học cơ bản
@@ -540,8 +604,10 @@ export default function Collection() {
       const BUILDERS = [buildWallet, buildWatchStrap, buildKeyPouch, buildPassport, buildCardHolder, buildBelt];
 
       /* ============================================================
-       * ★ MODEL THẬT — sản phẩm: thử tải .glb theo từng index, thất bại
-       *   → tự động fallback về hình khối procedural tương ứng.
+       * ★ MODEL THẬT — sản phẩm (nạp nền, KHÔNG chặn timeline):
+       *   Dựng procedural ngay để timeline chạy tức thì; khi từng .glb
+       *   tải xong sẽ thay thế procedural bằng model thật (hiệu ứng
+       *   hiện dần). Tải lỗi → giữ nguyên procedural.
        *   Muốn đổi model khác: thay file trong public/models/, giữ tên.
        * ============================================================ */
       const MODEL_BY_INDEX = [
@@ -567,26 +633,11 @@ export default function Collection() {
         null, // 4: đựng thẻ — giữ procedural
         null, // 5: thắt lưng — giữ procedural
       ];
-      const modelResults = await Promise.allSettled(
-        MODEL_BY_INDEX.map((m, i) =>
-          m && i < N
-            ? gltfLoader.loadAsync(m.url)
-            : Promise.reject(new Error('procedural'))
-        )
-      );
 
-      /* ---------- Các sản phẩm chi tiết bay ra từ túi ---------- */
+      /* ---------- Các sản phẩm: dựng procedural NGAY, swap model thật sau ---------- */
       const productGroups = products.map((p, i) => {
         const g = new THREE.Group();
-        const spec = MODEL_BY_INDEX[i % MODEL_BY_INDEX.length];
-        const res = modelResults[i % modelResults.length];
-        if (spec && res.status === 'fulfilled') {
-          const model = normalizeModel(res.value.scene, spec.size);
-          if (spec.tint) tintModel(model, spec.tint);
-          g.add(model);
-        } else {
-          g.add(BUILDERS[i % BUILDERS.length]()); // fallback procedural
-        }
+        g.add(BUILDERS[i % BUILDERS.length]()); // procedural trước, model thật swap sau
         // Bắt đầu: ẩn bên trong túi
         g.position.set((Math.random() - 0.5) * 1.1, -0.3, (Math.random() - 0.5) * 0.4);
         g.scale.setScalar(0.001);
@@ -597,6 +648,67 @@ export default function Collection() {
         scene.add(g);
         return g;
       });
+      // Lưu object 3D thật của từng SP → inspector 3D sẽ clone lại, không tải lại
+      // (được cập nhật lại mỗi khi model .glb swap vào)
+      modelsRef.current = productGroups.map((g) => g.children[0] || g);
+
+      // Nạp nền từng model .glb → thay thế procedural khi xong
+      MODEL_BY_INDEX.forEach((spec, i) => {        if (!spec || i >= N) return;
+        gltfLoader
+          .loadAsync(spec.url)
+          .then((gltf) => {
+            if (state.disposed) return;
+            const g = productGroups[i];
+            if (!g) return;
+            const old = g.children[0];
+            if (old) {
+              g.remove(old);
+              old.traverse((o) => {
+                if (o.geometry) o.geometry.dispose();
+              });
+            }
+            const model = normalizeModel(gltf.scene, spec.size);
+            if (spec.tint) tintModel(model, spec.tint);
+            const targetS = model.scale.x; // tỉ lệ sau normalize
+            model.scale.setScalar(targetS * 0.55); // hiệu ứng hiện dần
+            g.add(model);
+            modelsRef.current[i] = model;
+            gsap.to(model.scale, {
+              x: targetS,
+              y: targetS,
+              z: targetS,
+              duration: 0.7,
+              ease: 'back.out(1.5)',
+            });
+          })
+          .catch(() => {
+            /* tải lỗi → giữ nguyên procedural */
+          });
+      });
+
+      /* Bấm trực tiếp vào sản phẩm 3D → mở inspector xem chi tiết */
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      const onCanvasClick = (e) => {
+        if (inspectOpenRef.current) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(productGroups, true);
+        if (!hits.length) return;
+        let obj = hits[0].object;
+        const idx = productGroups.findIndex((g) => {
+          let p = obj;
+          while (p) {
+            if (p === g) return true;
+            p = p.parent;
+          }
+          return false;
+        });
+        if (idx >= 0 && products[idx]) openInspector(idx);
+      };
+      renderer.domElement.addEventListener('click', onCanvasClick);
 
       /* ---------- Hạt bụi vàng ---------- */
       const dCount = isMobile ? 80 : 200;
@@ -627,35 +739,46 @@ export default function Collection() {
       const rowX = (i) => (i - (N - 1) / 2) * 2.6;
       const tl = gsap.timeline({ defaults: { ease: 'none' } });
 
-      // Phase 2 (18→45): nắp mở, camera dolly vào, sản phẩm bay lên
-      if (openAction) {
-        // Túi model thật: scrub animation "open" có sẵn theo tiến trình cuộn
-        tl.to(
-          openProxy,
-          {
-            p: 1,
-            duration: 14,
-            onUpdate: () => {
-              openAction.time = openProxy.p * openClip.duration;
-              bagMixer.update(0);
-            },
+      // Phase 2 (18→45): gợi cảm giác mở nắp túi để sản phẩm bay lên
+      // - Túi procedural: xoay nắp (flapPivot) như cũ
+      // - Túi model thật (tĩnh, không animation): nghiêng cả túi ra sau
+      //   + camera dolly vào, nhìn vào miệng túi khi sản phẩm bay lên
+      const openProxy = { p: 0 }; // tiến trình mở, timeline cuộn điều khiển
+      tl.to(
+        openProxy,
+        {
+          p: 1,
+          duration: 14,
+          onUpdate: () => {
+            if (bagIsModel) {
+              bag.rotation.x = -0.42 * openProxy.p;
+              bag.position.y = -0.25 * openProxy.p;
+            } else {
+              flapPivot.rotation.x = -2.5 * openProxy.p;
+            }
           },
-          16
-        );
-      } else {
-        // Túi procedural (fallback): xoay nắp như cũ
-        tl.to(flapPivot.rotation, { x: -2.5, duration: 14 }, 16);
-      }
+        },
+        16
+      );
       tl.to(camera.position, { z: 6.4, y: 0.55, duration: 24 }, 16);
       productGroups.forEach((g, i) => {
         tl.to(g.scale, { x: 1, y: 1, z: 1, duration: 7 }, 24 + i * 3.2);
         tl.to(g.position, { y: 2.8, duration: 9 }, 24 + i * 3.2);
       });
-      // Chuyển phase (46→56): túi lùi + mờ về hậu cảnh, SP xếp hàng
+      // Chuyển phase (46→56): túi lùi + mờ về hậu cảnh, SP xếp hàng.
+      // Fade qua proxy bagFade để model swap vào sau vẫn mờ đúng.
       tl.to(camera.position, { x: rowX(0), duration: 10 }, 46);
       tl.to(bag.position, { z: -7.5, duration: 10 }, 46);
       tl.to(bag.scale, { x: 0.8, y: 0.8, z: 0.8, duration: 10 }, 46);
-      bagMats.forEach((m) => tl.to(m, { opacity: 0.1, duration: 10 }, 46));
+      tl.to(
+        bagFade,
+        {
+          o: 0.1,
+          duration: 10,
+          onUpdate: () => bagMats.forEach((m) => (m.opacity = bagFade.o)),
+        },
+        46
+      );
       productGroups.forEach((g, i) => {
         tl.to(g.position, { x: rowX(i), y: 0.35, z: 0, duration: 10 }, 46);
       });
@@ -678,6 +801,9 @@ export default function Collection() {
           const ho = pr < 0.06 ? 1 : pr > 0.16 ? 0 : 1 - (pr - 0.06) / 0.1;
           if (heroEl) {
             heroEl.style.opacity = ho;
+            // visibility:hidden để nút CTA tàng hình không chặn click
+            // vào sản phẩm 3D / thẻ ở phase 2-3
+            heroEl.style.visibility = ho > 0.5 ? 'visible' : 'hidden';
             heroEl.style.pointerEvents = ho > 0.5 ? 'auto' : 'none';
           }
           if (hintEl) hintEl.style.opacity = pr < 0.05 ? 1 : 0;
@@ -694,6 +820,12 @@ export default function Collection() {
           dotsRef.current.forEach(
             (el, i) => el && el.classList.toggle('on', i === phase)
           );
+          // Phase 3: phóng to nhẹ SP đang ở trung tâm để thấy rõ chi tiết
+          productGroups.forEach((g, i) => {
+            if (g.scale.x > 0.5) {
+              g.scale.setScalar(pr >= 0.56 ? (i === active ? 1.45 : 1) : 1);
+            }
+          });
         },
       });
 
@@ -704,6 +836,8 @@ export default function Collection() {
       const animate = () => {
         if (!running || state.disposed) return;
         raf = requestAnimationFrame(animate);
+        // Inspector đang mở: nghỉ render scene chính, tiết kiệm GPU
+        if (inspectOpenRef.current) return;
         const t = clock.getElapsedTime();
         for (const g of productGroups) {
           if (g.scale.x > 0.5) {
@@ -750,6 +884,7 @@ export default function Collection() {
         cancelAnimationFrame(raf);
         document.removeEventListener('visibilitychange', onVis);
         window.removeEventListener('resize', onResize);
+        renderer.domElement.removeEventListener('click', onCanvasClick);
         st.kill();
         tl.kill();
         scene.traverse((o) => {
@@ -759,6 +894,8 @@ export default function Collection() {
             mats.forEach((m) => m.dispose());
           }
         });
+        if (scene.environment) scene.environment.dispose();
+        shadowTex.dispose();
         renderer.dispose();
         if (renderer.domElement.parentNode === host) {
           host.removeChild(renderer.domElement);
@@ -797,6 +934,8 @@ export default function Collection() {
     <div className="collection">
       <section className="collection-stage" ref={stageRef}>
         <div className="collection-canvas" ref={canvasHostRef} aria-hidden="true" />
+        {/* Vignette: quầng tối viền → nền có chiều sâu, sản phẩm nổi bật hơn */}
+        <div className="collection-vignette" aria-hidden="true" />
 
         {/* HUD: chấm chỉ báo 3 phase — HTML, không phải WebGL */}
         <div className="collection-hud" aria-hidden="true">
@@ -849,15 +988,23 @@ export default function Collection() {
               <h3>{p.name}</h3>
               <p className="cc-cat">{p.category_name || 'Đồ da thủ công'}</p>
               <div className="cc-price">{fmtVND(p.price)}</div>
-              {p.fallback ? (
-                <Link to="/cua-hang" className="btn btn-primary btn-small">
-                  Xem cửa hàng
-                </Link>
-              ) : (
-                <Link to={`/san-pham/${p.id}`} className="btn btn-primary btn-small">
-                  Xem chi tiết
-                </Link>
-              )}
+              <div className="cc-actions">
+                {p.fallback ? (
+                  <Link to="/cua-hang" className="btn btn-primary btn-small">
+                    Xem cửa hàng
+                  </Link>
+                ) : (
+                  <Link to={`/san-pham/${p.id}`} className="btn btn-primary btn-small">
+                    Xem chi tiết
+                  </Link>
+                )}
+                <button
+                  className="btn btn-ghost btn-small"
+                  onClick={() => openInspector(i)}
+                >
+                  Xem 3D
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -865,12 +1012,257 @@ export default function Collection() {
         {/* Ghi công model 3D (yêu cầu của giấy phép CC-BY) */}
         <div className="collection-credits" aria-hidden="true">
           Model 3D: “Wrist Watch” của Poly by Google (CC BY 3.0), “A Wallet” của
-          senior design (CC BY), Briefcase của reyshapes (CC0), Key của
-          Quaternius (CC0) — qua Poly Pizza
+          senior design (CC BY), “Briefcase” của Poly by Google (CC BY 3.0),
+          Key của Quaternius (CC0) — qua Poly Pizza
         </div>
 
         {!ready && <div className="collection-loading">Đang chuẩn bị trải nghiệm 3D…</div>}
       </section>
+
+      {/* Inspector 3D: xem chi tiết từng món, xoay qua xoay lại */}
+      {inspectIdx !== null && products[inspectIdx] && (
+        <ProductInspector
+          product={products[inspectIdx]}
+          modelObject={modelsRef.current[inspectIdx] || null}
+          onClose={closeInspector}
+          addToCart={addToCart}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+ * ProductInspector — overlay toàn màn hình xem chi tiết 1 sản phẩm:
+ * model 3D THẬT (clone từ scene chính, không tải lại) + OrbitControls
+ * (kéo xoay, cuộn/phóng to, damping, tự xoay đến khi user chạm vào),
+ * panel HTML: tên, danh mục, giá, mô tả, thêm vào giỏ hàng.
+ * ESC / bấm nền / nút Đóng để thoát. Model tải lỗi → hiện mesh
+ * procedural fallback, không bao giờ trống.
+ * ============================================================ */
+function ProductInspector({ product, modelObject, onClose, addToCart }) {
+  const viewRef = useRef(null);
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
+
+  // Phím ESC đóng inspector
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  // Dựng viewport 3D riêng cho inspector
+  useEffect(() => {
+    let disposed = false;
+    let cleanup = null;
+    (async () => {
+      const [THREE, orbitMod, roomMod] = await Promise.all([
+        import('three'),
+        import('three/examples/jsm/controls/OrbitControls.js'),
+        import('three/examples/jsm/environments/RoomEnvironment.js'),
+      ]);
+      if (disposed || !viewRef.current) return;
+      const host = viewRef.current;
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(host.clientWidth, host.clientHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.95;
+      host.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      // Environment cho phản chiếu PBR chân thực (vừa phải, không cháy sáng)
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envTex = pmrem.fromScene(new roomMod.RoomEnvironment(), 0.04).texture;
+      scene.environment = envTex;
+      scene.environmentIntensity = 0.45;
+      pmrem.dispose();
+
+      const camera = new THREE.PerspectiveCamera(
+        42,
+        host.clientWidth / host.clientHeight,
+        0.1,
+        50
+      );
+      camera.position.set(1.8, 1.2, 3.4);
+
+      // Studio 3 điểm cho inspector
+      const key = new THREE.DirectionalLight(0xffe3b8, 1.7);
+      key.position.set(4, 6, 5);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xc98d5e, 0.4);
+      fill.position.set(-5, 2, 4);
+      scene.add(fill);
+      const rim = new THREE.DirectionalLight(0xff9d4d, 1.1);
+      rim.position.set(-2, 4, -6);
+      scene.add(rim);
+      scene.add(new THREE.AmbientLight(0x6b4a2e, 0.35));
+
+      // Clone model thật từ scene chính (chia sẻ geometry/material → rẻ)
+      if (modelObject) {
+        const model = modelObject.clone(true);
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        model.scale.setScalar(1.7 / maxDim);
+        const box2 = new THREE.Box3().setFromObject(model);
+        model.position.sub(box2.getCenter(new THREE.Vector3()));
+        scene.add(model);
+      }
+
+      // Bóng tiếp xúc mềm dưới sản phẩm
+      const shadowTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const ctx = c.getContext('2d');
+        const grd = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+        grd.addColorStop(0, 'rgba(0,0,0,0.55)');
+        grd.addColorStop(0.6, 'rgba(0,0,0,0.2)');
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 128, 128);
+        return new THREE.CanvasTexture(c);
+      })();
+      const contact = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.2, 3.2),
+        new THREE.MeshBasicMaterial({
+          map: shadowTex,
+          transparent: true,
+          depthWrite: false,
+        })
+      );
+      contact.rotation.x = -Math.PI / 2;
+      contact.position.y = -1.05;
+      scene.add(contact);
+
+      // OrbitControls: kéo xoay, cuộn/phóng to, damping; tự xoay đến khi chạm
+      const controls = new orbitMod.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.minDistance = 1.4;
+      controls.maxDistance = 9;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 1.1;
+      controls.addEventListener(
+        'start',
+        () => {
+          controls.autoRotate = false;
+        },
+        { once: true }
+      );
+      controls.target.set(0, 0.05, 0);
+
+      let raf = 0;
+      let run = true;
+      const animate = () => {
+        if (!run || disposed) return;
+        raf = requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      const onResize = () => {
+        const w = host.clientWidth;
+        const h = host.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      };
+      window.addEventListener('resize', onResize);
+
+      cleanup = () => {
+        run = false;
+        cancelAnimationFrame(raf);
+        window.removeEventListener('resize', onResize);
+        controls.dispose();
+        envTex.dispose();
+        shadowTex.dispose();
+        // KHÔNG dispose geometry/material của model: đang dùng chung với scene chính
+        renderer.dispose();
+        if (renderer.domElement.parentNode === host) {
+          host.removeChild(renderer.domElement);
+        }
+      };
+    })();
+    return () => {
+      disposed = true;
+      if (cleanup) cleanup();
+    };
+  }, [modelObject]);
+
+  const inStock = product.fallback ? true : product.stock > 0;
+
+  return (
+    <div
+      className="inspect-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Xem 3D ${product.name}`}
+    >
+      <div className="inspect-backdrop" onClick={onClose} />
+      <div className="inspect-box glass">
+        <div className="inspect-view" ref={viewRef}>
+          <div className="inspect-hint3d">Kéo để xoay · Cuộn để phóng to</div>
+        </div>
+        <aside className="inspect-panel">
+          <button className="inspect-close" onClick={onClose} aria-label="Đóng">
+            ✕
+          </button>
+          <div className="cc-index">Xem 3D</div>
+          <h2>{product.name}</h2>
+          <p className="cc-cat">{product.category_name || 'Đồ da thủ công'}</p>
+          <div className="cc-price">{fmtVND(product.price)}</div>
+          {product.description && (
+            <p className="inspect-desc">{product.description}</p>
+          )}
+          {!product.fallback && (
+            <div
+              className="inspect-stock"
+              style={{ color: inStock ? '#8fd18f' : '#e08a8a' }}
+            >
+              {inStock ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'}
+            </div>
+          )}
+          {!product.fallback && (
+            <div className="qty-row">
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))}>−</button>
+              <span>{qty}</span>
+              <button
+                onClick={() => setQty((q) => Math.min(product.stock || 99, q + 1))}
+              >
+                +
+              </button>
+            </div>
+          )}
+          <div className="inspect-actions">
+            {product.fallback ? (
+              <Link to="/cua-hang" className="btn btn-primary">
+                Xem cửa hàng
+              </Link>
+            ) : (
+              <button
+                className="btn btn-primary"
+                disabled={!inStock}
+                onClick={() => {
+                  addToCart(product, qty);
+                  setAdded(true);
+                  setTimeout(() => setAdded(false), 1800);
+                }}
+              >
+                {added ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ hàng'}
+              </button>
+            )}
+            <button className="btn btn-ghost" onClick={onClose}>
+              Đóng
+            </button>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
