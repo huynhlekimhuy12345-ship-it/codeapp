@@ -5,12 +5,47 @@ const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Lấy đơn hàng kèm chi tiết sản phẩm
+// Lấy đơn hàng kèm chi tiết sản phẩm và lịch sử trạng thái
 function getOrderWithItems(id) {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
   if (!order) return null;
   order.items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id);
+  order.history = db.prepare(
+    'SELECT * FROM order_status_history WHERE order_id = ? ORDER BY id DESC'
+  ).all(id);
   return order;
+}
+
+// Luồng trạng thái hợp lệ: chờ xác nhận → đã xác nhận → đang giao → đã giao
+// Chỉ được hủy khi chưa giao xong; đơn đã hủy / đã giao không chuyển đi đâu nữa
+const STATUS_FLOW = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['shipping', 'cancelled'],
+  shipping: ['delivered', 'cancelled'],
+  delivered: [],
+  cancelled: [],
+};
+
+// Ghi lịch sử trạng thái, dùng tên thật từ phiên đăng nhập (không cho giả mạo nhãn)
+function actorName(req) {
+  const row = db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id);
+  return row ? row.name : (req.user.email || '');
+}
+
+function writeHistory(orderId, fromStatus, toStatus, req, reason = '') {
+  db.prepare(
+    `INSERT INTO order_status_history (order_id, from_status, to_status, actor_name, reason)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(orderId, fromStatus, toStatus, actorName(req), reason || '');
+}
+
+// Hoàn lại tồn kho cho toàn bộ sản phẩm trong đơn
+function restoreStock(orderId) {
+  const items = db.prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ?').all(orderId);
+  const upd = db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?');
+  for (const i of items) {
+    if (i.product_id) upd.run(i.quantity, i.product_id);
+  }
 }
 
 // POST /api/orders — khách hàng đã đăng nhập đặt hàng (COD)
@@ -47,6 +82,11 @@ router.post('/', auth, (req, res) => {
       insItem.run(orderId, l.product_id, l.product_name, l.quantity, l.price);
       decStock.run(l.quantity, l.product_id);
     }
+    // Ghi lịch sử: đơn mới tạo, kèm danh tính khách hàng (tên + SĐT)
+    db.prepare(
+      `INSERT INTO order_status_history (order_id, from_status, to_status, actor_name, reason)
+       VALUES (?, NULL, 'pending', ?, ?)`
+    ).run(orderId, `${customer_name.trim()} (${phone.trim()})`, 'Đơn hàng mới được tạo');
     return orderId;
   });
 
@@ -84,15 +124,54 @@ router.get('/:id', auth, (req, res) => {
   res.json({ order });
 });
 
-// PUT /api/orders/:id/status — admin cập nhật trạng thái
+// PUT /api/orders/:id/status — admin cập nhật trạng thái (tuân thủ luồng chặt chẽ)
 router.put('/:id/status', auth, adminOnly, (req, res) => {
-  const { status } = req.body || {};
+  const { status, reason } = req.body || {};
   const valid = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
   if (!valid.includes(status))
     return res.status(400).json({ error: 'Trạng thái không hợp lệ' });
-  const info = db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
-  if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-  res.json({ order: getOrderWithItems(req.params.id) });
+
+  const change = db.transaction(() => {
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+    if (!order) return null;
+    const from = order.status;
+    if (!(STATUS_FLOW[from] || []).includes(status))
+      throw new Error(`Không thể chuyển đơn từ "${from}" sang "${status}"`);
+    if (status === 'cancelled' && !(reason || '').trim())
+      throw new Error('Hủy đơn hàng phải ghi rõ lý do');
+    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, order.id);
+    // Hủy đơn → hoàn lại toàn bộ tồn kho đã trừ
+    if (status === 'cancelled') restoreStock(order.id);
+    writeHistory(order.id, from, status, req, (reason || '').trim());
+  });
+
+  try {
+    change();
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  const order = getOrderWithItems(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+  res.json({ order });
+});
+
+// DELETE /api/orders/:id — admin xóa đơn (tự động hoàn tồn kho nếu đơn chưa bị hủy)
+router.delete('/:id', auth, adminOnly, (req, res) => {
+  const remove = db.transaction(() => {
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+    if (!order) return null;
+    // Đơn chưa hủy → hoàn tồn kho trước khi xóa (đơn đã hủy kho đã hoàn)
+    if (order.status !== 'cancelled') restoreStock(order.id);
+    db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
+    return order;
+  });
+
+  let order;
+  try { order = remove(); } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+  res.json({ ok: true });
 });
 
 module.exports = router;

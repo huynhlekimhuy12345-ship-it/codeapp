@@ -44,8 +44,9 @@ export const api = {
   createOrder: (o) => request('/api/orders', { method: 'POST', body: o, auth: true }),
   getOrders: (status) => request(`/api/orders${status ? '?status=' + status : ''}`, { auth: true }),
   getOrder: (id) => request(`/api/orders/${id}`, { auth: true }),
-  updateOrderStatus: (id, status) =>
-    request(`/api/orders/${id}/status`, { method: 'PUT', body: { status }, auth: true }),
+  updateOrderStatus: (id, status, reason) =>
+    request(`/api/orders/${id}/status`, { method: 'PUT', body: { status, reason }, auth: true }),
+  deleteOrder: (id) => request(`/api/orders/${id}`, { method: 'DELETE', auth: true }),
 
   // Người dùng (admin)
   getUsers: () => request('/api/users', { auth: true }),
@@ -68,3 +69,14 @@ export const ORDER_STATUS = {
   delivered: 'Đã giao',
   cancelled: 'Đã hủy',
 };
+
+// Luồng trạng thái hợp lệ của đơn hàng (khớp backend)
+export const STATUS_FLOW = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['shipping', 'cancelled'],
+  shipping: ['delivered', 'cancelled'],
+  delivered: [],
+  cancelled: [],
+};
+
+export const nextStatuses = (from) => STATUS_FLOW[from] || [];
