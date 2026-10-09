@@ -15,10 +15,17 @@ import './Collection.css';
  *  - Phase 3: túi lùi/mờ về hậu cảnh, từng sản phẩm lướt qua trung tâm
  *    kèm thẻ HTML hiển thị DỮ LIỆU THẬT từ API (tên, danh mục, giá).
  *
- * ★ Muốn thay model 3D thật (.glb): thay hàm buildBag() và từng hàm
- *   build*() (buildWallet, buildWatchStrap, buildKeyPouch, buildPassport,
- *   buildCardHolder, buildBelt) bằng GLTFLoader — xem chú thích
- *   "THAY MODEL THẬT" trong code.
+ *
+ * ★ MODEL 3D THẬT (.glb) ĐÃ ĐƯỢC GẮN (thư mục public/models/):
+ *   - Túi hero: bag.glb — briefcase da của reyshapes (CC0), CÓ SẴN animation
+ *     "open"/"closed" → ScrollTrigger scrub trực tiếp qua AnimationMixer.
+ *   - watch.glb — "Wrist Watch" của Poly by Google (CC BY 3.0).
+ *   - wallet.glb — "A Wallet" của senior design (CC BY).
+ *   - key.glb — "Key" của Quaternius (CC0).
+ *   Tất cả qua Poly Pizza. Mỗi model đều có fallback: tải lỗi → tự động dùng
+ *   hình khối procedural tương ứng, scene không bao giờ trống.
+ *   Muốn đổi model khác: chỉ cần thay file .glb trong public/models/ giữ
+ *   nguyên tên, hoặc sửa MODEL_BY_INDEX / khối "MODEL THẬT — túi hero".
  */
 
 /* Sản phẩm dự phòng khi API không truy cập được lúc chạy */
@@ -90,17 +97,62 @@ export default function Collection() {
 
     (async () => {
       // Lazy-load: tách three + gsap thành chunk riêng, không chặn lần vẽ đầu
-      const [THREE, gsapMod, stMod, rbgMod] = await Promise.all([
+      const [THREE, gsapMod, stMod, rbgMod, gltfMod] = await Promise.all([
         import('three'),
         import('gsap'),
         import('gsap/ScrollTrigger'),
         import('three/examples/jsm/geometries/RoundedBoxGeometry.js'),
+        import('three/examples/jsm/loaders/GLTFLoader.js'),
       ]);
       if (state.disposed) return;
       const gsap = gsapMod.gsap;
       const ScrollTrigger = stMod.ScrollTrigger;
       gsap.registerPlugin(ScrollTrigger);
       const RoundedBoxGeometry = rbgMod.RoundedBoxGeometry;
+      const gltfLoader = new gltfMod.GLTFLoader();
+
+      /* Chuẩn hoá model .glb: căn giữa + co về kích thước mục tiêu để giữ
+         framing của camera. Trả về Group bọc ngoài để timeline cuộn thao
+         tác như mesh thường. */
+      const normalizeModel = (srcScene, targetSize) => {
+        const wrap = new THREE.Group();
+        const box = new THREE.Box3().setFromObject(srcScene);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        srcScene.scale.setScalar(targetSize / maxDim);
+        const box2 = new THREE.Box3().setFromObject(srcScene);
+        const center = box2.getCenter(new THREE.Vector3());
+        srcScene.position.sub(center); // đưa tâm model về gốc
+        srcScene.traverse((o) => {
+          if (o.isMesh) o.castShadow = true;
+        });
+        wrap.add(srcScene);
+        return wrap;
+      };
+
+      /* Tô lại màu da cho model .glb có màu gốc không hợp tông shop
+         (ví dụ ví xanh lá, đồng hồ đen tuyền). Giữ nguyên hình khối thật,
+         chỉ thay vật liệu → vẫn chân thực mà hợp palette da bò/cognac. */
+      const tintModel = (wrap, tint) => {
+        let i = 0;
+        wrap.traverse((o) => {
+          if (!o.isMesh) return;
+          if (tint.mode === 'palette') {
+            const tone = tint.tones[i++ % tint.tones.length];
+            o.material = new THREE.MeshStandardMaterial({
+              color: tone,
+              roughness: 0.62,
+              metalness: 0.08,
+            });
+          } else {
+            o.material = new THREE.MeshStandardMaterial({
+              color: tint.color,
+              roughness: tint.roughness ?? 0.6,
+              metalness: tint.metalness ?? 0.1,
+            });
+          }
+        });
+      };
 
       const N = products.length;
       const host = canvasHostRef.current;
@@ -227,6 +279,54 @@ export default function Collection() {
       bag.add(handle);
       bag.add(flapPivot);
       scene.add(bag);
+
+      /* ============================================================
+       * ★ MODEL THẬT — túi hero: thử thay túi procedural ở trên bằng
+       *   model briefcase da thật (public/models/bag.glb) có sẵn sẵn
+       *   animation "open"/"closed". Tải lỗi → giữ nguyên túi procedural.
+       *   Muốn dùng model khác: thay file bag.glb, giữ nguyên tên.
+       * ============================================================ */
+      let bagMixer = null;
+      let openAction = null;
+      let openClip = null;
+      const openProxy = { p: 0 }; // tiến trình mở nắp, timeline cuộn điều khiển
+      try {
+        const bagGltf = await gltfLoader.loadAsync('/models/bag.glb');
+        // Dọn các mesh procedural, GIỮ LẠI Group cha `bag` và mảng `bagMats`
+        // để timeline cuộn (lùi/mờ túi phase 3) hoạt động không đổi
+        for (const child of [...bag.children]) {
+          bag.remove(child);
+          child.traverse((o) => {
+            if (o.geometry) o.geometry.dispose();
+          });
+        }
+        bagMats.length = 0;
+        const bagModel = normalizeModel(bagGltf.scene, 3.4);
+        bagModel.traverse((o) => {
+          if (o.isMesh) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach((m) => {
+              m.transparent = true; // để phase 3 làm mờ túi như cũ
+              if (!bagMats.includes(m)) bagMats.push(m);
+            });
+          }
+        });
+        bag.add(bagModel);
+        // Gắn animation mở nắp có sẵn trong model
+        const clips = bagGltf.animations || [];
+        if (clips.length) {
+          bagMixer = new THREE.AnimationMixer(bagModel);
+          openClip =
+            clips.find((a) => /open/i.test(a.name)) || clips[0];
+          openAction = bagMixer.clipAction(openClip);
+          openAction.play();
+          openAction.paused = true; // timeline cuộn sẽ scrub action.time thủ công
+          openAction.time = 0;
+          bagMixer.update(0);
+        }
+      } catch {
+        // Tải model thất bại → giữ nguyên túi procedural đã dựng ở trên
+      }
 
       /* ============================================================
        * HÌNH KHỐI SẢN PHẨM CHI TIẾT — dựng từ hình học cơ bản
@@ -439,10 +539,54 @@ export default function Collection() {
 
       const BUILDERS = [buildWallet, buildWatchStrap, buildKeyPouch, buildPassport, buildCardHolder, buildBelt];
 
+      /* ============================================================
+       * ★ MODEL THẬT — sản phẩm: thử tải .glb theo từng index, thất bại
+       *   → tự động fallback về hình khối procedural tương ứng.
+       *   Muốn đổi model khác: thay file trong public/models/, giữ tên.
+       * ============================================================ */
+      const MODEL_BY_INDEX = [
+        // 0: ví da — model gốc màu xanh lá/cam → tô lại tông da bò
+        {
+          url: '/models/wallet.glb',
+          size: 1.0,
+          tint: { mode: 'palette', tones: [0x8a5a33, 0x6b4226, 0x7a4a2c] },
+        },
+        // 1: đồng hồ — model gốc đen tuyền → nâu da
+        {
+          url: '/models/watch.glb',
+          size: 0.95,
+          tint: { mode: 'single', color: 0x7a4a2c, roughness: 0.55, metalness: 0.15 },
+        },
+        // 2: chìa khóa — nâu sẫm khó thấy → mạ đồng thau cho nổi
+        {
+          url: '/models/key.glb',
+          size: 0.8,
+          tint: { mode: 'single', color: 0xc9a227, roughness: 0.35, metalness: 0.85 },
+        },
+        null, // 3: bao hộ chiếu — giữ procedural
+        null, // 4: đựng thẻ — giữ procedural
+        null, // 5: thắt lưng — giữ procedural
+      ];
+      const modelResults = await Promise.allSettled(
+        MODEL_BY_INDEX.map((m, i) =>
+          m && i < N
+            ? gltfLoader.loadAsync(m.url)
+            : Promise.reject(new Error('procedural'))
+        )
+      );
+
       /* ---------- Các sản phẩm chi tiết bay ra từ túi ---------- */
       const productGroups = products.map((p, i) => {
         const g = new THREE.Group();
-        g.add(BUILDERS[i % BUILDERS.length]());
+        const spec = MODEL_BY_INDEX[i % MODEL_BY_INDEX.length];
+        const res = modelResults[i % modelResults.length];
+        if (spec && res.status === 'fulfilled') {
+          const model = normalizeModel(res.value.scene, spec.size);
+          if (spec.tint) tintModel(model, spec.tint);
+          g.add(model);
+        } else {
+          g.add(BUILDERS[i % BUILDERS.length]()); // fallback procedural
+        }
         // Bắt đầu: ẩn bên trong túi
         g.position.set((Math.random() - 0.5) * 1.1, -0.3, (Math.random() - 0.5) * 0.4);
         g.scale.setScalar(0.001);
@@ -484,7 +628,24 @@ export default function Collection() {
       const tl = gsap.timeline({ defaults: { ease: 'none' } });
 
       // Phase 2 (18→45): nắp mở, camera dolly vào, sản phẩm bay lên
-      tl.to(flapPivot.rotation, { x: -2.5, duration: 14 }, 16);
+      if (openAction) {
+        // Túi model thật: scrub animation "open" có sẵn theo tiến trình cuộn
+        tl.to(
+          openProxy,
+          {
+            p: 1,
+            duration: 14,
+            onUpdate: () => {
+              openAction.time = openProxy.p * openClip.duration;
+              bagMixer.update(0);
+            },
+          },
+          16
+        );
+      } else {
+        // Túi procedural (fallback): xoay nắp như cũ
+        tl.to(flapPivot.rotation, { x: -2.5, duration: 14 }, 16);
+      }
       tl.to(camera.position, { z: 6.4, y: 0.55, duration: 24 }, 16);
       productGroups.forEach((g, i) => {
         tl.to(g.scale, { x: 1, y: 1, z: 1, duration: 7 }, 24 + i * 3.2);
@@ -699,6 +860,13 @@ export default function Collection() {
               )}
             </article>
           ))}
+        </div>
+
+        {/* Ghi công model 3D (yêu cầu của giấy phép CC-BY) */}
+        <div className="collection-credits" aria-hidden="true">
+          Model 3D: “Wrist Watch” của Poly by Google (CC BY 3.0), “A Wallet” của
+          senior design (CC BY), Briefcase của reyshapes (CC0), Key của
+          Quaternius (CC0) — qua Poly Pizza
         </div>
 
         {!ready && <div className="collection-loading">Đang chuẩn bị trải nghiệm 3D…</div>}

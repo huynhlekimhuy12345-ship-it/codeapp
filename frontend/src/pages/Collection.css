@@ -196,6 +196,20 @@
   pointer-events: auto;
 }
 
+/* Ghi công model 3D (yêu cầu giấy phép CC-BY) */
+.collection-credits {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  z-index: 3;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: rgba(232, 217, 189, 0.4);
+  pointer-events: none;
+  max-width: 46vw;
+  text-align: right;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .collection-hud { top: 74px; gap: 14px; }
