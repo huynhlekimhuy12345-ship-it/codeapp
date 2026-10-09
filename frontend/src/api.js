@@ -52,6 +52,20 @@ export const api = {
   getUsers: () => request('/api/users', { auth: true }),
   updateUserRole: (id, role) =>
     request(`/api/users/${id}/role`, { method: 'PUT', body: { role }, auth: true }),
+
+  // Bài viết Blog
+  getPosts: (all = false) => request(`/api/posts${all ? '?all=1' : ''}`, { auth: all }),
+  getPost: (slug) => request(`/api/posts/${encodeURIComponent(slug)}`),
+  createPost: (p) => request('/api/posts', { method: 'POST', body: p, auth: true }),
+  updatePost: (id, p) => request(`/api/posts/${id}`, { method: 'PUT', body: p, auth: true }),
+  deletePost: (id) => request(`/api/posts/${id}`, { method: 'DELETE', auth: true }),
+
+  // Tin nhắn liên hệ
+  sendContactMessage: (m) => request('/api/contact', { method: 'POST', body: m }),
+  getContactMessages: () => request('/api/contact', { auth: true }),
+  markMessageRead: (id, isRead = true) =>
+    request(`/api/contact/${id}/read`, { method: 'PUT', body: { is_read: isRead }, auth: true }),
+  deleteContactMessage: (id) => request(`/api/contact/${id}`, { method: 'DELETE', auth: true }),
 };
 
 // Định dạng tiền VND
@@ -61,6 +75,15 @@ export const fmtVND = (n) =>
 // Định dạng ngày giờ
 export const fmtDate = (s) =>
   new Date(s.replace(' ', 'T') + 'Z').toLocaleString('vi-VN');
+
+// Định dạng ngày (dùng cho Blog): "Đăng ngày 07/10/2026"
+export const fmtDay = (s) => {
+  try {
+    return new Date(s).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch {
+    return '';
+  }
+};
 
 export const ORDER_STATUS = {
   pending: 'Chờ xác nhận',

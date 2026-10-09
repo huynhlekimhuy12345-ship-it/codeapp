@@ -16,7 +16,10 @@ export default function Navbar() {
         <Link to="/" className="logo">ĐỒ DA <span>SHOP</span></Link>
         <div className="nav-links">
           <NavLink to="/" end>Trang chủ</NavLink>
-          <NavLink to="/cua-hang">Cửa hàng</NavLink>
+          <NavLink to="/gioi-thieu">Giới thiệu</NavLink>
+          <NavLink to="/cua-hang">Sản phẩm</NavLink>
+          <NavLink to="/blog">Blog</NavLink>
+          <NavLink to="/lien-he">Liên hệ</NavLink>
           {user && <NavLink to="/don-hang">Đơn hàng</NavLink>}
           {user?.role === 'admin' && <NavLink to="/admin">Quản trị</NavLink>}
         </div>

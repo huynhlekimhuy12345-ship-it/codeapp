@@ -12,7 +12,10 @@ export default function Footer() {
           <h4>Liên kết</h4>
           <ul>
             <li><Link to="/">Trang chủ</Link></li>
+            <li><Link to="/gioi-thieu">Giới thiệu</Link></li>
             <li><Link to="/cua-hang">Cửa hàng</Link></li>
+            <li><Link to="/blog">Blog</Link></li>
+            <li><Link to="/lien-he">Liên hệ</Link></li>
             <li><Link to="/gio-hang">Giỏ hàng</Link></li>
             <li><Link to="/don-hang">Theo dõi đơn hàng</Link></li>
           </ul>

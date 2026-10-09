@@ -8,6 +8,10 @@ import Footer from './components/Footer';
 const Scene3D = lazy(() => import('./components/Scene3D'));
 import Home from './pages/Home';
 import Shop from './pages/Shop';
+import About from './pages/About';
+import Blog from './pages/Blog';
+import BlogDetail from './pages/BlogDetail';
+import Contact from './pages/Contact';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
@@ -48,6 +52,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/cua-hang" element={<Shop />} />
+          <Route path="/gioi-thieu" element={<About />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogDetail />} />
+          <Route path="/lien-he" element={<Contact />} />
           <Route path="/san-pham/:id" element={<ProductDetail />} />
           <Route path="/gio-hang" element={<Cart />} />
           <Route path="/dang-nhap" element={<Login />} />

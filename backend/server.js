@@ -19,6 +19,8 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/posts', require('./routes/posts'));
+app.use('/api/contact', require('./routes/contact'));
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

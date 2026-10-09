@@ -407,7 +407,177 @@ const NAV = [
   { key: 'categories', icon: '📂', label: 'Danh mục' },
   { key: 'orders', icon: '📦', label: 'Đơn hàng' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
+  { key: 'posts', icon: '📝', label: 'Bài viết' },
+  { key: 'messages', icon: '✉️', label: 'Tin nhắn' },
 ];
+
+/* ---------- Tab Bài viết (Blog) — port từ web artifact ---------- */
+function PostsTab() {
+  const [posts, setPosts] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const empty = { title: '', cover_image_url: '', excerpt: '', content: '', status: 'draft' };
+  const [form, setForm] = useState(empty);
+
+  const load = () => api.getPosts(true).then((d) => setPosts(d.posts)).catch(() => {});
+  useEffect(load, []);
+
+  const openNew = () => { setEditing(null); setForm(empty); setShowModal(true); };
+  const openEdit = (p) => {
+    setEditing(p);
+    setForm({ title: p.title, cover_image_url: p.cover_image_url || '', excerpt: p.excerpt || '', content: p.content || '', status: p.status });
+    setShowModal(true);
+  };
+  const save = async () => {
+    if (!form.title.trim()) return alert('Vui lòng nhập tiêu đề bài viết');
+    try {
+      if (editing) await api.updatePost(editing.id, form);
+      else await api.createPost(form);
+      setShowModal(false);
+      load();
+    } catch (e) { alert(e.message); }
+  };
+  const doDelete = async () => {
+    try { await api.deletePost(deleting.id); } catch (e) { alert(e.message); }
+    setDeleting(null);
+    load();
+  };
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  return (
+    <div>
+      <div className="toolbar">
+        <h3>Quản lý bài viết ({posts.length})</h3>
+        <button className="btn btn-primary" onClick={openNew}>+ Viết bài mới</button>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="data-table">
+          <thead><tr><th>ID</th><th>Tiêu đề</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+          <tbody>
+            {posts.map((p) => (
+              <tr key={p.id}>
+                <td>{p.id}</td>
+                <td style={{ maxWidth: 320 }}>{p.title}<br /><small style={{ color: 'var(--muted)' }}>/{p.slug}</small></td>
+                <td><span className={`status ${p.status === 'published' ? 'delivered' : 'pending'}`}>
+                  {p.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
+                </span></td>
+                <td>{fmtDate(p.created_at)}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button className="btn btn-small btn-outline" onClick={() => openEdit(p)}>Sửa</button>{' '}
+                  <button className="btn btn-small btn-danger" onClick={() => setDeleting(p)}>Xóa</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showModal && (
+        <div className="modal-backdrop" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+            <h3>{editing ? 'Sửa bài viết' : 'Viết bài mới'}</h3>
+            <div className="field"><label>Tiêu đề *</label>
+              <input value={form.title} onChange={set('title')} placeholder="Tiêu đề bài viết" /></div>
+            <div className="field"><label>Ảnh bìa (URL)</label>
+              <input value={form.cover_image_url} onChange={set('cover_image_url')} placeholder="https://..." /></div>
+            <div className="field"><label>Tóm tắt</label>
+              <textarea value={form.excerpt} onChange={set('excerpt')} rows={2} placeholder="Đoạn tóm tắt hiển thị ở danh sách" /></div>
+            <div className="field"><label>Nội dung (mỗi đoạn cách nhau bằng một dòng trống)</label>
+              <textarea value={form.content} onChange={set('content')} rows={8} placeholder="Nội dung bài viết..." /></div>
+            <div className="field"><label>Trạng thái</label>
+              <select value={form.status} onChange={set('status')}>
+                <option value="draft">Bản nháp</option>
+                <option value="published">Xuất bản</option>
+              </select></div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Đóng</button>
+              <button className="btn btn-primary" onClick={save}>{editing ? 'Lưu thay đổi' : 'Tạo bài viết'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title="Xóa bài viết"
+          message={`Xóa vĩnh viễn bài "${deleting.title}"? Hành động này không thể hoàn tác.`}
+          confirmLabel="Xóa bài viết"
+          danger
+          onCancel={() => setDeleting(null)}
+          onConfirm={doDelete}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---------- Tab Tin nhắn liên hệ — port từ web artifact ---------- */
+function MessagesTab() {
+  const [messages, setMessages] = useState([]);
+  const [deleting, setDeleting] = useState(null);
+  const load = () => api.getContactMessages().then((d) => setMessages(d.messages)).catch(() => {});
+  useEffect(load, []);
+
+  const toggleRead = async (m) => {
+    try { await api.markMessageRead(m.id, !m.is_read); } catch (e) { alert(e.message); }
+    load();
+  };
+  const doDelete = async () => {
+    try { await api.deleteContactMessage(deleting.id); } catch (e) { alert(e.message); }
+    setDeleting(null);
+    load();
+  };
+
+  const unread = messages.filter((m) => !m.is_read).length;
+
+  return (
+    <div>
+      <div className="toolbar">
+        <h3>Tin nhắn liên hệ ({messages.length}{unread > 0 ? ` — ${unread} chưa đọc` : ''})</h3>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="data-table">
+          <thead><tr><th>ID</th><th>Họ tên</th><th>Liên hệ</th><th>Nội dung</th><th>Trạng thái</th><th>Ngày gửi</th><th>Thao tác</th></tr></thead>
+          <tbody>
+            {messages.map((m) => (
+              <tr key={m.id} style={m.is_read ? undefined : { background: 'rgba(232,181,106,.06)' }}>
+                <td>{m.id}</td>
+                <td><strong>{m.name}</strong></td>
+                <td><small style={{ color: 'var(--muted)' }}>{[m.phone, m.email].filter(Boolean).join(' • ') || '—'}</small></td>
+                <td style={{ maxWidth: 320 }}>{m.content}</td>
+                <td><span className={`status ${m.is_read ? 'delivered' : 'pending'}`}>
+                  {m.is_read ? 'Đã đọc' : 'Chưa đọc'}
+                </span></td>
+                <td>{fmtDate(m.created_at)}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button className="btn btn-small btn-outline" onClick={() => toggleRead(m)}>
+                    {m.is_read ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
+                  </button>{' '}
+                  <button className="btn btn-small btn-danger" onClick={() => setDeleting(m)}>Xóa</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {messages.length === 0 && (
+        <div className="empty"><h3>Chưa có tin nhắn nào</h3><p>Tin nhắn khách gửi từ trang Liên hệ sẽ hiện ở đây.</p></div>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title="Xóa tin nhắn"
+          message={`Xóa vĩnh viễn tin nhắn của "${deleting.name}"? Hành động này không thể hoàn tác.`}
+          confirmLabel="Xóa tin nhắn"
+          danger
+          onCancel={() => setDeleting(null)}
+          onConfirm={doDelete}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function Admin() {
   const [tab, setTab] = useState('products');
@@ -439,6 +609,8 @@ export default function Admin() {
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'orders' && <OrdersTab />}
           {tab === 'users' && <UsersTab />}
+          {tab === 'posts' && <PostsTab />}
+          {tab === 'messages' && <MessagesTab />}
         </section>
       </div>
     </div>
