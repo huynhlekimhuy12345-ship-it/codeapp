@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
+import InventoryTab from './admin/InventoryTab';
+import PaymentsTab from './admin/PaymentsTab';
+import ShippingTab from './admin/ShippingTab';
+import AftersalesTab from './admin/AftersalesTab';
+import VouchersTab from './admin/VouchersTab';
+import ReviewsTab from './admin/ReviewsTab';
+import ReportsTab from './admin/ReportsTab';
 
 /* ---------- Hộp xác nhận trong trang (thay confirm() trình duyệt — bị chặn trong iframe nhúng) ---------- */
 function ConfirmDialog({ title, message, confirmLabel = 'Xác nhận', danger = false, onCancel, onConfirm }) {
@@ -406,6 +413,13 @@ const NAV = [
   { key: 'products', icon: '🛍️', label: 'Sản phẩm' },
   { key: 'categories', icon: '📂', label: 'Danh mục' },
   { key: 'orders', icon: '📦', label: 'Đơn hàng' },
+  { key: 'inventory', icon: '🏭', label: 'Kho & NCC' },
+  { key: 'payments', icon: '💳', label: 'Thanh toán' },
+  { key: 'shipping', icon: '🚚', label: 'Vận chuyển' },
+  { key: 'aftersales', icon: '🛠️', label: 'Hậu mãi' },
+  { key: 'vouchers', icon: '🎟️', label: 'Voucher' },
+  { key: 'reviews', icon: '⭐', label: 'Đánh giá' },
+  { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
   { key: 'posts', icon: '📝', label: 'Bài viết' },
   { key: 'messages', icon: '✉️', label: 'Tin nhắn' },
@@ -608,6 +622,13 @@ export default function Admin() {
           {tab === 'products' && <ProductsTab />}
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'orders' && <OrdersTab />}
+          {tab === 'inventory' && <InventoryTab />}
+          {tab === 'payments' && <PaymentsTab />}
+          {tab === 'shipping' && <ShippingTab />}
+          {tab === 'aftersales' && <AftersalesTab />}
+          {tab === 'vouchers' && <VouchersTab />}
+          {tab === 'reviews' && <ReviewsTab />}
+          {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}
           {tab === 'posts' && <PostsTab />}
           {tab === 'messages' && <MessagesTab />}

@@ -19,6 +19,7 @@ import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
+import ProfilePage from './pages/ProfilePage';
 import Admin from './pages/Admin';
 
 // Chặn route cần đăng nhập
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/dang-ky" element={<Register />} />
           <Route path="/thanh-toan" element={<RequireAuth><Checkout /></RequireAuth>} />
           <Route path="/don-hang" element={<RequireAuth><MyOrders /></RequireAuth>} />
+          <Route path="/ho-so" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

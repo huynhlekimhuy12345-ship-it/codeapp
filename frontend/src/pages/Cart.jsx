@@ -23,7 +23,7 @@ export default function Cart() {
       <h2 className="page-title">Giỏ hàng</h2>
       <div className="cart-table">
         {cart.map((i) => (
-          <div className="cart-row" key={i.product_id}>
+          <div className="cart-row" key={`${i.product_id}|${i.variant_id || 0}`}>
             <img src={i.image_url} alt={i.name}
               onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=Da'; }} />
             <div>
@@ -31,12 +31,12 @@ export default function Cart() {
               <div className="pprice">{fmtVND(i.price)}</div>
             </div>
             <div className="qty-row hide-m" style={{ margin: 0 }}>
-              <button onClick={() => updateQty(i.product_id, i.quantity - 1)}>−</button>
+              <button onClick={() => updateQty(i.product_id, i.quantity - 1, i.variant_id)}>−</button>
               <span>{i.quantity}</span>
-              <button onClick={() => updateQty(i.product_id, i.quantity + 1)}>+</button>
+              <button onClick={() => updateQty(i.product_id, i.quantity + 1, i.variant_id)}>+</button>
             </div>
             <div className="hide-m" style={{ fontWeight: 700 }}>{fmtVND(i.price * i.quantity)}</div>
-            <button className="btn btn-small btn-danger" onClick={() => removeFromCart(i.product_id)}>✕</button>
+            <button className="btn btn-small btn-danger" onClick={() => removeFromCart(i.product_id, i.variant_id)}>✕</button>
           </div>
         ))}
       </div>

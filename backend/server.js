@@ -21,6 +21,15 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/returns', require('./routes/returns')); // đổi/trả hàng (khách yêu cầu, admin xử lý)
+app.use('/api/warranties', require('./routes/warranties')); // bảo hành (khách tạo, admin quản lý)
+app.use('/api/repairs', require('./routes/repairs')); // sửa chữa đồ da
+app.use('/api/inventory', require('./routes/inventory')); // tồn kho, NCC, phiếu nhập
+app.use('/api/payments', require('./routes/payments')); // thanh toán
+app.use('/api/shipping', require('./routes/shipping')); // vận chuyển
+app.use('/api/vouchers', require('./routes/vouchers')); // khuyến mãi
+app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩm
+app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

@@ -5,6 +5,29 @@ const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+// GET /api/users/me — khách xem hồ sơ của mình
+router.get('/me', auth, (req, res) => {
+  const user = db.prepare(
+    'SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?'
+  ).get(req.user.id);
+  if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+  res.json({ user });
+});
+
+// PUT /api/users/me — khách cập nhật tên/SĐT của mình
+router.put('/me', auth, (req, res) => {
+  const { name, phone } = req.body || {};
+  if (!name || !String(name).trim())
+    return res.status(400).json({ error: 'Tên không được để trống' });
+  db.prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?').run(
+    String(name).trim(), String(phone || '').trim(), req.user.id
+  );
+  const user = db.prepare(
+    'SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?'
+  ).get(req.user.id);
+  res.json({ user });
+});
+
 // GET /api/users — admin xem danh sách
 router.get('/', auth, adminOnly, (req, res) => {
   const users = db.prepare(

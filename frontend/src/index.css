@@ -303,6 +303,11 @@ h1, h2, h3, .logo, .hero-title {
 .field input:disabled { opacity: 0.6; }
 .field textarea { min-height: 90px; resize: vertical; }
 .form-error { background: rgba(179,64,46,.18); border: 1px solid rgba(232,112,95,.4); color: #f0a196; padding: 11px 15px; border-radius: 9px; margin-bottom: 16px; font-size: 0.9rem; }
+.form-success { background: rgba(64,150,90,.15); border: 1px solid rgba(110,200,140,.4); color: #8fd6a3; padding: 11px 15px; border-radius: 9px; margin-bottom: 16px; font-size: 0.9rem; }
+.muted { color: var(--muted); }
+.radio-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+.radio-row:hover { border-color: rgba(255,255,255,.28); }
+.radio-row input[type="radio"] { margin-top: 3px; }
 .form-link { margin-top: 16px; text-align: center; font-size: 0.92rem; color: var(--muted); }
 .form-link a { color: var(--amber-light); font-weight: 600; }
 .checkout-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }

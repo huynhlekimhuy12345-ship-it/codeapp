@@ -53,6 +53,13 @@ export const api = {
   updateUserRole: (id, role) =>
     request(`/api/users/${id}/role`, { method: 'PUT', body: { role }, auth: true }),
 
+  // Voucher (checkout preview, không trừ lượt)
+  validateVoucher: (code, order_total) =>
+    request('/api/vouchers/validate', { method: 'POST', body: { code, order_total }, auth: true }),
+
+  // Phương thức vận chuyển (public)
+  getShippingMethods: () => request('/api/shipping/methods'),
+
   // Bài viết Blog
   getPosts: (all = false) => request(`/api/posts${all ? '?all=1' : ''}`, { auth: all }),
   getPost: (slug) => request(`/api/posts/${encodeURIComponent(slug)}`),
@@ -66,6 +73,100 @@ export const api = {
   markMessageRead: (id, isRead = true) =>
     request(`/api/contact/${id}/read`, { method: 'PUT', body: { is_read: isRead }, auth: true }),
   deleteContactMessage: (id) => request(`/api/contact/${id}`, { method: 'DELETE', auth: true }),
+
+  // Biến thể & ảnh sản phẩm
+  getVariants: (productId) => request(`/api/products/${productId}/variants`),
+  createVariant: (productId, v) => request(`/api/products/${productId}/variants`, { method: 'POST', body: v, auth: true }),
+  updateVariant: (variantId, v) => request(`/api/products/variants/${variantId}`, { method: 'PUT', body: v, auth: true }),
+  deleteVariant: (variantId) => request(`/api/products/variants/${variantId}`, { method: 'DELETE', auth: true }),
+  getProductImages: (productId) => request(`/api/products/${productId}/images`),
+  addProductImage: (productId, img) => request(`/api/products/${productId}/images`, { method: 'POST', body: img, auth: true }),
+  deleteProductImage: (imageId) => request(`/api/products/images/${imageId}`, { method: 'DELETE', auth: true }),
+
+  // Đơn hàng (mở rộng)
+  cancelOrder: (id, reason) => request(`/api/orders/${id}/cancel`, { method: 'PUT', body: { reason }, auth: true }),
+  updateShippingInfo: (id, info) => request(`/api/orders/${id}/shipping-info`, { method: 'PUT', body: info, auth: true }),
+
+  // Tồn kho & NCC (admin)
+  getSuppliers: () => request('/api/inventory/suppliers', { auth: true }),
+  createSupplier: (s) => request('/api/inventory/suppliers', { method: 'POST', body: s, auth: true }),
+  updateSupplier: (id, s) => request(`/api/inventory/suppliers/${id}`, { method: 'PUT', body: s, auth: true }),
+  deleteSupplier: (id) => request(`/api/inventory/suppliers/${id}`, { method: 'DELETE', auth: true }),
+  getPurchaseOrders: () => request('/api/inventory/purchase-orders', { auth: true }),
+  getPurchaseOrder: (id) => request(`/api/inventory/purchase-orders/${id}`, { auth: true }),
+  createPurchaseOrder: (po) => request('/api/inventory/purchase-orders', { method: 'POST', body: po, auth: true }),
+  receivePurchaseOrder: (id) => request(`/api/inventory/purchase-orders/${id}/receive`, { method: 'PUT', auth: true }),
+  cancelPurchaseOrder: (id) => request(`/api/inventory/purchase-orders/${id}/cancel`, { method: 'PUT', auth: true }),
+  getMovements: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/inventory/movements${q ? '?' + q : ''}`, { auth: true });
+  },
+  adjustStock: (payload) => request('/api/inventory/adjust', { method: 'POST', body: payload, auth: true }),
+  getLowStock: (threshold = 5) => request(`/api/inventory/low-stock?threshold=${threshold}`, { auth: true }),
+  getInventoryItems: (q = '') => request(`/api/inventory/items${q ? '?q=' + encodeURIComponent(q) : ''}`, { auth: true }),
+
+  // Thanh toán
+  getPayments: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/payments${q ? '?' + q : ''}`, { auth: true });
+  },
+  createPayment: (p) => request('/api/payments', { method: 'POST', body: p, auth: true }),
+  verifyPayment: (id, action, note) => request(`/api/payments/${id}/verify`, { method: 'PUT', body: { action, note }, auth: true }),
+  refundPayment: (id, note) => request(`/api/payments/${id}/refund`, { method: 'PUT', body: { note }, auth: true }),
+  submitPaymentProof: (id, proof_url) => request(`/api/payments/${id}/proof`, { method: 'PUT', body: { proof_url }, auth: true }),
+
+  // Vận chuyển
+  getShippingMethodsAdmin: () => request('/api/shipping/methods?all=1', { auth: true }),
+  createShippingMethod: (m) => request('/api/shipping/methods', { method: 'POST', body: m, auth: true }),
+  updateShippingMethod: (id, m) => request(`/api/shipping/methods/${id}`, { method: 'PUT', body: m, auth: true }),
+  deleteShippingMethod: (id) => request(`/api/shipping/methods/${id}`, { method: 'DELETE', auth: true }),
+  getShippings: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/shipping${q ? '?' + q : ''}`, { auth: true });
+  },
+  createShipping: (s) => request('/api/shipping', { method: 'POST', body: s, auth: true }),
+  updateShipping: (id, s) => request(`/api/shipping/${id}`, { method: 'PUT', body: s, auth: true }),
+
+  // Voucher (admin)
+  getVouchers: (activeOnly = false) => request(`/api/vouchers${activeOnly ? '?is_active=1' : ''}`, { auth: true }),
+  createVoucher: (v) => request('/api/vouchers', { method: 'POST', body: v, auth: true }),
+  updateVoucher: (id, v) => request(`/api/vouchers/${id}`, { method: 'PUT', body: v, auth: true }),
+  deleteVoucher: (id) => request(`/api/vouchers/${id}`, { method: 'DELETE', auth: true }),
+
+  // Đánh giá
+  getReviews: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/reviews${q ? '?' + q : ''}`);
+  },
+  createReview: (r) => request('/api/reviews', { method: 'POST', body: r, auth: true }),
+  updateReview: (id, r) => request(`/api/reviews/${id}`, { method: 'PUT', body: r, auth: true }),
+  approveReview: (id, is_approved) => request(`/api/reviews/${id}/approve`, { method: 'PUT', body: { is_approved }, auth: true }),
+  deleteReview: (id) => request(`/api/reviews/${id}`, { method: 'DELETE', auth: true }),
+  getPendingReviews: () => request('/api/reviews/pending', { auth: true }),
+
+  // Hồ sơ khách hàng
+  getMe: () => request('/api/users/me', { auth: true }),
+  updateMe: (payload) => request('/api/users/me', { method: 'PUT', body: payload, auth: true }),
+
+  // Đổi trả / bảo hành / sửa chữa
+  getReturns: (status) => request(`/api/returns${status ? '?status=' + status : ''}`, { auth: true }),
+  createReturn: (r) => request('/api/returns', { method: 'POST', body: r, auth: true }),
+  updateReturn: (id, payload) => request(`/api/returns/${id}`, { method: 'PUT', body: payload, auth: true }),
+  getWarranties: (status) => request(`/api/warranties${status ? '?status=' + status : ''}`, { auth: true }),
+  createWarranty: (w) => request('/api/warranties', { method: 'POST', body: w, auth: true }),
+  updateWarranty: (id, payload) => request(`/api/warranties/${id}`, { method: 'PUT', body: payload, auth: true }),
+  getRepairs: (status) => request(`/api/repairs${status ? '?status=' + status : ''}`, { auth: true }),
+  createRepair: (r) => request('/api/repairs', { method: 'POST', body: r, auth: true }),
+  updateRepair: (id, payload) => request(`/api/repairs/${id}`, { method: 'PUT', body: payload, auth: true }),
+
+  // Báo cáo (admin)
+  getReportSummary: () => request('/api/reports/summary', { auth: true }),
+  getRevenueReport: ({ from, to, group = 'day' } = {}) =>
+    request(`/api/reports/revenue?from=${from}&to=${to}&group=${group}`, { auth: true }),
+  getTopProducts: (limit = 10) => request(`/api/reports/top-products?limit=${limit}`, { auth: true }),
+  getReportLowStock: (threshold = 5) => request(`/api/reports/low-stock?threshold=${threshold}`, { auth: true }),
+  getOrdersByStatus: () => request('/api/reports/orders-by-status', { auth: true }),
+  getPaymentsByMethod: () => request('/api/reports/payments-by-method', { auth: true }),
 };
 
 // Định dạng tiền VND
