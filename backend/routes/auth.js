@@ -6,6 +6,42 @@ const { auth, signToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ============================================================
+// Rate-limit chống brute-force cho /api/auth/login:
+// tối đa 10 lần đăng nhập / phút / IP → 429 (in-memory)
+// ============================================================
+const loginAttempts = new Map(); // ip -> { count, resetAt }
+const LOGIN_LIMIT = 10;
+const LOGIN_WINDOW_MS = 60 * 1000;
+
+function loginRateLimit(req, res, next) {
+  const ip = String(req.ip || (req.connection && req.connection.remoteAddress) || 'unknown');
+  const now = Date.now();
+
+  // Dọn dẹp entry hết hạn (tránh phình Map) khi đã đông
+  if (loginAttempts.size > 5000) {
+    for (const [k, v] of loginAttempts) {
+      if (v.resetAt <= now) loginAttempts.delete(k);
+    }
+  }
+
+  let entry = loginAttempts.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
+    loginAttempts.set(ip, entry);
+  }
+  entry.count += 1;
+
+  if (entry.count > LOGIN_LIMIT) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    res.set('Retry-After', String(retryAfter));
+    return res.status(429).json({
+      error: 'Quá nhiều lần đăng nhập thất bại, vui lòng thử lại sau 1 phút',
+    });
+  }
+  next();
+}
+
 // POST /api/auth/register
 router.post('/register', (req, res) => {
   const { name, email, password } = req.body || {};
@@ -26,7 +62,7 @@ router.post('/register', (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', loginRateLimit, (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password)
     return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });

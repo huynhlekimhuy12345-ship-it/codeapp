@@ -3,6 +3,14 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'leather-shop-secret-key';
 
+// Cảnh báo khi chạy với secret mặc định (chỉ an toàn cho dev local)
+if (!process.env.JWT_SECRET) {
+  console.warn(
+    '[CẢNH BÁO BẢO MẬT] JWT_SECRET chưa được đặt trong biến môi trường — đang dùng secret mặc định. ' +
+    'Hãy đặt JWT_SECRET trong file .env trước khi chạy production, nếu không token có thể bị giả mạo.'
+  );
+}
+
 // Đọc token từ header Authorization: Bearer <token>
 function auth(req, res, next) {
   const header = req.headers.authorization || '';
