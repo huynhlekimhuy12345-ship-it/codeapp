@@ -75,17 +75,51 @@ router.get('/', auth, staffOnly, (req, res) => {
   res.json({ events: rows.map(withCodes) });
 });
 
-// GET /api/promo-events/active — public: sự kiện đang bật (cho landing page)
+// GET /api/promo-events/active — public: sự kiện đang diễn ra, hoặc sự kiện
+// sắp tới gần nhất (để landing page đếm ngược). Kèm voucher đang bật và
+// sản phẩm sale của sự kiện.
 router.get('/active', (req, res) => {
   const now = new Date().toISOString();
-  const row = db
+  let row = db
     .prepare(
       `SELECT * FROM promo_events WHERE is_active = 1
        AND (start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)
        ORDER BY id DESC LIMIT 1`
     )
     .get(now, now);
-  res.json({ event: withCodes(row) || null });
+  let status = 'live';
+  if (!row) {
+    row = db
+      .prepare(
+        `SELECT * FROM promo_events WHERE is_active = 1
+         AND start_at IS NOT NULL AND start_at > ?
+         ORDER BY start_at ASC LIMIT 1`
+      )
+      .get(now);
+    status = 'upcoming';
+  }
+  if (!row) return res.json({ event: null, status: null, vouchers: [], products: [] });
+  const event = withCodes(row);
+  const vouchers = event.voucher_codes.length
+    ? db
+        .prepare(
+          `SELECT code, type, value, min_order, usage_limit, used_count FROM vouchers
+           WHERE is_active = 1 AND code IN (${event.voucher_codes.map(() => '?').join(',')})`
+        )
+        .all(...event.voucher_codes)
+    : [];
+  const products = db
+    .prepare(
+      `SELECT ep.product_id AS id, ep.sale_price, p.name, p.price, p.image_url, p.stock
+       FROM promo_event_products ep JOIN products p ON p.id = ep.product_id
+       WHERE ep.event_id = ? ORDER BY ep.id`
+    )
+    .all(event.id)
+    .map((r) => ({
+      ...r,
+      discount_percent: r.price > 0 ? Math.round((1 - r.sale_price / r.price) * 100) : 0,
+    }));
+  res.json({ event, status, vouchers, products });
 });
 
 // POST /api/promo-events — admin: tạo mới (mặc định tắt)

@@ -1,0 +1,110 @@
+/* Trang khuyến mãi — tone nâu da của Leather House */
+.sale-page { padding-bottom: 48px; }
+
+.sale-hero {
+  text-align: center;
+  padding: 64px 20px 48px;
+  background:
+    radial-gradient(900px 420px at 50% -80px, rgba(242, 197, 124, 0.14), transparent 60%),
+    linear-gradient(180deg, #2b1a0c 0%, #1d1107 70%);
+  color: #e8d9bd;
+  border-bottom: 1px solid rgba(242, 197, 124, 0.22);
+  margin-bottom: 8px;
+}
+.sale-kicker {
+  display: inline-block;
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #f2c57c;
+  border: 1px solid rgba(242, 197, 124, 0.35);
+  border-radius: 999px;
+  padding: 8px 22px;
+  margin-bottom: 20px;
+}
+.sale-hero h1 {
+  font-family: 'Playfair Display', 'Be Vietnam Pro', serif;
+  font-size: clamp(2.6rem, 7vw, 4.4rem);
+  line-height: 1.08;
+  background: linear-gradient(180deg, #ffe9bd, #f2c57c 60%, #e8a54b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 12px;
+}
+.sale-sub { color: #c9b489; font-size: 1.05rem; max-width: 640px; margin: 0 auto 28px; }
+
+.sale-countdown { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+.cd-cell {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(242, 197, 124, 0.25);
+  border-radius: 12px;
+  min-width: 78px;
+  padding: 12px 8px;
+}
+.cd-num { font-size: 1.8rem; font-weight: 800; color: #f2c57c; font-variant-numeric: tabular-nums; }
+.cd-lbl { font-size: 0.68rem; letter-spacing: 0.16em; color: #c9b489; text-transform: uppercase; margin-top: 4px; }
+.sale-note { color: #c9b489; font-size: 0.9rem; }
+
+.sale-section { padding: 36px 0 8px; }
+.sale-section h2 { font-family: 'Playfair Display', 'Be Vietnam Pro', serif; font-size: 1.7rem; margin-bottom: 4px; }
+.sale-desc { color: #777; margin-bottom: 20px; font-size: 0.92rem; }
+
+.sale-vouchers { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.sale-voucher {
+  background: linear-gradient(135deg, #33200f, #241407);
+  border: 1px dashed rgba(242, 197, 124, 0.45);
+  border-radius: 14px;
+  padding: 20px;
+  color: #e8d9bd;
+}
+.sv-off { font-size: 1.7rem; font-weight: 800; color: #f2c57c; }
+.sv-code {
+  display: inline-block;
+  margin: 12px 0;
+  padding: 8px 18px;
+  border: 1.5px dashed #f2c57c;
+  border-radius: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffe9bd;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.sv-code.copied { border-style: solid; color: #9fe6a0; border-color: #9fe6a0; }
+.sale-voucher ul { list-style: none; margin: 4px 0 0; padding: 0; font-size: 0.85rem; color: #c9b489; line-height: 1.8; }
+.sale-voucher ul b { color: #e8d9bd; }
+
+.sale-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.sale-product {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.sale-product:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12); }
+.sp-img { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #f4efe6; }
+.sp-img img { width: 100%; height: 100%; object-fit: cover; }
+.sp-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #c0392b;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.sp-body { padding: 14px 16px 18px; }
+.sp-body h3 { font-size: 0.98rem; margin: 0 0 8px; }
+.sp-body h3 a, .sp-body a h3 { color: inherit; text-decoration: none; }
+.sp-prices { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.sp-old { text-decoration: line-through; color: #999; font-size: 0.85rem; }
+.sp-sale { color: #c0392b; font-weight: 800; font-size: 1.1rem; }
+
+.sale-empty { text-align: center; padding: 80px 20px; }
+.sale-empty h2 { margin-bottom: 10px; }
+.sale-empty p { color: #777; margin-bottom: 24px; }
