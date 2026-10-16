@@ -96,6 +96,25 @@ router.post('/', auth, (req, res) => {
     let subtotal = 0;
     const lines = [];
 
+    // 0. Giá sale sự kiện: nếu đang có sự kiện diễn ra, SP thuộc sự kiện được
+    //    tính theo sale_price (server-side, không tin giá client gửi)
+    const nowIso = new Date().toISOString();
+    const liveEvent = db
+      .prepare(
+        `SELECT id FROM promo_events WHERE is_active = 1
+         AND (start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)
+         ORDER BY id DESC LIMIT 1`
+      )
+      .get(nowIso, nowIso);
+    const salePrices = new Map();
+    if (liveEvent) {
+      for (const r of db
+        .prepare('SELECT product_id, sale_price FROM promo_event_products WHERE event_id = ?')
+        .all(liveEvent.id)) {
+        salePrices.set(r.product_id, r.sale_price);
+      }
+    }
+
     // 1. Validate từng item: SP tồn tại; variant (nếu có) phải active + đủ kho
     for (const it of items) {
       const qty = parseInt(it.quantity) || 0;
@@ -103,17 +122,18 @@ router.post('/', auth, (req, res) => {
       const p = db.prepare('SELECT * FROM products WHERE id = ?').get(it.product_id);
       if (!p) throw new Error(`Sản phẩm #${it.product_id} không tồn tại`);
 
-      let unitPrice = p.price;
+      const basePrice = salePrices.get(p.id) ?? p.price;
+      let unitPrice = basePrice;
       let variantId = null;
       let variantSku = '';
       if (it.variant_id) {
-        // Dòng có biến thể: giá = giá gốc + price_delta, kho riêng của biến thể
+        // Dòng có biến thể: giá = giá gốc (hoặc giá sale sự kiện) + price_delta, kho riêng của biến thể
         const v = db.prepare(
           'SELECT * FROM product_variants WHERE id = ? AND product_id = ? AND is_active = 1'
         ).get(it.variant_id, p.id);
         if (!v) throw new Error(`Biến thể của "${p.name}" không tồn tại hoặc đã tắt`);
         if (v.stock < qty) throw new Error(`"${p.name} (${v.sku})" chỉ còn ${v.stock} sản phẩm trong kho`);
-        unitPrice = p.price + (v.price_delta || 0);
+        unitPrice = basePrice + (v.price_delta || 0);
         variantId = v.id;
         variantSku = v.sku;
       } else {

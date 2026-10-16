@@ -21,6 +21,7 @@ import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
 import ProfilePage from './pages/ProfilePage';
 import Admin from './pages/Admin';
+import SalePage from './pages/SalePage';
 
 // Chặn route cần đăng nhập
 function RequireAuth({ children }) {
@@ -58,6 +59,7 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/khuyen-mai" element={<SalePage />} />
           <Route path="/cua-hang" element={<Shop />} />
           <Route path="/gioi-thieu" element={<About />} />
           <Route path="/blog" element={<Blog />} />
