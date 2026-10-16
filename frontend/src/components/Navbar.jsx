@@ -15,7 +15,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="logo">ĐỒ DA <span>SHOP</span></Link>
+        <Link to="/" className="logo">LEATHER <span>HOUSE</span></Link>
         <div className={`nav-links${menuOpen ? ' open' : ''}`} onClick={() => setMenuOpen(false)} onKeyDown={() => {}} role="presentation">
           <NavLink to="/" end>Trang chủ</NavLink>
           <NavLink to="/gioi-thieu">Giới thiệu</NavLink>

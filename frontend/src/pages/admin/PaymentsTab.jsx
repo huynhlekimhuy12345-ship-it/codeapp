@@ -64,7 +64,7 @@ export default function PaymentsTab() {
     const q = filter ? `?status=${filter}` : '';
     request(`/api/payments${q}`).then((d) => setPayments(d.payments)).catch(() => {});
   };
-  useEffect(load, [filter]);
+  useEffect(() => { load(); }, [filter]);
 
   const doVerify = async (note) => {
     try {

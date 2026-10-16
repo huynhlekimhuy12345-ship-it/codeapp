@@ -45,7 +45,7 @@ function ReturnsSection() {
     req(`/api/returns${filter ? '?status=' + filter : ''}`)
       .then((d) => setList(d.returns))
       .catch(() => {});
-  useEffect(load, [filter]);
+  useEffect(() => { load(); }, [filter]);
 
   const act = async (id, action, refund_amount) => {
     try {
@@ -125,7 +125,7 @@ function WarrantiesSection() {
     req(`/api/warranties${filter ? '?status=' + filter : ''}`)
       .then((d) => setList(d.warranties))
       .catch(() => {});
-  useEffect(load, [filter]);
+  useEffect(() => { load(); }, [filter]);
 
   const create = async () => {
     if (!orderId.trim()) { alert('Nhập mã đơn hàng'); return; }
@@ -220,7 +220,7 @@ function RepairsSection() {
     req(`/api/repairs${filter ? '?status=' + filter : ''}`)
       .then((d) => setList(d.repairs))
       .catch(() => {});
-  useEffect(load, [filter]);
+  useEffect(() => { load(); }, [filter]);
 
   const startEdit = (r) => setEditing((s) => ({ ...s, [r.id]: { status: r.status, fee: String(r.fee || 0) } }));
   const save = async (id) => {

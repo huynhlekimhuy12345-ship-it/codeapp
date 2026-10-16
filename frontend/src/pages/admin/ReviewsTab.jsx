@@ -13,7 +13,7 @@ export default function ReviewsTab() {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const decide = async (id, isApproved) => {
     try {

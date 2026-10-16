@@ -67,7 +67,7 @@ function SuppliersSection() {
   const [editing, setEditing] = useState(null);
 
   const load = () => api.getSuppliers().then((d) => setSuppliers(d.suppliers)).catch((e) => alert(e.message));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const openNew = () => { setEditing(null); setShowForm(true); };
   const openEdit = (s) => { setEditing(s); setShowForm(true); };
@@ -226,7 +226,7 @@ function PurchaseOrdersSection() {
     api.getPurchaseOrders().then((d) => setOrders(d.purchase_orders)).catch((e) => alert(e.message));
     api.getSuppliers().then((d) => setSuppliers(d.suppliers)).catch(() => {});
   };
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const openDetail = async (id) => {
     try { setDetail(await api.getPurchaseOrder(id)); } catch (e) { alert(e.message); }

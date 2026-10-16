@@ -44,7 +44,7 @@ function ProductsTab() {
     api.getProducts({ limit: 50 }).then((d) => { setProducts(d.products); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách sản phẩm'));
     api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
   };
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const openNew = () => {
     setEditing(null);
@@ -168,7 +168,7 @@ function CategoriesTab() {
 
   const [loadError, setLoadError] = useState('');
   const load = () => api.getCategories().then((d) => { setCategories(d.categories); setLoadError(''); }).catch(() => setLoadError('Không tải được danh mục'));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const reset = () => { setName(''); setDescription(''); setEditingId(null); };
 
@@ -238,7 +238,7 @@ function OrdersTab() {
 
   const [loadError, setLoadError] = useState('');
   const load = () => api.getOrders(filter || undefined).then((d) => { setOrders(d.orders); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách đơn hàng'));
-  useEffect(load, [filter]);
+  useEffect(() => { load(); }, [filter]);
 
   const refreshDetail = async (id) => {
     try { const { order } = await api.getOrder(id); setDetail(order); } catch { setDetail(null); }
@@ -400,7 +400,7 @@ function UsersTab() {
   const [newRole, setNewRole] = useState('customer');
   const [loadError, setLoadError] = useState('');
   const load = () => api.getUsers().then((d) => { setUsers(d.users); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const openRoleChange = (u) => { setRoleTarget(u); setNewRole(u.role); };
   const doChangeRole = async () => {
@@ -482,7 +482,7 @@ function PostsTab() {
 
   const [loadError, setLoadError] = useState('');
   const load = () => api.getPosts(true).then((d) => { setPosts(d.posts); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách bài viết'));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const openNew = () => { setEditing(null); setForm(empty); setShowModal(true); };
   const openEdit = (p) => {
@@ -580,7 +580,7 @@ function MessagesTab() {
   const [deleting, setDeleting] = useState(null);
   const [loadError, setLoadError] = useState('');
   const load = () => api.getContactMessages().then((d) => { setMessages(d.messages); setLoadError(''); }).catch(() => setLoadError('Không tải được tin nhắn liên hệ'));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const toggleRead = async (m) => {
     try { await api.markMessageRead(m.id, !m.is_read); } catch (e) { alert(e.message); }
