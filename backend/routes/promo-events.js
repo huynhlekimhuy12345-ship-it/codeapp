@@ -1,0 +1,222 @@
+// CRUD sự kiện khuyến mãi (admin) + bật/tắt + lấy sự kiện đang chạy (public cho landing page)
+// Convention: better-sqlite3 đồng bộ, middleware { auth, adminOnly } như routes/vouchers.js
+const express = require('express');
+const db = require('../db');
+const { auth, adminOnly } = require('../middleware/auth');
+
+const router = express.Router();
+
+function normSlug(s) {
+  return String(s || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+}
+function parseISO(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+function parseCodes(v) {
+  if (!v) return [];
+  const arr = Array.isArray(v) ? v : String(v).split(',');
+  return [...new Set(arr.map((c) => String(c).trim().toUpperCase()).filter(Boolean))];
+}
+
+// Validate payload tạo/sửa, trả về { ok, error, clean }
+function validatePayload(body, isCreate, selfId) {
+  const clean = {};
+  if (isCreate || body.name !== undefined) {
+    const name = String(body.name || '').trim();
+    if (!name) return { ok: false, error: 'Tên sự kiện là bắt buộc' };
+    clean.name = name;
+  }
+  if (isCreate || body.slug !== undefined) {
+    const slug = normSlug(body.slug || body.name);
+    if (!slug) return { ok: false, error: 'Slug không hợp lệ' };
+    const dup = db.prepare('SELECT id FROM promo_events WHERE slug = ?').get(slug);
+    if (dup && dup.id !== selfId) return { ok: false, error: 'Slug đã tồn tại' };
+    clean.slug = slug;
+  }
+  for (const k of ['title', 'subtitle']) {
+    if (body[k] !== undefined) clean[k] = String(body[k] || '').trim();
+  }
+  for (const k of ['start_at', 'end_at']) {
+    if (body[k] !== undefined) {
+      if (!body[k]) { clean[k] = null; continue; }
+      const iso = parseISO(body[k]);
+      if (!iso) return { ok: false, error: `Thời gian ${k} không hợp lệ` };
+      clean[k] = iso;
+    }
+  }
+  const start = clean.start_at !== undefined ? clean.start_at : undefined;
+  const end = clean.end_at !== undefined ? clean.end_at : undefined;
+  if (start && end && new Date(end) <= new Date(start))
+    return { ok: false, error: 'Thời gian kết thúc phải sau thời gian bắt đầu' };
+  if (body.voucher_codes !== undefined) {
+    const codes = parseCodes(body.voucher_codes);
+    for (const c of codes) {
+      const v = db.prepare('SELECT id FROM vouchers WHERE code = ?').get(c);
+      if (!v) return { ok: false, error: `Mã voucher "${c}" không tồn tại` };
+    }
+    clean.voucher_codes = JSON.stringify(codes);
+  }
+  if (body.is_active !== undefined) clean.is_active = body.is_active ? 1 : 0;
+  return { ok: true, clean };
+}
+
+function withCodes(row) {
+  if (!row) return row;
+  let codes = [];
+  try { codes = JSON.parse(row.voucher_codes || '[]'); } catch (e) { codes = []; }
+  return { ...row, voucher_codes: codes };
+}
+
+// GET /api/promo-events — admin: danh sách (mới nhất trước)
+router.get('/', auth, adminOnly, (req, res) => {
+  const rows = db.prepare('SELECT * FROM promo_events ORDER BY id DESC').all();
+  res.json({ events: rows.map(withCodes) });
+});
+
+// GET /api/promo-events/active — public: sự kiện đang bật (cho landing page)
+router.get('/active', (req, res) => {
+  const now = new Date().toISOString();
+  const row = db
+    .prepare(
+      `SELECT * FROM promo_events WHERE is_active = 1
+       AND (start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)
+       ORDER BY id DESC LIMIT 1`
+    )
+    .get(now, now);
+  res.json({ event: withCodes(row) || null });
+});
+
+// POST /api/promo-events — admin: tạo mới (mặc định tắt)
+router.post('/', auth, adminOnly, (req, res) => {
+  const { ok, error, clean } = validatePayload(req.body || {}, true, null);
+  if (!ok) return res.status(400).json({ error });
+  const info = db
+    .prepare(
+      `INSERT INTO promo_events (name, slug, title, subtitle, start_at, end_at, voucher_codes, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      clean.name, clean.slug, clean.title || '', clean.subtitle || '',
+      clean.start_at || null, clean.end_at || null,
+      clean.voucher_codes || '[]', clean.is_active || 0
+    );
+  const row = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(info.lastInsertRowid);
+  res.status(201).json({ event: withCodes(row) });
+});
+
+// PUT /api/promo-events/:id — admin: sửa
+router.put('/:id', auth, adminOnly, (req, res) => {
+  const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
+  if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
+  const { ok, error, clean } = validatePayload(req.body || {}, false, cur.id);
+  if (!ok) return res.status(400).json({ error });
+  const keys = ['name', 'slug', 'title', 'subtitle', 'start_at', 'end_at', 'voucher_codes', 'is_active'];
+  const sets = [], params = [];
+  for (const k of keys) {
+    if (clean[k] !== undefined) { sets.push(`${k} = ?`); params.push(clean[k]); }
+  }
+  if (!sets.length) return res.status(400).json({ error: 'Không có trường nào để cập nhật' });
+  sets.push(`updated_at = datetime('now')`);
+  params.push(cur.id);
+  db.prepare(`UPDATE promo_events SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+  res.json({ event: withCodes(db.prepare('SELECT * FROM promo_events WHERE id = ?').get(cur.id)) });
+});
+
+// PUT /api/promo-events/:id/toggle — admin: bật/tắt; đồng bộ voucher liên kết
+router.put('/:id/toggle', auth, adminOnly, (req, res) => {
+  const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
+  if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
+  const next = cur.is_active ? 0 : 1;
+  const codes = parseCodes(cur.voucher_codes ? JSON.parse(cur.voucher_codes || '[]') : []);
+  const txn = db.transaction(() => {
+    db.prepare(`UPDATE promo_events SET is_active = ?, updated_at = datetime('now') WHERE id = ?`).run(next, cur.id);
+    for (const c of codes) {
+      db.prepare('UPDATE vouchers SET is_active = ? WHERE code = ?').run(next, c);
+    }
+  });
+  txn();
+  const row = withCodes(db.prepare('SELECT * FROM promo_events WHERE id = ?').get(cur.id));
+  res.json({ event: row, vouchers_synced: codes });
+});
+
+// DELETE /api/promo-events/:id — admin: xóa (kèm sản phẩm trong sự kiện; voucher không bị ảnh hưởng)
+router.delete('/:id', auth, adminOnly, (req, res) => {
+  const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
+  if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
+  db.prepare('DELETE FROM promo_events WHERE id = ?').run(cur.id);
+  res.json({ message: 'Đã xóa sự kiện' });
+});
+
+// ============ Sản phẩm trong sự kiện (admin) ============
+
+function getEventOr404(id, res) {
+  const ev = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(id);
+  if (!ev) { res.status(404).json({ error: 'Không tìm thấy sự kiện' }); return null; }
+  return ev;
+}
+
+// GET /api/promo-events/:id/products — admin: danh sách SP trong sự kiện
+router.get('/:id/products', auth, adminOnly, (req, res) => {
+  if (!getEventOr404(req.params.id, res)) return;
+  const rows = db
+    .prepare(
+      `SELECT ep.product_id, ep.sale_price, p.name, p.price, p.image_url, p.stock
+       FROM promo_event_products ep JOIN products p ON p.id = ep.product_id
+       WHERE ep.event_id = ? ORDER BY ep.id`
+    )
+    .all(req.params.id)
+    .map((r) => ({
+      ...r,
+      discount_percent: r.price > 0 ? Math.round((1 - r.sale_price / r.price) * 100) : 0,
+    }));
+  res.json({ products: rows });
+});
+
+// POST /api/promo-events/:id/products — admin: thêm SP vào sự kiện
+router.post('/:id/products', auth, adminOnly, (req, res) => {
+  if (!getEventOr404(req.params.id, res)) return;
+  const product_id = parseInt(req.body.product_id) || 0;
+  const sale_price = parseInt(req.body.sale_price) || 0;
+  const p = db.prepare('SELECT id, name, price FROM products WHERE id = ?').get(product_id);
+  if (!p) return res.status(400).json({ error: 'Sản phẩm không tồn tại' });
+  if (sale_price <= 0) return res.status(400).json({ error: 'Giá sale phải lớn hơn 0' });
+  if (sale_price >= p.price)
+    return res.status(400).json({ error: `Giá sale phải thấp hơn giá gốc (${p.price.toLocaleString('vi-VN')}₫)` });
+  const dup = db
+    .prepare('SELECT id FROM promo_event_products WHERE event_id = ? AND product_id = ?')
+    .get(req.params.id, product_id);
+  if (dup) return res.status(400).json({ error: 'Sản phẩm đã có trong sự kiện' });
+  db.prepare(
+    'INSERT INTO promo_event_products (event_id, product_id, sale_price) VALUES (?, ?, ?)'
+  ).run(req.params.id, product_id, sale_price);
+  res.status(201).json({ message: 'Đã thêm sản phẩm vào sự kiện' });
+});
+
+// PUT /api/promo-events/:id/products/:product_id — admin: đổi giá sale
+router.put('/:id/products/:product_id', auth, adminOnly, (req, res) => {
+  if (!getEventOr404(req.params.id, res)) return;
+  const link = db
+    .prepare('SELECT ep.id, p.price FROM promo_event_products ep JOIN products p ON p.id = ep.product_id WHERE ep.event_id = ? AND ep.product_id = ?')
+    .get(req.params.id, req.params.product_id);
+  if (!link) return res.status(404).json({ error: 'Sản phẩm không có trong sự kiện' });
+  const sale_price = parseInt(req.body.sale_price) || 0;
+  if (sale_price <= 0) return res.status(400).json({ error: 'Giá sale phải lớn hơn 0' });
+  if (sale_price >= link.price)
+    return res.status(400).json({ error: `Giá sale phải thấp hơn giá gốc (${link.price.toLocaleString('vi-VN')}₫)` });
+  db.prepare('UPDATE promo_event_products SET sale_price = ? WHERE id = ?').run(sale_price, link.id);
+  res.json({ message: 'Đã cập nhật giá sale' });
+});
+
+// DELETE /api/promo-events/:id/products/:product_id — admin: gỡ SP khỏi sự kiện
+router.delete('/:id/products/:product_id', auth, adminOnly, (req, res) => {
+  if (!getEventOr404(req.params.id, res)) return;
+  const r = db
+    .prepare('DELETE FROM promo_event_products WHERE event_id = ? AND product_id = ?')
+    .run(req.params.id, req.params.product_id);
+  if (!r.changes) return res.status(404).json({ error: 'Sản phẩm không có trong sự kiện' });
+  res.json({ message: 'Đã gỡ sản phẩm khỏi sự kiện' });
+});
+
+module.exports = router;
