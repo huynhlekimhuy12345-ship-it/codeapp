@@ -94,30 +94,43 @@ h1, h2, h3, .logo, .hero-title {
 .navbar .container { display: flex; align-items: center; gap: 24px; height: 66px; }
 .logo { font-size: 1.45rem; font-weight: 800; color: var(--amber-light); letter-spacing: 1px; }
 .logo span { color: #fff; }
-.nav-links { display: flex; gap: 10px; margin-left: 12px; }
+.nav-links { display: flex; gap: 2px; margin-left: 8px; align-items: center; }
 .nav-links a {
-  opacity: 0.85; font-weight: 500; font-size: 0.92rem; transition: 0.2s; white-space: nowrap;
-  padding: 8px 13px; border: 1px solid rgba(232, 181, 106, 0.35); border-radius: 10px;
+  position: relative; display: inline-block;
+  font-weight: 500; font-size: 0.93rem; white-space: nowrap;
+  color: var(--cream); opacity: 0.72; transition: 0.2s;
+  padding: 10px 11px; border: none; background: none; border-radius: 0; box-shadow: none;
 }
-.nav-links a:hover {
-  opacity: 1; color: var(--amber-light);
-  border-color: var(--amber-light); background: rgba(232, 181, 106, 0.08);
+.nav-links a::after {
+  content: ''; position: absolute; left: 11px; right: 11px; bottom: 5px; height: 2px;
+  border-radius: 2px; background: var(--amber-light);
+  transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease;
 }
+.nav-links a:hover { opacity: 1; color: #ffe9c4; background: none; border: none; box-shadow: none; }
+.nav-links a:hover::after { transform: scaleX(1); opacity: 0.55; }
 .nav-links a.active {
-  opacity: 1; color: #ffe9c4;
-  border-color: var(--amber-light); background: rgba(232, 181, 106, 0.16);
-  box-shadow: 0 0 0 1px var(--amber-light), 0 2px 14px rgba(232, 181, 106, 0.3);
+  opacity: 1; color: var(--amber-light); font-weight: 600;
+  background: none; border: none; box-shadow: none;
 }
+.nav-links a.active::after { transform: scaleX(1); opacity: 1; }
 .hamburger { display: none; background: none; border: 1px solid var(--panel-border); color: var(--text); font-size: 1.3rem; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
-.nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
-.cart-link { position: relative; font-size: 1.3rem; }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.cart-link {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; font-size: 1.15rem; flex-shrink: 0;
+  border: 1px solid rgba(232, 181, 106, 0.3); border-radius: 10px; transition: 0.2s;
+}
+.cart-link:hover { border-color: var(--amber-light); background: rgba(232, 181, 106, 0.08); }
 .cart-badge {
   position: absolute; top: -8px; right: -10px;
   background: var(--amber); color: #231408; font-size: 0.7rem; font-weight: 700;
   min-width: 20px; height: 20px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center; padding: 0 5px;
 }
-.user-chip { font-size: 0.9rem; color: var(--muted); }
+.user-chip {
+  font-size: 0.88rem; color: var(--muted); white-space: nowrap;
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;
+}
 
 /* --- Nút bấm --- */
 .btn {
