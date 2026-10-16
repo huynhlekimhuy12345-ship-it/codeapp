@@ -13,6 +13,20 @@ if (!adminExists) {
   console.log('  - Đã tạo admin: admin@dodashop.vn / admin123');
 }
 
+// 1b. Tài khoản nhân viên sale mặc định (đăng nhập xong đổi mật khẩu ngay)
+const saleAccounts = [
+  ['Nhân viên sale 1', 'sale@dodashop.vn', 'sale123'],
+  ['Nhân viên sale 2', 'sale2@dodashop.vn', 'sale123'],
+];
+for (const [name, email, password] of saleAccounts) {
+  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (!exists) {
+    db.prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)')
+      .run(name, email, bcrypt.hashSync(password, 10), 'sale');
+    console.log(`  - Đã tạo sale: ${email} / ${password}`);
+  }
+}
+
 // 2. Danh mục
 const categories = [
   ['Ví da', 'Ví nam, ví nữ làm từ da bò thật, da cá sấu'],
