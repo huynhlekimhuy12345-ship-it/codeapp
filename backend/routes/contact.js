@@ -2,7 +2,7 @@
 // Khách gửi công khai; chỉ admin xem / đánh dấu đã đọc / xóa
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/contact?limit= — admin: danh sách tin nhắn, mới nhất trước
-router.get('/', auth, adminOnly, (req, res) => {
+router.get('/', auth, staffOnly, (req, res) => {
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
   const messages = db
     .prepare('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT ?')
@@ -29,7 +29,7 @@ router.get('/', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/contact/:id/read — admin: đánh dấu đã đọc / chưa đọc
-router.put('/:id/read', auth, adminOnly, (req, res) => {
+router.put('/:id/read', auth, staffOnly, (req, res) => {
   const isRead = req.body && req.body.is_read === false ? 0 : 1;
   const info = db
     .prepare('UPDATE contact_messages SET is_read = ? WHERE id = ?')
@@ -39,7 +39,7 @@ router.put('/:id/read', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/contact/:id — admin
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const info = db.prepare('DELETE FROM contact_messages WHERE id = ?').run(req.params.id);
   if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy tin nhắn' });
   res.json({ ok: true });

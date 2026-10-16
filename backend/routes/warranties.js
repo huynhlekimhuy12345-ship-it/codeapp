@@ -1,7 +1,7 @@
 // Bảo hành theo đơn hàng: tạo cho đơn đã giao, gia hạn / hủy bởi admin
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -78,7 +78,7 @@ router.get('/', auth, (req, res) => {
 });
 
 // PUT /api/warranties/:id — admin gia hạn hoặc hủy (void) bảo hành
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const { action, months } = req.body || {};
   if (!['extend', 'void'].includes(action))
     return res.status(400).json({ error: 'action phải là extend (gia hạn) hoặc void (hủy)' });

@@ -1,7 +1,7 @@
 // Quản lý đơn hàng: khách đặt hàng, admin cập nhật trạng thái
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 const { validateVoucher } = require('./vouchers');
 
 const router = express.Router();
@@ -251,7 +251,7 @@ router.get('/:id', auth, (req, res) => {
 });
 
 // PUT /api/orders/:id/status — admin cập nhật trạng thái (tuân thủ luồng chặt chẽ)
-router.put('/:id/status', auth, adminOnly, (req, res) => {
+router.put('/:id/status', auth, staffOnly, (req, res) => {
   const { status, reason } = req.body || {};
   const valid = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
   if (!valid.includes(status))
@@ -282,7 +282,7 @@ router.put('/:id/status', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/orders/:id — admin xóa đơn (tự động hoàn tồn kho nếu đơn chưa bị hủy)
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const remove = db.transaction(() => {
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return null;
@@ -351,7 +351,7 @@ router.put('/:id/cancel', auth, (req, res) => {
 // Chỉ cho đơn pending/confirmed (400 nếu đơn đã sang giai đoạn giao hàng).
 // Ghi lịch sử với note 'Cập nhật thông tin giao hàng', không đổi trạng thái đơn.
 // ============================================================
-router.put('/:id/shipping-info', auth, adminOnly, (req, res) => {
+router.put('/:id/shipping-info', auth, staffOnly, (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
   if (!['pending', 'confirmed'].includes(order.status))

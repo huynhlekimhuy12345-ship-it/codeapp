@@ -6,7 +6,7 @@
 // tách biệt với trạng thái đơn hàng.
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -42,7 +42,7 @@ function getShipping(id) {
 // Middleware: chỉ khi gọi ?all=1 mới yêu cầu quyền admin,
 // còn lại route vẫn công khai như spec.
 function adminIfAll(req, res, next) {
-  if (req.query.all === '1') return auth(req, res, () => adminOnly(req, res, next));
+  if (req.query.all === '1') return auth(req, res, () => staffOnly(req, res, next));
   next();
 }
 
@@ -57,7 +57,7 @@ router.get('/methods', adminIfAll, (req, res) => {
 });
 
 // POST /api/shipping/methods — admin: thêm phương thức mới
-router.post('/methods', auth, adminOnly, (req, res) => {
+router.post('/methods', auth, staffOnly, (req, res) => {
   const { name, fee, eta_days, is_active } = req.body || {};
   if (!name || !String(name).trim())
     return res.status(400).json({ error: 'Tên phương thức là bắt buộc' });
@@ -75,7 +75,7 @@ router.post('/methods', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/shipping/methods/:id — admin: sửa phương thức
-router.put('/methods/:id', auth, adminOnly, (req, res) => {
+router.put('/methods/:id', auth, staffOnly, (req, res) => {
   const m = db.prepare('SELECT * FROM shipping_methods WHERE id = ?').get(req.params.id);
   if (!m) return res.status(404).json({ error: 'Không tìm thấy phương thức vận chuyển' });
 
@@ -96,7 +96,7 @@ router.put('/methods/:id', auth, adminOnly, (req, res) => {
 
 // DELETE /api/shipping/methods/:id — admin: xóa phương thức
 // Không cho xóa method đang được đơn hàng / vận đơn nào dùng → 409
-router.delete('/methods/:id', auth, adminOnly, (req, res) => {
+router.delete('/methods/:id', auth, staffOnly, (req, res) => {
   const m = db.prepare('SELECT * FROM shipping_methods WHERE id = ?').get(req.params.id);
   if (!m) return res.status(404).json({ error: 'Không tìm thấy phương thức vận chuyển' });
 
@@ -149,7 +149,7 @@ router.get('/', auth, (req, res) => {
 // POST /api/shipping — admin: gán vận chuyển cho đơn hàng
 // fee lấy từ shipping_methods (server-side), không tin fee từ client.
 // Đồng thời UPDATE orders.shipping_fee + orders.shipping_method_id (KHÔNG chạm orders.status).
-router.post('/', auth, adminOnly, (req, res) => {
+router.post('/', auth, staffOnly, (req, res) => {
   const { order_id, method_id, tracking_code } = req.body || {};
   if (!order_id || !method_id)
     return res.status(400).json({ error: 'order_id và method_id là bắt buộc' });
@@ -185,7 +185,7 @@ router.post('/', auth, adminOnly, (req, res) => {
 // PUT /api/shipping/:id — admin: cập nhật tracking_code, chuyển trạng thái vận đơn.
 // Luồng hợp lệ: preparing → shipped/failed; shipped → delivered/failed.
 // Khi chuyển sang shipped/delivered tự động set shipped_at/delivered_at.
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const ship = db.prepare('SELECT * FROM shippings WHERE id = ?').get(req.params.id);
   if (!ship) return res.status(404).json({ error: 'Không tìm thấy thông tin vận chuyển' });
 

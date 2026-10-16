@@ -2,7 +2,7 @@
 // admin kiểm duyệt (duyệt/từ chối) và xóa
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) return res.status(401).json({ error: 'Cần đăng nhập để xem đánh giá của bạn' });
     const jwt = require('jsonwebtoken');
-    const { JWT_SECRET } = require('../middleware/auth');
+    const { auth, staffOnly } = require('../middleware/auth');
     let userId;
     try {
       userId = jwt.verify(token, JWT_SECRET).id;
@@ -59,7 +59,7 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/reviews/pending — admin: danh sách review chờ duyệt
-router.get('/pending', auth, adminOnly, (req, res) => {
+router.get('/pending', auth, staffOnly, (req, res) => {
   const reviews = db.prepare(
     `SELECT ${REVIEW_COLS}, p.name AS product_name
      FROM reviews r LEFT JOIN users u ON u.id = r.user_id
@@ -116,7 +116,7 @@ router.put('/:id', auth, (req, res) => {
 });
 
 // PUT /api/reviews/:id/approve — admin: duyệt hoặc từ chối {is_approved: 1|0}
-router.put('/:id/approve', auth, adminOnly, (req, res) => {
+router.put('/:id/approve', auth, staffOnly, (req, res) => {
   const { is_approved } = req.body || {};
   if (![0, 1, '0', '1', true, false].includes(is_approved))
     return res.status(400).json({ error: 'is_approved phải là 0 hoặc 1' });

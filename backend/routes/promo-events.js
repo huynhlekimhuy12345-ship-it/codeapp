@@ -1,8 +1,8 @@
 // CRUD sự kiện khuyến mãi (admin) + bật/tắt + lấy sự kiện đang chạy (public cho landing page)
-// Convention: better-sqlite3 đồng bộ, middleware { auth, adminOnly } như routes/vouchers.js
+// Convention: better-sqlite3 đồng bộ, middleware { auth, staffOnly } như routes/vouchers.js
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -70,7 +70,7 @@ function withCodes(row) {
 }
 
 // GET /api/promo-events — admin: danh sách (mới nhất trước)
-router.get('/', auth, adminOnly, (req, res) => {
+router.get('/', auth, staffOnly, (req, res) => {
   const rows = db.prepare('SELECT * FROM promo_events ORDER BY id DESC').all();
   res.json({ events: rows.map(withCodes) });
 });
@@ -89,7 +89,7 @@ router.get('/active', (req, res) => {
 });
 
 // POST /api/promo-events — admin: tạo mới (mặc định tắt)
-router.post('/', auth, adminOnly, (req, res) => {
+router.post('/', auth, staffOnly, (req, res) => {
   const { ok, error, clean } = validatePayload(req.body || {}, true, null);
   if (!ok) return res.status(400).json({ error });
   const info = db
@@ -107,7 +107,7 @@ router.post('/', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/promo-events/:id — admin: sửa
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
   const { ok, error, clean } = validatePayload(req.body || {}, false, cur.id);
@@ -125,7 +125,7 @@ router.put('/:id', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/promo-events/:id/toggle — admin: bật/tắt; đồng bộ voucher liên kết
-router.put('/:id/toggle', auth, adminOnly, (req, res) => {
+router.put('/:id/toggle', auth, staffOnly, (req, res) => {
   const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
   const next = cur.is_active ? 0 : 1;
@@ -142,7 +142,7 @@ router.put('/:id/toggle', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/promo-events/:id — admin: xóa (kèm sản phẩm trong sự kiện; voucher không bị ảnh hưởng)
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
   db.prepare('DELETE FROM promo_events WHERE id = ?').run(cur.id);
@@ -158,7 +158,7 @@ function getEventOr404(id, res) {
 }
 
 // GET /api/promo-events/:id/products — admin: danh sách SP trong sự kiện
-router.get('/:id/products', auth, adminOnly, (req, res) => {
+router.get('/:id/products', auth, staffOnly, (req, res) => {
   if (!getEventOr404(req.params.id, res)) return;
   const rows = db
     .prepare(
@@ -175,7 +175,7 @@ router.get('/:id/products', auth, adminOnly, (req, res) => {
 });
 
 // POST /api/promo-events/:id/products — admin: thêm SP vào sự kiện
-router.post('/:id/products', auth, adminOnly, (req, res) => {
+router.post('/:id/products', auth, staffOnly, (req, res) => {
   if (!getEventOr404(req.params.id, res)) return;
   const product_id = parseInt(req.body.product_id) || 0;
   const sale_price = parseInt(req.body.sale_price) || 0;
@@ -195,7 +195,7 @@ router.post('/:id/products', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/promo-events/:id/products/:product_id — admin: đổi giá sale
-router.put('/:id/products/:product_id', auth, adminOnly, (req, res) => {
+router.put('/:id/products/:product_id', auth, staffOnly, (req, res) => {
   if (!getEventOr404(req.params.id, res)) return;
   const link = db
     .prepare('SELECT ep.id, p.price FROM promo_event_products ep JOIN products p ON p.id = ep.product_id WHERE ep.event_id = ? AND ep.product_id = ?')
@@ -210,7 +210,7 @@ router.put('/:id/products/:product_id', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/promo-events/:id/products/:product_id — admin: gỡ SP khỏi sự kiện
-router.delete('/:id/products/:product_id', auth, adminOnly, (req, res) => {
+router.delete('/:id/products/:product_id', auth, staffOnly, (req, res) => {
   if (!getEventOr404(req.params.id, res)) return;
   const r = db
     .prepare('DELETE FROM promo_event_products WHERE event_id = ? AND product_id = ?')

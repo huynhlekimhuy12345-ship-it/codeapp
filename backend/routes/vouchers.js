@@ -1,8 +1,8 @@
 // CRUD voucher khuyến mãi (admin) + validate mã ở checkout (customer)
-// Convention: dùng db better-sqlite3 đồng bộ, middleware { auth, adminOnly } như routes/products.js
+// Convention: dùng db better-sqlite3 đồng bộ, middleware { auth, staffOnly } như routes/products.js
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -107,7 +107,7 @@ const REASON_MSG = {
 };
 
 // GET /api/vouchers — admin: danh sách, lọc ?is_active=1|0
-router.get('/', auth, adminOnly, (req, res) => {
+router.get('/', auth, staffOnly, (req, res) => {
   const conds = [];
   const params = [];
   if (req.query.is_active !== undefined && req.query.is_active !== '') {
@@ -122,7 +122,7 @@ router.get('/', auth, adminOnly, (req, res) => {
 });
 
 // POST /api/vouchers — admin: tạo mới
-router.post('/', auth, adminOnly, (req, res) => {
+router.post('/', auth, staffOnly, (req, res) => {
   const { ok, error, clean } = validatePayload(req.body || {}, true);
   if (!ok) return res.status(400).json({ error });
   const exists = db.prepare('SELECT id FROM vouchers WHERE code = ?').get(clean.code);
@@ -137,7 +137,7 @@ router.post('/', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/vouchers/:id — admin: sửa value/min_order/expiry/usage_limit/is_active
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const v = db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id);
   if (!v) return res.status(404).json({ error: 'Không tìm thấy voucher' });
   const { ok, error, clean } = validatePayload(req.body || {}, false);
@@ -157,7 +157,7 @@ router.put('/:id', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/vouchers/:id — admin: chỉ tắt nếu đã có lượt dùng, không xóa cứng
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const v = db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id);
   if (!v) return res.status(404).json({ error: 'Không tìm thấy voucher' });
   if (v.used_count > 0)

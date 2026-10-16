@@ -2,12 +2,12 @@
 // Tất cả query đều dùng aggregate SQL, không lặp query trong vòng lặp (hiệu năng).
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Bảo vệ toàn bộ router báo cáo: chỉ admin
-router.use(auth, adminOnly);
+router.use(auth, staffOnly);
 
 // Ngày tháng trong created_at lưu theo giờ UTC (datetime('now')); 'localtime' giúp
 // "hôm nay / tháng này" khớp giờ Việt Nam hiển thị trên giao diện.

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
 import InventoryTab from './admin/InventoryTab';
 import PaymentsTab from './admin/PaymentsTab';
@@ -387,15 +388,17 @@ function OrdersTab() {
 function UsersTab() {
   const [users, setUsers] = useState([]);
   const [roleTarget, setRoleTarget] = useState(null);
+  const [newRole, setNewRole] = useState('customer');
   const load = () => api.getUsers().then((d) => setUsers(d.users)).catch(() => {});
   useEffect(load, []);
 
-  const doToggleRole = async () => {
-    const next = roleTarget.role === 'admin' ? 'customer' : 'admin';
-    try { await api.updateUserRole(roleTarget.id, next); } catch (e) { alert(e.message); }
+  const openRoleChange = (u) => { setRoleTarget(u); setNewRole(u.role); };
+  const doChangeRole = async () => {
+    try { await api.updateUserRole(roleTarget.id, newRole); } catch (e) { alert(e.message); }
     setRoleTarget(null);
     load();
   };
+  const roleLabel = (r) => r === 'admin' ? 'Quản trị' : r === 'sale' ? 'Nhân viên sale' : 'Khách hàng';
 
   return (
     <div>
@@ -406,24 +409,35 @@ function UsersTab() {
           {users.map((u) => (
             <tr key={u.id}>
               <td>{u.id}</td><td>{u.name}</td><td>{u.email}</td>
-              <td><span className={`status ${u.role === 'admin' ? 'confirmed' : 'pending'}`}>
-                {u.role === 'admin' ? 'Quản trị' : 'Khách hàng'}
+              <td><span className={`status ${u.role === 'customer' ? 'pending' : 'confirmed'}`}>
+                {roleLabel(u.role)}
               </span></td>
               <td>{fmtDate(u.created_at)}</td>
-              <td><button className="btn btn-small btn-outline" onClick={() => setRoleTarget(u)}>Đổi vai trò</button></td>
+              <td><button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)}>Đổi vai trò</button></td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {roleTarget && (
-        <ConfirmDialog
-          title="Đổi vai trò"
-          message={`Đổi ${roleTarget.email} thành ${roleTarget.role === 'admin' ? 'khách hàng' : 'quản trị viên'}?`}
-          confirmLabel="Đổi vai trò"
-          onCancel={() => setRoleTarget(null)}
-          onConfirm={doToggleRole}
-        />
+        <div className="modal-overlay" onClick={() => setRoleTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <h3>Đổi vai trò</h3>
+            <p style={{ marginBottom: 12 }}>{roleTarget.email}</p>
+            <div className="field">
+              <label>Vai trò mới</label>
+              <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
+                <option value="customer">Khách hàng</option>
+                <option value="sale">Nhân viên sale</option>
+                <option value="admin">Quản trị viên</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setRoleTarget(null)}>Hủy</button>
+              <button className="btn btn-primary" onClick={doChangeRole}>Lưu</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -617,6 +631,9 @@ function MessagesTab() {
 export default function Admin() {
   const [tab, setTab] = useState('products');
   const [collapsed, setCollapsed] = useState(false);
+  const { user } = useStore();
+  // Sale thấy toàn bộ tab trừ "Người dùng" (quản lý tài khoản chỉ dành cho Admin)
+  const visibleNav = user?.role === 'sale' ? NAV.filter((n) => n.key !== 'users') : NAV;
   return (
     <div className="container page">
       <h2 className="page-title">Bảng quản trị</h2>
@@ -626,7 +643,7 @@ export default function Admin() {
             {collapsed ? '☰' : '✕'}
           </button>
           <nav>
-            {NAV.map((n) => (
+            {visibleNav.map((n) => (
               <button
                 key={n.key}
                 className={tab === n.key ? 'active' : ''}
