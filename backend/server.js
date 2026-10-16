@@ -28,6 +28,7 @@ app.use('/api/inventory', require('./routes/inventory')); // tồn kho, NCC, phi
 app.use('/api/payments', require('./routes/payments')); // thanh toán
 app.use('/api/shipping', require('./routes/shipping')); // vận chuyển
 app.use('/api/vouchers', require('./routes/vouchers')); // khuyến mãi
+app.use('/api/promo-events', require('./routes/promo-events')); // sự kiện khuyến mãi
 app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩm
 app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
 

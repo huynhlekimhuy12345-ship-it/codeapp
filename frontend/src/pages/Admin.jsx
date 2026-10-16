@@ -5,6 +5,8 @@ import PaymentsTab from './admin/PaymentsTab';
 import ShippingTab from './admin/ShippingTab';
 import AftersalesTab from './admin/AftersalesTab';
 import VouchersTab from './admin/VouchersTab';
+import PromoEventsTab from './admin/PromoEventsTab';
+import EventProductsSection from './admin/EventProductsSection';
 import ReviewsTab from './admin/ReviewsTab';
 import ReportsTab from './admin/ReportsTab';
 
@@ -32,6 +34,7 @@ function ProductsTab() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', stock: '', image_url: '' });
   const [deleting, setDeleting] = useState(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const load = () => {
     api.getProducts({ limit: 50 }).then((d) => setProducts(d.products)).catch(() => {});
@@ -42,17 +45,26 @@ function ProductsTab() {
   const openNew = () => {
     setEditing(null);
     setForm({ category_id: '', name: '', description: '', price: '', stock: '', image_url: '' });
+    setNewCategoryName('');
     setShowModal(true);
   };
   const openEdit = (p) => {
     setEditing(p);
     setForm({ category_id: p.category_id || '', name: p.name, description: p.description || '', price: p.price, stock: p.stock, image_url: p.image_url || '' });
+    setNewCategoryName('');
     setShowModal(true);
   };
   const save = async () => {
     if (!form.name || form.price === '') return alert('Vui lòng nhập tên và giá');
     try {
-      const payload = { ...form, category_id: form.category_id || null };
+      let category_id = form.category_id || null;
+      if (form.category_id === '__new__') {
+        const name = newCategoryName.trim();
+        if (!name) return alert('Vui lòng nhập tên danh mục mới');
+        const created = await api.createCategory({ name });
+        category_id = created.category.id;
+      }
+      const payload = { ...form, category_id };
       if (editing) await api.updateProduct(editing.id, payload);
       else await api.createProduct(payload);
       setShowModal(false);
@@ -114,8 +126,14 @@ function ProductsTab() {
               <select value={form.category_id} onChange={(e) => set('category_id', e.target.value)}>
                 <option value="">— Không có —</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="__new__">+ Thêm danh mục mới...</option>
               </select>
             </div>
+            {form.category_id === '__new__' && (
+              <div className="field"><label>Tên danh mục mới *</label>
+                <input value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="VD: Thắt lưng da" />
+              </div>
+            )}
             <div className="field"><label>Mô tả</label><textarea value={form.description} onChange={(e) => set('description', e.target.value)} /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="field"><label>Giá (VND) *</label><input type="number" min="0" value={form.price} onChange={(e) => set('price', e.target.value)} /></div>
@@ -129,6 +147,8 @@ function ProductsTab() {
           </div>
         </div>
       )}
+
+      <EventProductsSection />
     </div>
   );
 }
@@ -418,6 +438,7 @@ const NAV = [
   { key: 'shipping', icon: '🚚', label: 'Vận chuyển' },
   { key: 'aftersales', icon: '🛠️', label: 'Hậu mãi' },
   { key: 'vouchers', icon: '🎟️', label: 'Voucher' },
+  { key: 'promos', icon: '🎉', label: 'Sự kiện' },
   { key: 'reviews', icon: '⭐', label: 'Đánh giá' },
   { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
@@ -627,6 +648,7 @@ export default function Admin() {
           {tab === 'shipping' && <ShippingTab />}
           {tab === 'aftersales' && <AftersalesTab />}
           {tab === 'vouchers' && <VouchersTab />}
+          {tab === 'promos' && <PromoEventsTab />}
           {tab === 'reviews' && <ReviewsTab />}
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}

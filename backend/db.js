@@ -234,6 +234,29 @@ db.exec(`
   );
 
   -- Voucher / mã giảm giá (usage_limit = 0 nghĩa là không giới hạn)
+  CREATE TABLE IF NOT EXISTS promo_event_products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL REFERENCES promo_events(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    sale_price INTEGER NOT NULL CHECK(sale_price > 0),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(event_id, product_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS promo_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    title TEXT DEFAULT '',
+    subtitle TEXT DEFAULT '',
+    start_at TEXT,
+    end_at TEXT,
+    voucher_codes TEXT NOT NULL DEFAULT '[]',
+    is_active INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS vouchers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
