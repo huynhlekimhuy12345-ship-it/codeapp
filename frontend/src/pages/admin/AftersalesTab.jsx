@@ -1,6 +1,5 @@
 // Tab Hậu mãi (admin): Đổi trả / Bảo hành / Sửa chữa
-// Component độc lập — coordinator gắn vào Admin.jsx như các tab khác.
-// Gọi trực tiếp /api/returns|warranties|repairs (không qua api.js để không sửa file chung).
+// Thiết kế: section header có icon + thẻ card với viền accent theo trạng thái
 import { useEffect, useState } from 'react';
 
 function req(path, { method = 'GET', body } = {}) {
@@ -20,30 +19,86 @@ function req(path, { method = 'GET', body } = {}) {
 
 const fmt = (n) => `${(parseInt(n) || 0).toLocaleString('vi-VN')} ₫`;
 
-const RETURN_STATUS = {
-  requested: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Từ chối',
-  completed: 'Hoàn thành',
+const card = {
+  background: 'linear-gradient(160deg, rgba(58,38,24,.55), rgba(32,20,12,.65))',
+  border: '1px solid rgba(232,181,106,.16)',
+  borderRadius: 14,
+  padding: '16px 18px',
 };
-const RETURN_TYPE = { return: 'Trả hàng', exchange: 'Đổi hàng' };
+
+function Pill({ bg, fg, dot, children }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      background: bg, color: fg, padding: '4px 12px', borderRadius: 20,
+      fontSize: '.82rem', fontWeight: 600,
+    }}>
+      {dot && <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, display: 'inline-block' }} />}
+      {children}
+    </span>
+  );
+}
+
+function SectionHead({ icon, title, count, filter, setFilter, options, right }) {
+  return (
+    <div className="toolbar" style={{ marginBottom: 12 }}>
+      <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: '1.3rem' }}>{icon}</span> {title}
+        <span style={{
+          fontSize: '.8rem', fontWeight: 600, background: 'rgba(232,181,106,.14)',
+          color: '#e8b56a', borderRadius: 20, padding: '2px 10px',
+        }}>{count}</span>
+      </h3>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {right}
+        <select value={filter} onChange={(e) => setFilter(e.target.value)}
+          style={{ padding: '9px 14px', borderRadius: 10 }}>
+          <option value="">Tất cả trạng thái</option>
+          {options.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function Empty({ icon, text }) {
+  return (
+    <div style={{ ...card, padding: 36, textAlign: 'center', color: 'var(--muted)', marginBottom: 8 }}>
+      <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>{icon}</div>
+      {text}
+    </div>
+  );
+}
+
+const RETURN_STATUS = {
+  requested: { label: 'Chờ duyệt', bg: 'rgba(232,181,106,.14)', fg: '#e8b56a', dot: '#e8b56a' },
+  approved: { label: 'Đã duyệt', bg: 'rgba(96,165,250,.12)', fg: '#7fb3f5', dot: '#60a5fa' },
+  rejected: { label: 'Từ chối', bg: 'rgba(248,113,113,.12)', fg: '#f58a8a', dot: '#f87171' },
+  completed: { label: 'Hoàn thành', bg: 'rgba(74,222,128,.12)', fg: '#6ee7a0', dot: '#4ade80' },
+};
+const RETURN_TYPE = { return: '↩️ Trả hàng', exchange: '🔄 Đổi hàng' };
 const REPAIR_STATUS = {
-  received: 'Đã nhận',
-  repairing: 'Đang sửa',
-  done: 'Đã sửa xong',
-  returned: 'Đã trả khách',
+  received: { label: 'Đã nhận', bg: 'rgba(232,181,106,.14)', fg: '#e8b56a', dot: '#e8b56a' },
+  repairing: { label: 'Đang sửa', bg: 'rgba(96,165,250,.12)', fg: '#7fb3f5', dot: '#60a5fa' },
+  done: { label: 'Đã sửa xong', bg: 'rgba(74,222,128,.12)', fg: '#6ee7a0', dot: '#4ade80' },
+  returned: { label: 'Đã trả khách', bg: 'rgba(148,163,184,.14)', fg: '#a8b3c4', dot: '#94a3b8' },
+};
+const WARRANTY_STATUS = {
+  active: { label: 'Đang hiệu lực', bg: 'rgba(74,222,128,.12)', fg: '#6ee7a0', dot: '#4ade80' },
+  expired: { label: 'Hết hạn', bg: 'rgba(148,163,184,.14)', fg: '#a8b3c4', dot: '#94a3b8' },
+  void: { label: 'Đã hủy', bg: 'rgba(248,113,113,.12)', fg: '#f58a8a', dot: '#f87171' },
 };
 
 /* ---------- Section Đổi trả ---------- */
 function ReturnsSection() {
   const [list, setList] = useState([]);
   const [filter, setFilter] = useState('');
-  const [refundFor, setRefundFor] = useState(null); // id yêu cầu đang nhập số tiền hoàn
+  const [refundFor, setRefundFor] = useState(null);
   const [refundValue, setRefundValue] = useState('0');
 
   const load = () =>
     req(`/api/returns${filter ? '?status=' + filter : ''}`)
-      .then((d) => setList(d.returns))
+      .then((d) => setList(d.returns || []))
       .catch(() => {});
   useEffect(() => { load(); }, [filter]);
 
@@ -52,62 +107,72 @@ function ReturnsSection() {
       await req(`/api/returns/${id}`, { method: 'PUT', body: { action, refund_amount } });
       setRefundFor(null);
       load();
-    } catch (e) {
-      alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
   };
 
   return (
-    <section className="aftersales-section">
-      <div className="toolbar">
-        <h3>Đổi / trả hàng ({list.length})</h3>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8 }}>
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(RETURN_STATUS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
+    <section style={{ marginBottom: 28 }}>
+      <SectionHead icon="↩️" title="Đổi / trả hàng" count={list.length}
+        filter={filter} setFilter={setFilter}
+        options={Object.entries(RETURN_STATUS).map(([k, v]) => [k, v.label])} />
+      <div style={{ display: 'grid', gap: 12 }}>
+        {list.map((r) => {
+          const s = RETURN_STATUS[r.status] || RETURN_STATUS.requested;
+          return (
+            <div key={r.id} style={{ ...card, borderLeft: `3px solid ${s.dot}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '1.02rem' }}>Yêu cầu #{r.id}</strong>
+                    <Pill {...s}>{s.label}</Pill>
+                    <span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>{RETURN_TYPE[r.type] || r.type}</span>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: '.9rem', color: 'var(--muted)' }}>
+                    Đơn <strong style={{ color: '#ffe9c4' }}>#{r.order_id}</strong>
+                    {r.customer_name && <span> · {r.customer_name}</span>}
+                    {' · '}{r.created_at}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: '.92rem' }}>
+                    <span style={{ color: 'var(--muted)' }}>Lý do: </span>{r.reason || '—'}
+                  </div>
+                  {r.refund_amount > 0 && (
+                    <div style={{ marginTop: 4, fontSize: '.92rem' }}>
+                      <span style={{ color: 'var(--muted)' }}>Hoàn tiền: </span>
+                      <strong style={{ color: '#6ee7a0' }}>{fmt(r.refund_amount)}</strong>
+                    </div>
+                  )}
+                </div>
+                <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
+                  {r.status === 'requested' && (
+                    <>
+                      <button className="btn btn-small btn-primary" onClick={() => act(r.id, 'approved')}>✓ Duyệt</button>
+                      <button className="btn btn-small btn-outline" onClick={() => act(r.id, 'rejected')}>Từ chối</button>
+                    </>
+                  )}
+                  {r.status === 'approved' && refundFor !== r.id && (
+                    <button className="btn btn-small btn-primary"
+                      onClick={() => { setRefundFor(r.id); setRefundValue(String(r.refund_amount || 0)); }}>
+                      Hoàn thành
+                    </button>
+                  )}
+                  {r.status === 'approved' && refundFor === r.id && (
+                    <span className="inline-form">
+                      <input type="number" min="0" value={refundValue}
+                        onChange={(e) => setRefundValue(e.target.value)}
+                        placeholder="Số tiền hoàn (đ)"
+                        style={{ width: 150, padding: '8px 12px', borderRadius: 8 }} />
+                      <button className="btn btn-small btn-primary"
+                        onClick={() => act(r.id, 'completed', parseInt(refundValue) || 0)}>Xác nhận</button>
+                      <button className="btn btn-small btn-outline" onClick={() => setRefundFor(null)}>Hủy</button>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {list.length === 0 && <Empty icon="📦" text="Chưa có yêu cầu đổi/trả nào." />}
       </div>
-      {list.map((r) => (
-        <div className="order-card" key={r.id}>
-          <div className="order-head">
-            <strong>
-              Yêu cầu #{r.id} — Đơn #{r.order_id} ({r.customer_name}) — {RETURN_TYPE[r.type]}
-            </strong>
-            <span className="badge">{RETURN_STATUS[r.status]}</span>
-          </div>
-          <p><em>Lý do:</em> {r.reason}</p>
-          <p><em>Hoàn tiền:</em> {fmt(r.refund_amount)} · <em>Ngày tạo:</em> {r.created_at}</p>
-          <div className="row-actions">
-            {r.status === 'requested' && (
-              <>
-                <button className="btn-primary" onClick={() => act(r.id, 'approved')}>Duyệt</button>
-                <button className="btn-danger" onClick={() => act(r.id, 'rejected')}>Từ chối</button>
-              </>
-            )}
-            {r.status === 'approved' && refundFor !== r.id && (
-              <button className="btn-primary" onClick={() => { setRefundFor(r.id); setRefundValue(String(r.refund_amount || 0)); }}>
-                Hoàn thành (nhập tiền hoàn)
-              </button>
-            )}
-            {r.status === 'approved' && refundFor === r.id && (
-              <span className="inline-form">
-                <input
-                  type="number" min="0" value={refundValue}
-                  onChange={(e) => setRefundValue(e.target.value)}
-                  placeholder="Số tiền hoàn (đ)"
-                  style={{ width: 160, padding: '8px 12px', borderRadius: 8 }}
-                />
-                <button className="btn-primary" onClick={() => act(r.id, 'completed', parseInt(refundValue) || 0)}>
-                  Xác nhận hoàn thành
-                </button>
-                <button onClick={() => setRefundFor(null)}>Hủy</button>
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
-      {list.length === 0 && <p className="empty">Chưa có yêu cầu đổi/trả nào.</p>}
     </section>
   );
 }
@@ -123,22 +188,17 @@ function WarrantiesSection() {
 
   const load = () =>
     req(`/api/warranties${filter ? '?status=' + filter : ''}`)
-      .then((d) => setList(d.warranties))
+      .then((d) => setList(d.warranties || []))
       .catch(() => {});
   useEffect(() => { load(); }, [filter]);
 
   const create = async () => {
     if (!orderId.trim()) { alert('Nhập mã đơn hàng'); return; }
     try {
-      await req('/api/warranties', {
-        method: 'POST',
-        body: { order_id: parseInt(orderId), months: parseInt(months) },
-      });
+      await req('/api/warranties', { method: 'POST', body: { order_id: parseInt(orderId), months: parseInt(months) } });
       setOrderId('');
       load();
-    } catch (e) {
-      alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
   };
 
   const act = async (id, action, m) => {
@@ -146,66 +206,70 @@ function WarrantiesSection() {
       await req(`/api/warranties/${id}`, { method: 'PUT', body: { action, months: m } });
       setExtendId(null);
       load();
-    } catch (e) {
-      alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
   };
 
   return (
-    <section className="aftersales-section">
-      <div className="toolbar">
-        <h3>Bảo hành ({list.length})</h3>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8 }}>
-          <option value="">Tất cả trạng thái</option>
-          <option value="active">Đang hiệu lực</option>
-          <option value="expired">Hết hạn</option>
-          <option value="void">Đã hủy</option>
-        </select>
-      </div>
-      <div className="inline-form" style={{ marginBottom: 16 }}>
-        <input
-          value={orderId} onChange={(e) => setOrderId(e.target.value)}
-          placeholder="Mã đơn hàng" type="number"
-          style={{ width: 140, padding: '8px 12px', borderRadius: 8 }}
-        />
-        <input
-          value={months} onChange={(e) => setMonths(e.target.value)}
-          placeholder="Số tháng" type="number" min="1" max="120"
-          style={{ width: 110, padding: '8px 12px', borderRadius: 8 }}
-        />
-        <button className="btn-primary" onClick={create}>Tạo bảo hành</button>
-      </div>
-      {list.map((w) => (
-        <div className="order-card" key={w.id}>
-          <div className="order-head">
-            <strong>Bảo hành #{w.id} — Đơn #{w.order_id} ({w.customer_name})</strong>
-            <span className="badge">{w.status === 'active' ? 'Đang hiệu lực' : w.status === 'expired' ? 'Hết hạn' : 'Đã hủy'}</span>
-          </div>
-          <p><em>Thời hạn:</em> {w.months} tháng — {w.start_date} → {w.end_date}</p>
-          {w.status !== 'void' && (
-            <div className="row-actions">
-              {extendId !== w.id && (
-                <button onClick={() => { setExtendId(w.id); setExtendMonths('12'); }}>Gia hạn</button>
-              )}
-              {extendId === w.id && (
-                <span className="inline-form">
-                  <input
-                    type="number" min="1" max="120" value={extendMonths}
-                    onChange={(e) => setExtendMonths(e.target.value)}
-                    style={{ width: 90, padding: '8px 12px', borderRadius: 8 }}
-                  />
-                  <button className="btn-primary" onClick={() => act(w.id, 'extend', parseInt(extendMonths))}>
-                    Xác nhận gia hạn
-                  </button>
-                  <button onClick={() => setExtendId(null)}>Hủy</button>
-                </span>
-              )}
-              <button className="btn-danger" onClick={() => act(w.id, 'void')}>Hủy bảo hành</button>
+    <section style={{ marginBottom: 28 }}>
+      <SectionHead icon="🛡️" title="Bảo hành" count={list.length}
+        filter={filter} setFilter={setFilter}
+        options={[['active', 'Đang hiệu lực'], ['expired', 'Hết hạn'], ['void', 'Đã hủy']]}
+        right={(
+          <span className="inline-form">
+            <input value={orderId} onChange={(e) => setOrderId(e.target.value)}
+              placeholder="Mã đơn hàng" type="number"
+              style={{ width: 130, padding: '9px 12px', borderRadius: 10 }} aria-label="Mã đơn hàng" />
+            <input value={months} onChange={(e) => setMonths(e.target.value)}
+              placeholder="Tháng" type="number" min="1" max="120"
+              style={{ width: 90, padding: '9px 12px', borderRadius: 10 }} aria-label="Số tháng bảo hành" />
+            <button className="btn btn-small btn-primary" onClick={create}>+ Tạo bảo hành</button>
+          </span>
+        )} />
+      <div style={{ display: 'grid', gap: 12 }}>
+        {list.map((w) => {
+          const s = WARRANTY_STATUS[w.status] || WARRANTY_STATUS.active;
+          return (
+            <div key={w.id} style={{ ...card, borderLeft: `3px solid ${s.dot}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '1.02rem' }}>Bảo hành #{w.id}</strong>
+                    <Pill {...s}>{s.label}</Pill>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: '.9rem', color: 'var(--muted)' }}>
+                    Đơn <strong style={{ color: '#ffe9c4' }}>#{w.order_id}</strong>
+                    {w.customer_name && <span> · {w.customer_name}</span>}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: '.92rem' }}>
+                    ⏳ <strong>{w.months} tháng</strong>
+                    <span style={{ color: 'var(--muted)' }}> · {w.start_date} → {w.end_date}</span>
+                  </div>
+                </div>
+                {w.status !== 'void' && (
+                  <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
+                    {extendId !== w.id && (
+                      <button className="btn btn-small btn-outline"
+                        onClick={() => { setExtendId(w.id); setExtendMonths('12'); }}>Gia hạn</button>
+                    )}
+                    {extendId === w.id && (
+                      <span className="inline-form">
+                        <input type="number" min="1" max="120" value={extendMonths}
+                          onChange={(e) => setExtendMonths(e.target.value)}
+                          style={{ width: 80, padding: '8px 12px', borderRadius: 8 }} aria-label="Số tháng gia hạn" />
+                        <button className="btn btn-small btn-primary"
+                          onClick={() => act(w.id, 'extend', parseInt(extendMonths))}>Xác nhận</button>
+                        <button className="btn btn-small btn-outline" onClick={() => setExtendId(null)}>Hủy</button>
+                      </span>
+                    )}
+                    <button className="btn btn-small btn-danger" onClick={() => act(w.id, 'void')}>Hủy BH</button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      ))}
-      {list.length === 0 && <p className="empty">Chưa có bảo hành nào.</p>}
+          );
+        })}
+        {list.length === 0 && <Empty icon="🛡️" text="Chưa có bảo hành nào." />}
+      </div>
     </section>
   );
 }
@@ -214,82 +278,80 @@ function WarrantiesSection() {
 function RepairsSection() {
   const [list, setList] = useState([]);
   const [filter, setFilter] = useState('');
-  const [editing, setEditing] = useState({}); // id -> { status, fee }
+  const [editing, setEditing] = useState({});
 
   const load = () =>
     req(`/api/repairs${filter ? '?status=' + filter : ''}`)
-      .then((d) => setList(d.repairs))
+      .then((d) => setList(d.repairs || []))
       .catch(() => {});
   useEffect(() => { load(); }, [filter]);
 
   const startEdit = (r) => setEditing((s) => ({ ...s, [r.id]: { status: r.status, fee: String(r.fee || 0) } }));
+  const cancelEdit = (id) => setEditing((s) => { const n = { ...s }; delete n[id]; return n; });
   const save = async (id) => {
     const e = editing[id];
     try {
-      await req(`/api/repairs/${id}`, {
-        method: 'PUT',
-        body: { status: e.status, fee: parseInt(e.fee) || 0 },
-      });
-      setEditing((s) => { const n = { ...s }; delete n[id]; return n; });
+      await req(`/api/repairs/${id}`, { method: 'PUT', body: { status: e.status, fee: parseInt(e.fee) || 0 } });
+      cancelEdit(id);
       load();
-    } catch (err) {
-      alert(err.message);
-    }
+    } catch (err) { alert(err.message); }
   };
 
   return (
-    <section className="aftersales-section">
-      <div className="toolbar">
-        <h3>Sửa chữa / bảo dưỡng ({list.length})</h3>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8 }}>
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(REPAIR_STATUS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-      </div>
-      {list.map((r) => {
-        const e = editing[r.id];
-        return (
-          <div className="order-card" key={r.id}>
-            <div className="order-head">
-              <strong>
-                Phiếu #{r.id}{r.order_id ? ` — Đơn #${r.order_id} (${r.customer_name || ''})` : ''}{r.warranty_id ? ` — BH #${r.warranty_id}` : ''}
-              </strong>
-              <span className="badge">{REPAIR_STATUS[r.status]}</span>
+    <section style={{ marginBottom: 8 }}>
+      <SectionHead icon="🔧" title="Sửa chữa / bảo dưỡng" count={list.length}
+        filter={filter} setFilter={setFilter}
+        options={Object.entries(REPAIR_STATUS).map(([k, v]) => [k, v.label])} />
+      <div style={{ display: 'grid', gap: 12 }}>
+        {list.map((r) => {
+          const s = REPAIR_STATUS[r.status] || REPAIR_STATUS.received;
+          const e = editing[r.id];
+          return (
+            <div key={r.id} style={{ ...card, borderLeft: `3px solid ${s.dot}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '1.02rem' }}>Phiếu #{r.id}</strong>
+                    <Pill {...s}>{s.label}</Pill>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: '.9rem', color: 'var(--muted)' }}>
+                    {r.order_id ? <>Đơn <strong style={{ color: '#ffe9c4' }}>#{r.order_id}</strong>{r.customer_name && <span> · {r.customer_name}</span>} · </> : null}
+                    {r.created_at}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: '.92rem' }}>
+                    <span style={{ color: 'var(--muted)' }}>Mô tả: </span>{r.description || '—'}
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: '.92rem' }}>
+                    <span style={{ color: 'var(--muted)' }}>Phí: </span>
+                    <strong style={{ color: '#ffe9c4' }}>{r.fee > 0 ? fmt(r.fee) : 'Miễn phí'}</strong>
+                  </div>
+                </div>
+                {!e && (
+                  <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
+                    <button className="btn btn-small btn-outline" onClick={() => startEdit(r)}>Cập nhật</button>
+                  </div>
+                )}
+              </div>
+              {e && (
+                <div className="row-actions" style={{ marginTop: 10 }}>
+                  <select value={e.status}
+                    onChange={(ev) => setEditing((s2) => ({ ...s2, [r.id]: { ...s2[r.id], status: ev.target.value } }))}
+                    style={{ padding: '8px 12px', borderRadius: 8 }} aria-label="Trạng thái sửa chữa">
+                    {Object.entries(REPAIR_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                  <input type="number" min="0" value={e.fee}
+                    onChange={(ev) => setEditing((s2) => ({ ...s2, [r.id]: { ...s2[r.id], fee: ev.target.value } }))}
+                    placeholder="Phí (đ)" aria-label="Phí sửa chữa"
+                    style={{ width: 130, padding: '8px 12px', borderRadius: 8 }} />
+                  <button className="btn btn-small btn-primary" onClick={() => save(r.id)}>Lưu</button>
+                  <button className="btn btn-small btn-outline" onClick={() => cancelEdit(r.id)}>Hủy</button>
+                </div>
+              )}
             </div>
-            <p><em>Mô tả:</em> {r.description}</p>
-            <p><em>Phí:</em> {fmt(r.fee)} · <em>Ngày tạo:</em> {r.created_at}</p>
-            {!e && (
-              <div className="row-actions">
-                <button onClick={() => startEdit(r)}>Cập nhật trạng thái / phí</button>
-              </div>
-            )}
-            {e && (
-              <div className="row-actions">
-                <select
-                  value={e.status}
-                  onChange={(ev) => setEditing((s) => ({ ...s, [r.id]: { ...s[r.id], status: ev.target.value } }))}
-                  style={{ padding: '8px 12px', borderRadius: 8 }}
-                >
-                  {Object.entries(REPAIR_STATUS).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-                <input
-                  type="number" min="0" value={e.fee}
-                  onChange={(ev) => setEditing((s) => ({ ...s, [r.id]: { ...s[r.id], fee: ev.target.value } }))}
-                  placeholder="Phí (đ)"
-                  style={{ width: 140, padding: '8px 12px', borderRadius: 8 }}
-                />
-                <button className="btn-primary" onClick={() => save(r.id)}>Lưu</button>
-                <button onClick={() => setEditing((s) => { const n = { ...s }; delete n[r.id]; return n; })}>Hủy</button>
-              </div>
-            )}
-          </div>
-        );
-      })}
-      {list.length === 0 && <p className="empty">Chưa có phiếu sửa chữa nào.</p>}
+          );
+        })}
+        {list.length === 0 && <Empty icon="🔧" text="Chưa có phiếu sửa chữa nào." />}
+      </div>
     </section>
   );
 }

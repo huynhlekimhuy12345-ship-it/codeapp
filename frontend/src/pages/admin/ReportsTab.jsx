@@ -55,7 +55,7 @@ export default function ReportsTab() {
       const [s, tp, ls, bs, pm] = await Promise.all([
         api.getReportSummary(),
         api.getTopProducts(10),
-        api.getLowStock(5),
+        api.getReportLowStock(5),
         api.getOrdersByStatus(),
         api.getPaymentsByMethod(),
       ]);
