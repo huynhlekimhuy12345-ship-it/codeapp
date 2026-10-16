@@ -3,6 +3,7 @@
 // Cần coordinator bổ sung trong api.js: api.getMe() -> GET /api/users/me,
 // api.updateMe({name, phone}) -> PUT /api/users/me, api.getReviews (hỗ trợ ?mine=1).
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useStore } from '../context/StoreContext';
@@ -55,6 +56,7 @@ export default function ProfilePage() {
 
   return (
     <div className="container page">
+      <PageTitle title="Hồ sơ" />
       <h1>Hồ sơ của tôi</h1>
 
       {loading ? (
@@ -66,11 +68,11 @@ export default function ProfilePage() {
             <p><strong>Email:</strong> {profile?.email}</p>
             <label>
               Họ tên:
-              <input value={name} onChange={(e) => setName(e.target.value)} required />
+              <input aria-label="Ô nhập" value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label style={{ marginTop: '.75rem' }}>
               Số điện thoại:
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxx" />
+              <input aria-label="Ô nhập" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxx" />
             </label>
             {msg && <p className="success">{msg}</p>}
             <button className="btn" type="submit" disabled={saving} style={{ marginTop: '1rem' }}>

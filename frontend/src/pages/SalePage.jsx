@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
@@ -72,6 +73,7 @@ export default function SalePage() {
   if (loading) {
     return (
       <div className="container page sale-page">
+        <PageTitle title="Khuyến mãi" />
         <p style={{ textAlign: 'center', padding: 60 }}>Đang tải chương trình khuyến mãi...</p>
       </div>
     );

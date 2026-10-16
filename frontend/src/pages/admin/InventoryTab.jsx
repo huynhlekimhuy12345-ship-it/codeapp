@@ -47,9 +47,9 @@ function SupplierForm({ initial, onSave, onCancel }) {
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>{initial ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}</h3>
-        <div className="field"><label>Tên *</label><input value={form.name} onChange={(e) => set('name', e.target.value)} /></div>
-        <div className="field"><label>Điện thoại</label><input value={form.phone} onChange={(e) => set('phone', e.target.value)} /></div>
-        <div className="field"><label>Địa chỉ</label><input value={form.address} onChange={(e) => set('address', e.target.value)} /></div>
+        <div className="field"><label>Tên *</label><input aria-label="Ô nhập" value={form.name} onChange={(e) => set('name', e.target.value)} /></div>
+        <div className="field"><label>Điện thoại</label><input aria-label="Ô nhập" value={form.phone} onChange={(e) => set('phone', e.target.value)} /></div>
+        <div className="field"><label>Địa chỉ</label><input aria-label="Ô nhập" value={form.address} onChange={(e) => set('address', e.target.value)} /></div>
         <div className="field"><label>Ghi chú</label><textarea value={form.note} onChange={(e) => set('note', e.target.value)} rows={3} /></div>
         <div className="modal-actions">
           <button className="btn btn-outline" onClick={onCancel}>Đóng</button>
@@ -155,18 +155,18 @@ function PurchaseOrderForm({ suppliers, onSave, onCancel }) {
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
         <h3>Tạo phiếu nhập hàng</h3>
-        <div className="field"><label>Nhà cung cấp *</label>
-          <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+        <div className="field"><label htmlFor="inventorytab-nha-cung-cap">Nhà cung cấp *</label>
+          <select id="inventorytab-nha-cung-cap" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
             {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
-        <div className="field"><label>Ghi chú</label><input value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        <div className="field"><label>Ghi chú</label><input aria-label="Ô nhập" value={note} onChange={(e) => setNote(e.target.value)} /></div>
 
         <h4>Thêm dòng hàng</h4>
         <div className="filters">
-          <input placeholder="Tìm sản phẩm…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 2 }} />
-          <input placeholder="SL" type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} style={{ width: 80 }} />
-          <input placeholder="Giá nhập" type="number" min="0" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} style={{ width: 140 }} />
+          <input aria-label="Tìm sản phẩm…" placeholder="Tìm sản phẩm…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 2 }} />
+          <input aria-label="SL" placeholder="SL" type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} style={{ width: 80 }} />
+          <input aria-label="Giá nhập" placeholder="Giá nhập" type="number" min="0" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} style={{ width: 140 }} />
         </div>
         <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border, #eee)', borderRadius: 8, marginBottom: 12 }}>
           {results.flatMap((p) => {
@@ -346,7 +346,7 @@ function AdjustForm({ onSave, onCancel }) {
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>Điều chỉnh tồn kho thủ công</h3>
-        <div className="field"><label>Tìm mặt hàng</label><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nhập tên sản phẩm…" /></div>
+        <div className="field"><label>Tìm mặt hàng</label><input aria-label="Ô nhập" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nhập tên sản phẩm…" /></div>
         <div style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid var(--border, #eee)', borderRadius: 8, marginBottom: 12 }}>
           {results.flatMap((p) => {
             const rows = p.variants.length === 0
@@ -362,9 +362,9 @@ function AdjustForm({ onSave, onCancel }) {
             ));
           })}
         </div>
-        <div className="field"><label>Đã chọn</label><input value={target ? target.label : '—'} readOnly /></div>
-        <div className="field"><label>Số lượng (+ nhập thêm / − xuất bớt) *</label>
-          <input type="number" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="VD: 10 hoặc -5" />
+        <div className="field"><label>Đã chọn</label><input aria-label="Ô nhập" value={target ? target.label : '—'} readOnly /></div>
+        <div className="field"><label htmlFor="inventorytab-so-luong-nhap-them-xuat-bot">Số lượng (+ nhập thêm / − xuất bớt) *</label>
+          <input id="inventorytab-so-luong-nhap-them-xuat-bot" type="number" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="VD: 10 hoặc -5" />
         </div>
         <div className="field"><label>Lý do điều chỉnh *</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} /></div>
         <div className="modal-actions">
@@ -418,7 +418,7 @@ function MovementsSection() {
 
       <h4 style={{ marginTop: 4 }}>Cảnh báo sắp hết hàng (≤ {threshold})</h4>
       <div className="filters" style={{ marginBottom: 12 }}>
-        <input type="number" min="0" value={threshold} onChange={(e) => setThreshold(e.target.value)} style={{ width: 100 }} />
+        <input aria-label="Ô nhập" type="number" min="0" value={threshold} onChange={(e) => setThreshold(e.target.value)} style={{ width: 100 }} />
         <button className="btn btn-small btn-outline" onClick={loadLowStock}>Kiểm tra</button>
       </div>
       {lowStock.length > 0 && (

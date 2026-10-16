@@ -6,8 +6,23 @@ const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Chống spam form liên hệ: tối đa 10 tin/phút/IP
+const contactAttempts = new Map();
+function contactRateLimit(req, res, next) {
+  const ip = String(req.ip || (req.connection && req.connection.remoteAddress) || 'unknown');
+  const now = Date.now();
+  let entry = contactAttempts.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + 60 * 1000 };
+    contactAttempts.set(ip, entry);
+  }
+  entry.count += 1;
+  if (entry.count > 10) return res.status(429).json({ error: 'Bạn gửi quá nhiều tin nhắn, vui lòng thử lại sau' });
+  next();
+}
+
 // POST /api/contact — công khai: khách gửi tin nhắn từ trang Liên hệ
-router.post('/', (req, res) => {
+router.post('/', contactRateLimit, (req, res) => {
   const { name, phone, email, content } = req.body || {};
   if (!name || !String(name).trim() || !content || !String(content).trim())
     return res.status(400).json({ error: 'Vui lòng điền Họ tên và Nội dung tin nhắn' });

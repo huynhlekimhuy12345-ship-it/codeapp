@@ -22,6 +22,7 @@ import MyOrders from './pages/MyOrders';
 import ProfilePage from './pages/ProfilePage';
 import Admin from './pages/Admin';
 import SalePage from './pages/SalePage';
+import NotFound from './pages/NotFound';
 
 // Chặn route cần đăng nhập
 function RequireAuth({ children }) {
@@ -55,8 +56,9 @@ export default function App() {
         </Suspense>
       )}
       <div className="page-veil" aria-hidden="true" />
+      <a className="skip-link" href="#main-content">Bỏ qua tới nội dung chính</a>
       <Navbar />
-      <main>
+      <main id="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/khuyen-mai" element={<SalePage />} />
@@ -74,7 +76,7 @@ export default function App() {
           <Route path="/don-hang" element={<RequireAuth><MyOrders /></RequireAuth>} />
           <Route path="/ho-so" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/admin" element={<RequireStaff><Admin /></RequireStaff>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
@@ -915,6 +916,7 @@ export default function Collection() {
     const list = products || [];
     return (
       <div className="container page">
+        <PageTitle title="Bộ sưu tập" />
         <h1 className="page-title">Bộ sưu tập</h1>
         <p className="collection-lead">
           Những món đồ da thủ công được chế tác tỉ mỉ từ xưởng của chúng tôi.
@@ -954,9 +956,9 @@ export default function Collection() {
         {/* Phase 1: hero copy HTML */}
         <div className="collection-hero" ref={heroRef}>
           <span className="hero-kicker">Bộ sưu tập thủ công</span>
-          <h1 className="hero-title">
+          <p className="hero-title">
             Mở chiếc túi, <em>khám phá</em> từng món đồ da
-          </h1>
+          </p>
           <p className="hero-sub">
             Cuộn xuống để xem nắp túi mở ra và từng sản phẩm thủ công bay lên —
             tất cả được làm từ da bò thật 100%.

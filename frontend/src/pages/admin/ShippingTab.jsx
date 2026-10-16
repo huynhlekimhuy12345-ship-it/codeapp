@@ -151,33 +151,35 @@ export default function ShippingTab() {
       {methods.length === 0 ? (
         <div className="empty">Chưa có phương thức vận chuyển nào.</div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Tên</th>
-              <th>Phí</th>
-              <th>ETA (ngày)</th>
-              <th>Trạng thái</th>
-              <th style={{ width: 140 }}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {methods.map((m) => (
-              <tr key={m.id}>
-                <td><strong>{m.name}</strong></td>
-                <td>{fmtVND(m.fee)}</td>
-                <td>{m.eta_days}</td>
-                <td>{m.is_active ? '🟢 Đang bật' : '⚪ Đã tắt'}</td>
-                <td>
-                  <div className="row-actions">
-                    <button className="btn btn-small btn-outline" onClick={() => openEditMethod(m)}>Sửa</button>
-                    <button className="btn btn-small btn-danger" onClick={() => deleteMethod(m)}>Xóa</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Tên</th>
+                        <th>Phí</th>
+                        <th>ETA (ngày)</th>
+                        <th>Trạng thái</th>
+                        <th style={{ width: 140 }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {methods.map((m) => (
+                        <tr key={m.id}>
+                          <td><strong>{m.name}</strong></td>
+                          <td>{fmtVND(m.fee)}</td>
+                          <td>{m.eta_days}</td>
+                          <td>{m.is_active ? '🟢 Đang bật' : '⚪ Đã tắt'}</td>
+                          <td>
+                            <div className="row-actions">
+                              <button className="btn btn-small btn-outline" onClick={() => openEditMethod(m)}>Sửa</button>
+                              <button className="btn btn-small btn-danger" onClick={() => deleteMethod(m)}>Xóa</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+          </table>
+        </div>
       )}
 
       {/* ===== Vận đơn ===== */}
@@ -193,8 +195,8 @@ export default function ShippingTab() {
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div className="field" style={{ margin: 0, minWidth: 120 }}>
-            <label>Mã đơn hàng *</label>
-            <input
+            <label htmlFor="shippingtab-ma-on-hang">Mã đơn hàng *</label>
+            <input id="shippingtab-ma-on-hang"
               type="number" min="1"
               value={assignForm.order_id}
               onChange={(e) => setAssignForm({ ...assignForm, order_id: e.target.value })}
@@ -202,8 +204,8 @@ export default function ShippingTab() {
             />
           </div>
           <div className="field" style={{ margin: 0, minWidth: 180 }}>
-            <label>Phương thức *</label>
-            <select
+            <label htmlFor="shippingtab-phuong-thuc">Phương thức *</label>
+            <select id="shippingtab-phuong-thuc"
               value={assignForm.method_id}
               onChange={(e) => setAssignForm({ ...assignForm, method_id: e.target.value })}
             >
@@ -216,8 +218,8 @@ export default function ShippingTab() {
             </select>
           </div>
           <div className="field" style={{ margin: 0, minWidth: 180 }}>
-            <label>Mã tracking</label>
-            <input
+            <label htmlFor="shippingtab-ma-tracking">Mã tracking</label>
+            <input id="shippingtab-ma-tracking"
               value={assignForm.tracking_code}
               onChange={(e) => setAssignForm({ ...assignForm, tracking_code: e.target.value })}
               placeholder="VD: GHN123456"
@@ -230,71 +232,73 @@ export default function ShippingTab() {
       {shippings.length === 0 ? (
         <div className="empty">Chưa có vận đơn nào.</div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Mã đơn</th>
-              <th>Phương thức</th>
-              <th>Phí</th>
-              <th>Mã tracking</th>
-              <th>Trạng thái</th>
-              <th>Gửi / Giao</th>
-              <th style={{ width: 170 }}>Cập nhật trạng thái</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shippings.map((s) => {
-              const next = SHIP_FLOW[s.status] || [];
-              const trackingVal = trackingEdits[s.id] ?? s.tracking_code ?? '';
-              const trackingChanged = trackingVal.trim() !== (s.tracking_code || '').trim();
-              return (
-                <tr key={s.id}>
-                  <td><strong>#{s.order_id}</strong><br /><span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>{s.customer_name} • {s.phone}</span></td>
-                  <td>{s.method_name || '—'}</td>
-                  <td>{fmtVND(s.fee)}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <input
-                        value={trackingVal}
-                        onChange={(e) => setTrackingEdits((prev) => ({ ...prev, [s.id]: e.target.value }))}
-                        placeholder="Mã tracking"
-                        style={{ width: 120 }}
-                      />
-                      <button
-                        className="btn btn-small btn-outline"
-                        disabled={!trackingChanged}
-                        onClick={() => saveTracking(s)}
-                      >
-                        Lưu
-                      </button>
-                    </div>
-                  </td>
-                  <td><span className="status-chip">{SHIP_STATUS[s.status] || s.status}</span></td>
-                  <td style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
-                    {s.shipped_at ? `Gửi: ${fmtDate(s.shipped_at)}` : '—'}<br />
-                    {s.delivered_at ? `Giao: ${fmtDate(s.delivered_at)}` : ''}
-                  </td>
-                  <td>
-                    {next.length > 0 ? (
-                      <select
-                        value=""
-                        onChange={(e) => { const st = e.target.value; e.target.value = ''; changeShipStatus(s, st); }}
-                        style={{ padding: '6px 10px', borderRadius: 8 }}
-                      >
-                        <option value="">Chuyển trạng thái…</option>
-                        {next.map((st) => (
-                          <option key={st} value={st}>→ {SHIP_STATUS[st]}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>Kết thúc</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Mã đơn</th>
+                        <th>Phương thức</th>
+                        <th>Phí</th>
+                        <th>Mã tracking</th>
+                        <th>Trạng thái</th>
+                        <th>Gửi / Giao</th>
+                        <th style={{ width: 170 }}>Cập nhật trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shippings.map((s) => {
+                        const next = SHIP_FLOW[s.status] || [];
+                        const trackingVal = trackingEdits[s.id] ?? s.tracking_code ?? '';
+                        const trackingChanged = trackingVal.trim() !== (s.tracking_code || '').trim();
+                        return (
+                          <tr key={s.id}>
+                            <td><strong>#{s.order_id}</strong><br /><span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>{s.customer_name} • {s.phone}</span></td>
+                            <td>{s.method_name || '—'}</td>
+                            <td>{fmtVND(s.fee)}</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <input aria-label="Ô nhập"
+                                  value={trackingVal}
+                                  onChange={(e) => setTrackingEdits((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                                  placeholder="Mã tracking"
+                                  style={{ width: 120 }}
+                                />
+                                <button
+                                  className="btn btn-small btn-outline"
+                                  disabled={!trackingChanged}
+                                  onClick={() => saveTracking(s)}
+                                >
+                                  Lưu
+                                </button>
+                              </div>
+                            </td>
+                            <td><span className="status-chip">{SHIP_STATUS[s.status] || s.status}</span></td>
+                            <td style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
+                              {s.shipped_at ? `Gửi: ${fmtDate(s.shipped_at)}` : '—'}<br />
+                              {s.delivered_at ? `Giao: ${fmtDate(s.delivered_at)}` : ''}
+                            </td>
+                            <td>
+                              {next.length > 0 ? (
+                                <select
+                                  value=""
+                                  onChange={(e) => { const st = e.target.value; e.target.value = ''; changeShipStatus(s, st); }}
+                                  style={{ padding: '6px 10px', borderRadius: 8 }}
+                                >
+                                  <option value="">Chuyển trạng thái…</option>
+                                  {next.map((st) => (
+                                    <option key={st} value={st}>→ {SHIP_STATUS[st]}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>Kết thúc</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+          </table>
+        </div>
       )}
 
       {/* ===== Modal thêm/sửa phương thức ===== */}
@@ -303,16 +307,16 @@ export default function ShippingTab() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{editingMethod ? `Sửa phương thức #${editingMethod.id}` : 'Thêm phương thức vận chuyển'}</h3>
             <div className="field">
-              <label>Tên phương thức *</label>
-              <input
+              <label htmlFor="shippingtab-ten-phuong-thuc">Tên phương thức *</label>
+              <input id="shippingtab-ten-phuong-thuc"
                 value={methodForm.name}
                 onChange={(e) => setMethodForm({ ...methodForm, name: e.target.value })}
                 placeholder="VD: Tiêu chuẩn, Nhanh, Hỏa tốc"
               />
             </div>
             <div className="field">
-              <label>Phí (VNĐ)</label>
-              <input
+              <label htmlFor="shippingtab-phi-vn">Phí (VNĐ)</label>
+              <input id="shippingtab-phi-vn"
                 type="number" min="0"
                 value={methodForm.fee}
                 onChange={(e) => setMethodForm({ ...methodForm, fee: e.target.value })}
@@ -320,8 +324,8 @@ export default function ShippingTab() {
               />
             </div>
             <div className="field">
-              <label>Thời gian giao dự kiến (ngày)</label>
-              <input
+              <label htmlFor="shippingtab-thoi-gian-giao-du-kien-ngay">Thời gian giao dự kiến (ngày)</label>
+              <input id="shippingtab-thoi-gian-giao-du-kien-ngay"
                 type="number" min="0"
                 value={methodForm.eta_days}
                 onChange={(e) => setMethodForm({ ...methodForm, eta_days: e.target.value })}
@@ -329,7 +333,7 @@ export default function ShippingTab() {
             </div>
             <div className="field">
               <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
+                <input aria-label="Ô nhập"
                   type="checkbox"
                   checked={methodForm.is_active}
                   onChange={(e) => setMethodForm({ ...methodForm, is_active: e.target.checked })}

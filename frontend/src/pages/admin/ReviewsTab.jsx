@@ -43,34 +43,36 @@ export default function ReviewsTab() {
       {pending.length === 0 ? (
         <p>Không có đánh giá nào chờ duyệt.</p>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Sản phẩm</th>
-              <th>Khách hàng</th>
-              <th>Điểm</th>
-              <th>Nội dung</th>
-              <th>Ngày gửi</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pending.map((r) => (
-              <tr key={r.id}>
-                <td>{r.product_name}</td>
-                <td>{r.user_name}</td>
-                <td>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
-                <td style={{ maxWidth: 320 }}>{r.comment}</td>
-                <td>{fmtDate(r.created_at)}</td>
-                <td>
-                  <button className="btn btn-sm btn-primary" onClick={() => decide(r.id, 1)}>Duyệt</button>{' '}
-                  <button className="btn btn-sm btn-outline" onClick={() => decide(r.id, 0)}>Từ chối</button>{' '}
-                  <button className="btn btn-sm btn-danger" onClick={() => remove(r.id)}>Xóa</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Sản phẩm</th>
+                        <th>Khách hàng</th>
+                        <th>Điểm</th>
+                        <th>Nội dung</th>
+                        <th>Ngày gửi</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pending.map((r) => (
+                        <tr key={r.id}>
+                          <td>{r.product_name}</td>
+                          <td>{r.user_name}</td>
+                          <td>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
+                          <td style={{ maxWidth: 320 }}>{r.comment}</td>
+                          <td>{fmtDate(r.created_at)}</td>
+                          <td>
+                            <button className="btn btn-sm btn-primary" onClick={() => decide(r.id, 1)}>Duyệt</button>{' '}
+                            <button className="btn btn-sm btn-outline" onClick={() => decide(r.id, 0)}>Từ chối</button>{' '}
+                            <button className="btn btn-sm btn-danger" onClick={() => remove(r.id)}>Xóa</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

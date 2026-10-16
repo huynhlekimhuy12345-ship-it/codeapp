@@ -110,7 +110,7 @@ export default function PromoEventsTab() {
   };
 
   const remove = async (ev) => {
-    if (!window.confirm(`Xóa sự kiện "${ev.name}"? (Voucher liên kết không bị ảnh hưởng)`)) return;
+    if (!window.confirm(`Xóa sự kiện "${ev.name}"? (Voucher liên kết sẽ bị TẮT nếu sự kiện đang bật)`)) return;
     try {
       await request(`/api/promo-events/${ev.id}`, { method: 'DELETE' });
       load();
@@ -127,46 +127,48 @@ export default function PromoEventsTab() {
       </div>
       {error && <div className="alert alert-error">{error}</div>}
       {loading ? <p>Đang tải...</p> : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Tên sự kiện</th>
-              <th>Thời gian</th>
-              <th>Voucher liên kết</th>
-              <th>Trạng thái</th>
-              <th style={{ width: 190 }}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((ev) => (
-              <tr key={ev.id}>
-                <td>
-                  <strong>{ev.name}</strong>
-                  <div style={{ fontSize: '.8rem', color: '#888' }}>{ev.slug}</div>
-                </td>
-                <td style={{ fontSize: '.85rem' }}>{fmtDateTime(ev.start_at)}<br />→ {fmtDateTime(ev.end_at)}</td>
-                <td>
-                  {(ev.voucher_codes || []).length
-                    ? (ev.voucher_codes || []).map((c) => <span key={c} className="badge" style={{ marginRight: 4 }}>{c}</span>)
-                    : <span style={{ color: '#888' }}>—</span>}
-                </td>
-                <td>
-                  <span style={{ color: ev.is_active ? 'green' : '#888', fontWeight: 600 }}>
-                    {ev.is_active ? '● Đang bật' : '○ Đang tắt'}
-                  </span>
-                </td>
-                <td>
-                  <button className={`btn btn-small ${ev.is_active ? 'btn-outline' : 'btn-primary'}`} onClick={() => toggle(ev)}>
-                    {ev.is_active ? 'Tắt' : 'Bật'}
-                  </button>{' '}
-                  <button className="btn btn-small btn-outline" onClick={() => openEdit(ev)}>Sửa</button>{' '}
-                  <button className="btn btn-small btn-danger-outline" onClick={() => remove(ev)}>Xóa</button>
-                </td>
-              </tr>
-            ))}
-            {!events.length && <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888' }}>Chưa có sự kiện nào</td></tr>}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Tên sự kiện</th>
+                        <th>Thời gian</th>
+                        <th>Voucher liên kết</th>
+                        <th>Trạng thái</th>
+                        <th style={{ width: 190 }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((ev) => (
+                        <tr key={ev.id}>
+                          <td>
+                            <strong>{ev.name}</strong>
+                            <div style={{ fontSize: '.8rem', color: '#888' }}>{ev.slug}</div>
+                          </td>
+                          <td style={{ fontSize: '.85rem' }}>{fmtDateTime(ev.start_at)}<br />→ {fmtDateTime(ev.end_at)}</td>
+                          <td>
+                            {(ev.voucher_codes || []).length
+                              ? (ev.voucher_codes || []).map((c) => <span key={c} className="badge" style={{ marginRight: 4 }}>{c}</span>)
+                              : <span style={{ color: '#888' }}>—</span>}
+                          </td>
+                          <td>
+                            <span style={{ color: ev.is_active ? 'green' : '#888', fontWeight: 600 }}>
+                              {ev.is_active ? '● Đang bật' : '○ Đang tắt'}
+                            </span>
+                          </td>
+                          <td>
+                            <button className={`btn btn-small ${ev.is_active ? 'btn-outline' : 'btn-primary'}`} onClick={() => toggle(ev)}>
+                              {ev.is_active ? 'Tắt' : 'Bật'}
+                            </button>{' '}
+                            <button className="btn btn-small btn-outline" onClick={() => openEdit(ev)}>Sửa</button>{' '}
+                            <button className="btn btn-small btn-danger-outline" onClick={() => remove(ev)}>Xóa</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {!events.length && <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888' }}>Chưa có sự kiện nào</td></tr>}
+                    </tbody>
+          </table>
+        </div>
       )}
 
       {showForm && (
@@ -175,38 +177,38 @@ export default function PromoEventsTab() {
             <h3>{editing ? 'Sửa sự kiện' : 'Thêm sự kiện mới'}</h3>
             {error && <div className="alert alert-error">{error}</div>}
             <div className="field">
-              <label>Tên sự kiện *</label>
-              <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Sale 11.11" />
+              <label htmlFor="promoeventstab-ten-su-kien">Tên sự kiện *</label>
+              <input id="promoeventstab-ten-su-kien" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Sale 11.11" />
             </div>
             <div className="field">
-              <label>Slug</label>
-              <input value={form.slug} onChange={(e) => set('slug', e.target.value)} placeholder="VD: sale-11-11 (để trống = tự tạo từ tên)" />
+              <label htmlFor="promoeventstab-slug">Slug</label>
+              <input id="promoeventstab-slug" value={form.slug} onChange={(e) => set('slug', e.target.value)} placeholder="VD: sale-11-11 (để trống = tự tạo từ tên)" />
             </div>
             <div className="field">
-              <label>Tiêu đề banner</label>
-              <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="VD: SALE 11.11" />
+              <label htmlFor="promoeventstab-tieu-e-banner">Tiêu đề banner</label>
+              <input id="promoeventstab-tieu-e-banner" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="VD: SALE 11.11" />
             </div>
             <div className="field">
-              <label>Mô tả banner</label>
-              <textarea value={form.subtitle} onChange={(e) => set('subtitle', e.target.value)} rows={2} placeholder="Dòng giới thiệu hiển thị trên trang khuyến mãi" />
+              <label htmlFor="promoeventstab-mo-ta-banner">Mô tả banner</label>
+              <textarea id="promoeventstab-mo-ta-banner" value={form.subtitle} onChange={(e) => set('subtitle', e.target.value)} rows={2} placeholder="Dòng giới thiệu hiển thị trên trang khuyến mãi" />
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
               <div className="field" style={{ flex: 1 }}>
-                <label>Bắt đầu</label>
-                <input type="datetime-local" value={form.start_at} onChange={(e) => set('start_at', e.target.value)} />
+                <label htmlFor="promoeventstab-bat-au">Bắt đầu</label>
+                <input id="promoeventstab-bat-au" type="datetime-local" value={form.start_at} onChange={(e) => set('start_at', e.target.value)} />
               </div>
               <div className="field" style={{ flex: 1 }}>
-                <label>Kết thúc</label>
-                <input type="datetime-local" value={form.end_at} onChange={(e) => set('end_at', e.target.value)} />
+                <label htmlFor="promoeventstab-ket-thuc">Kết thúc</label>
+                <input id="promoeventstab-ket-thuc" type="datetime-local" value={form.end_at} onChange={(e) => set('end_at', e.target.value)} />
               </div>
             </div>
             <div className="field">
-              <label>Voucher liên kết (cách nhau bằng dấu phẩy)</label>
-              <input value={form.voucher_codes} onChange={(e) => set('voucher_codes', e.target.value)} placeholder="VD: SALE1111, GIAM111K" />
+              <label htmlFor="promoeventstab-voucher-lien-ket-cach-nhau-bang-dau-phay">Voucher liên kết (cách nhau bằng dấu phẩy)</label>
+              <input id="promoeventstab-voucher-lien-ket-cach-nhau-bang-dau-phay" value={form.voucher_codes} onChange={(e) => set('voucher_codes', e.target.value)} placeholder="VD: SALE1111, GIAM111K" />
               <small style={{ color: '#888' }}>Khi bật/tắt sự kiện, các voucher này sẽ được bật/tắt cùng lúc.</small>
             </div>
             <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
+              <input aria-label="Ô nhập" type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
               <label style={{ margin: 0 }}>Bật ngay sau khi lưu</label>
             </div>
             <div className="modal-actions">

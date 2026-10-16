@@ -1,8 +1,9 @@
 // Trang Giới thiệu — port từ web artifact Leather House (AboutView)
 import { Link } from 'react-router-dom';
+import PageTitle from '../components/PageTitle';
 
 const VALUES = [
-  ['🥩', 'Da bò thật 100%', 'Chỉ dùng da bò nguyên tấm thuộc thảo mộc, có vân và lỗ chân lông tự nhiên. Cam kết hoàn tiền nếu phát hiện da giả.'],
+  ['🐄', 'Da bò thật 100%', 'Chỉ dùng da bò nguyên tấm thuộc thảo mộc, có vân và lỗ chân lông tự nhiên. Cam kết hoàn tiền nếu phát hiện da giả.'],
   ['✋', 'Làm thủ công tại xưởng', 'Mọi công đoạn — cắt, lạng, đục lỗ, khâu hai kim, đánh bóng cạnh — đều qua tay thợ da lành nghề tại Hội An.'],
   ['🛡️', 'Bảo hành & bảo dưỡng', 'Bảo hành 12 tháng đường chỉ, khóa kéo, phụ kiện; hỗ trợ đánh bóng, dưỡng da và sửa chữa trọn đời sản phẩm.'],
 ];
@@ -19,6 +20,7 @@ const STEPS = [
 export default function About() {
   return (
     <div className="container page">
+      <PageTitle title="Giới thiệu" />
       <div className="about-story">
         <div>
           <span className="kicker">Giới thiệu</span>

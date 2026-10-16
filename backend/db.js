@@ -313,6 +313,15 @@ db.exec(`
 // AUDIT-FIXES MIGRATION (Giai đoạn 1): bổ sung cột cho bảng cũ
 // SQLite không có ADD COLUMN IF NOT EXISTS -> guard bằng PRAGMA table_info
 // =====================================================
+// Chuẩn hoá tiếng Việt không dấu để tìm kiếm (vi da -> "vi da" khớp "ví da")
+function normVi(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, (m) => (m === 'đ' ? 'd' : 'D'))
+    .toLowerCase();
+}
+
 function addColumnIfMissing(table, columnName, columnDef) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all();
   if (!cols.some((c) => c.name === columnName)) {
@@ -333,6 +342,26 @@ addColumnIfMissing('order_items', 'variant_sku', "variant_sku TEXT NOT NULL DEFA
 
 // --- Cột phone cho users (hồ sơ khách hàng) ---
 addColumnIfMissing('users', 'phone', "phone TEXT NOT NULL DEFAULT ''");
+
+// --- Cột name_norm cho products (tìm kiếm không dấu) ---
+addColumnIfMissing('products', 'name_norm', "name_norm TEXT NOT NULL DEFAULT ''");
+(function backfillNorm() {
+  const rows = db.prepare("SELECT id, name FROM products WHERE name_norm = '' OR name_norm IS NULL").all();
+  if (!rows.length) return;
+  const upd = db.prepare('UPDATE products SET name_norm = ? WHERE id = ?');
+  for (const r of rows) upd.run(normVi(r.name), r.id);
+})();
+
+// --- Index cho các cột khóa ngoại hay query ---
+for (const q of [
+  'CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)',
+  'CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)',
+  'CREATE INDEX IF NOT EXISTS idx_status_history_order ON order_status_history(order_id)',
+  'CREATE INDEX IF NOT EXISTS idx_event_products_event ON promo_event_products(event_id)',
+  'CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id)',
+  'CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id)',
+  'CREATE INDEX IF NOT EXISTS idx_products_norm ON products(name_norm)',
+]) db.exec(q);
 
 // =====================================================
 // Seed dữ liệu mẫu (idempotent: chỉ seed khi chưa có)

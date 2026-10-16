@@ -41,8 +41,8 @@ function ConfirmBox({ title, message, confirmLabel, danger, needNote, onCancel, 
         <h4>{title}</h4>
         <p style={{ color: 'var(--muted)', fontSize: '.95rem', marginBottom: 10 }}>{message}</p>
         <div className="field">
-          <label>{needNote ? 'Lý do / ghi chú *' : 'Ghi chú (không bắt buộc)'}</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
+          <label htmlFor="paymentstab-neednote-ly-do-ghi-chu-ghi-chu-khong-bat-buoc">{needNote ? 'Lý do / ghi chú *' : 'Ghi chú (không bắt buộc)'}</label>
+          <textarea id="paymentstab-neednote-ly-do-ghi-chu-ghi-chu-khong-bat-buoc" value={note} onChange={(e) => setNote(e.target.value)} rows={3}
             placeholder={needNote ? 'Nhập lý do...' : 'Ghi chú thêm...'} />
         </div>
         <div className="row-actions" style={{ justifyContent: 'flex-end' }}>

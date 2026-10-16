@@ -1,7 +1,13 @@
 // Middleware xác thực JWT và phân quyền admin
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'leather-shop-secret-key';
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET chưa được cấu hình. Hãy đặt JWT_SECRET trong biến môi trường trước khi chạy production.');
+  }
+  JWT_SECRET = 'dev-only-secret-khong-dung-cho-production';
+}
 
 // Cảnh báo khi chạy với secret mặc định (chỉ an toàn cho dev local)
 if (!process.env.JWT_SECRET) {

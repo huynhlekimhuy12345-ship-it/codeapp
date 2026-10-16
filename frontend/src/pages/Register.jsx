@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 
@@ -23,20 +24,21 @@ export default function Register() {
 
   return (
     <div className="container page">
+      <PageTitle title="Đăng ký" />
       <form className="form-card" onSubmit={submit}>
         <h2>Đăng ký tài khoản</h2>
         {error && <div className="form-error">{error}</div>}
         <div className="field">
-          <label>Họ tên</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
+          <label htmlFor="register-ho-ten">Họ tên</label>
+          <input id="register-ho-ten" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
         <div className="field">
-          <label>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <label htmlFor="register-email">Email</label>
+          <input id="register-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div className="field">
-          <label>Mật khẩu (ít nhất 6 ký tự)</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+          <label htmlFor="register-mat-khau-it-nhat-6-ky-tu">Mật khẩu (ít nhất 6 ký tự)</label>
+          <input id="register-mat-khau-it-nhat-6-ky-tu" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
         </div>
         <button className="btn btn-primary" style={{ width: '100%' }}>Đăng ký</button>
         <div className="form-link">Đã có tài khoản? <Link to="/dang-nhap">Đăng nhập</Link></div>

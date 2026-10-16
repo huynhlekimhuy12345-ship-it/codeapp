@@ -155,8 +155,8 @@ export default function EventProductsSection() {
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div className="field" style={{ minWidth: 260, margin: 0 }}>
-              <label>Thêm sản phẩm vào "{selectedEvent?.name}"</label>
-              <select value={newProductId} onChange={(e) => setNewProductId(e.target.value)}>
+              <label htmlFor="eventproductssection-them-san-pham-vao-selectedevent-name">Thêm sản phẩm vào "{selectedEvent?.name}"</label>
+              <select id="eventproductssection-them-san-pham-vao-selectedevent-name" value={newProductId} onChange={(e) => setNewProductId(e.target.value)}>
                 <option value="">— Chọn sản phẩm —</option>
                 {available.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} — {fmtVND(p.price)}</option>
@@ -164,12 +164,12 @@ export default function EventProductsSection() {
               </select>
             </div>
             <div className="field" style={{ width: 130, margin: 0 }}>
-              <label>Giảm (%)</label>
-              <input type="number" min="1" max="99" value={newDiscountPct} onChange={(e) => onNewPctChange(e.target.value)} placeholder="VD: 10" />
+              <label htmlFor="eventproductssection-giam">Giảm (%)</label>
+              <input id="eventproductssection-giam" type="number" min="1" max="99" value={newDiscountPct} onChange={(e) => onNewPctChange(e.target.value)} placeholder="VD: 10" />
             </div>
             <div className="field" style={{ width: 180, margin: 0 }}>
-              <label>Giá sale (₫)</label>
-              <input type="number" min="1" value={newSalePrice} onChange={(e) => setNewSalePrice(e.target.value)} placeholder="Tự tính theo %" />
+              <label htmlFor="eventproductssection-gia-sale">Giá sale (₫)</label>
+              <input id="eventproductssection-gia-sale" type="number" min="1" value={newSalePrice} onChange={(e) => setNewSalePrice(e.target.value)} placeholder="Tự tính theo %" />
             </div>
             <button className="btn btn-primary" onClick={addProduct}>+ Thêm vào sự kiện</button>
           </div>
@@ -208,12 +208,12 @@ export default function EventProductsSection() {
             {error && <div className="alert alert-error">{error}</div>}
             <div style={{ display: 'flex', gap: 12 }}>
               <div className="field" style={{ flex: 1 }}>
-                <label>Giảm (%)</label>
-                <input type="number" min="1" max="99" value={editDiscountPct} onChange={(e) => onEditPctChange(e.target.value)} />
+                <label htmlFor="eventproductssection-giam-1">Giảm (%)</label>
+                <input id="eventproductssection-giam-1" type="number" min="1" max="99" value={editDiscountPct} onChange={(e) => onEditPctChange(e.target.value)} />
               </div>
               <div className="field" style={{ flex: 1 }}>
-                <label>Giá sale mới (₫)</label>
-                <input type="number" min="1" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+                <label htmlFor="eventproductssection-gia-sale-moi">Giá sale mới (₫)</label>
+                <input id="eventproductssection-gia-sale-moi" type="number" min="1" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
               </div>
             </div>
             <small style={{ color: '#888' }}>Nhập % giảm, giá sale tự tính và làm tròn về nghìn đồng. Vẫn sửa tay được nếu muốn.</small>

@@ -77,6 +77,8 @@ router.post('/', auth, (req, res) => {
   // Validate thông tin giao hàng
   if (!customer_name || !phone || !address)
     return res.status(400).json({ error: 'Vui lòng nhập đầy đủ họ tên, số điện thoại, địa chỉ' });
+  if (!/^[0-9+ ]{9,15}$/.test(String(phone).trim()))
+    return res.status(400).json({ error: 'Số điện thoại không hợp lệ' });
   if (!Array.isArray(items) || items.length === 0)
     return res.status(400).json({ error: 'Giỏ hàng trống' });
 
@@ -116,10 +118,27 @@ router.post('/', auth, (req, res) => {
     }
 
     // 1. Validate từng item: SP tồn tại; variant (nếu có) phải active + đủ kho
+    // (batch fetch 1 lần để tránh N+1 query)
+    const pIds = [...new Set(items.map((it) => it.product_id))];
+    const pRows = pIds.length
+      ? db.prepare(`SELECT * FROM products WHERE id IN (${pIds.map(() => '?').join(',')})`).all(...pIds)
+      : [];
+    const pById = new Map(pRows.map((r) => [r.id, r]));
+    const vIds = [...new Set(items.map((it) => it.variant_id).filter(Boolean))];
+    const vRows = vIds.length
+      ? db.prepare(`SELECT * FROM product_variants WHERE id IN (${vIds.map(() => '?').join(',')}) AND is_active = 1`).all(...vIds)
+      : [];
+    const vById = new Map(vRows.map((r) => [r.id, r]));
+    const vProductIds = new Set(
+      (pIds.length
+        ? db.prepare(`SELECT DISTINCT product_id FROM product_variants WHERE product_id IN (${pIds.map(() => '?').join(',')}) AND is_active = 1`).all(...pIds)
+        : []).map((r) => r.product_id)
+    );
+
     for (const it of items) {
       const qty = parseInt(it.quantity) || 0;
       if (qty <= 0) throw new Error('Số lượng sản phẩm không hợp lệ');
-      const p = db.prepare('SELECT * FROM products WHERE id = ?').get(it.product_id);
+      const p = pById.get(it.product_id);
       if (!p) throw new Error(`Sản phẩm #${it.product_id} không tồn tại`);
 
       const basePrice = salePrices.get(p.id) ?? p.price;
@@ -128,15 +147,15 @@ router.post('/', auth, (req, res) => {
       let variantSku = '';
       if (it.variant_id) {
         // Dòng có biến thể: giá = giá gốc (hoặc giá sale sự kiện) + price_delta, kho riêng của biến thể
-        const v = db.prepare(
-          'SELECT * FROM product_variants WHERE id = ? AND product_id = ? AND is_active = 1'
-        ).get(it.variant_id, p.id);
-        if (!v) throw new Error(`Biến thể của "${p.name}" không tồn tại hoặc đã tắt`);
+        const v = vById.get(it.variant_id);
+        if (!v || v.product_id !== p.id) throw new Error(`Biến thể của "${p.name}" không tồn tại hoặc đã tắt`);
         if (v.stock < qty) throw new Error(`"${p.name} (${v.sku})" chỉ còn ${v.stock} sản phẩm trong kho`);
         unitPrice = basePrice + (v.price_delta || 0);
         variantId = v.id;
         variantSku = v.sku;
       } else {
+        // Không gửi variant_id: nếu SP có biến thể đang bán thì bắt buộc phải chọn
+        if (vProductIds.has(p.id)) throw new Error(`"${p.name}" có nhiều màu sắc/kích thước — vui lòng chọn trước khi đặt hàng`);
         // Dòng không biến thể: giữ hành vi cũ (kho + giá gốc của sản phẩm)
         if (p.stock < qty) throw new Error(`"${p.name}" chỉ còn ${p.stock} sản phẩm trong kho`);
       }

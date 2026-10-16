@@ -1,5 +1,6 @@
 // Trang Blog (danh sách) — port từ web artifact Leather House (BlogListView)
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api, fmtDay } from '../api';
 
@@ -16,6 +17,7 @@ export default function Blog() {
 
   return (
     <div className="container page">
+      <PageTitle title="Blog" />
       <span className="hero-kicker">Blog</span>
       <h1 className="page-title">Góc chia sẻ về đồ da</h1>
       <p style={{ color: 'var(--muted)', marginBottom: 24 }}>

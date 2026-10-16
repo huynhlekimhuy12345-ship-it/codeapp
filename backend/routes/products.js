@@ -5,13 +5,52 @@ const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Chuẩn hoá không dấu để tìm kiếm
+function normVi(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, (m) => (m === 'đ' ? 'd' : 'D'))
+    .toLowerCase();
+}
+
+// Bản đồ giá sale của sự kiện đang diễn ra (nếu có): product_id -> sale_price
+function liveSaleMap() {
+  const now = new Date().toISOString();
+  const ev = db
+    .prepare(
+      `SELECT id FROM promo_events WHERE is_active = 1
+       AND (start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)
+       ORDER BY id DESC LIMIT 1`
+    )
+    .get(now, now);
+  const map = new Map();
+  if (ev) {
+    for (const r of db
+      .prepare('SELECT product_id, sale_price FROM promo_event_products WHERE event_id = ?')
+      .all(ev.id)) map.set(r.product_id, r.sale_price);
+  }
+  return map;
+}
+
+// Gắn sale_price/discount_percent vào object sản phẩm (nếu đang sale)
+function withSale(p, saleMap) {
+  if (!p) return p;
+  const sp = saleMap.get(p.id);
+  if (sp && p.price > 0) {
+    p.sale_price = sp;
+    p.discount_percent = Math.round((1 - sp / p.price) * 100);
+  }
+  return p;
+}
+
 const SELECT = `
   SELECT p.*, c.name AS category_name
   FROM products p LEFT JOIN categories c ON c.id = p.category_id`;
 
 // GET /api/products?category=&search=&sort=&page=&limit= — công khai
 router.get('/', (req, res) => {
-  const { category, search, sort } = req.query;
+  const { category, search, sort, min_price, max_price } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
   const offset = (page - 1) * limit;
@@ -19,7 +58,13 @@ router.get('/', (req, res) => {
   const conds = [];
   const params = [];
   if (category) { conds.push('p.category_id = ?'); params.push(category); }
-  if (search) { conds.push('(p.name LIKE ? OR p.description LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+  if (search) {
+    const norm = normVi(search);
+    conds.push('(p.name LIKE ? OR p.description LIKE ? OR p.name_norm LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${norm}%`);
+  }
+  if (min_price !== undefined && min_price !== '') { conds.push('p.price >= ?'); params.push(parseInt(min_price) || 0); }
+  if (max_price !== undefined && max_price !== '') { conds.push('p.price <= ?'); params.push(parseInt(max_price) || 0); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
 
   const sorts = {
@@ -31,7 +76,20 @@ router.get('/', (req, res) => {
   const orderBy = 'ORDER BY ' + (sorts[sort] || 'p.id DESC');
 
   const total = db.prepare(`SELECT COUNT(*) AS n FROM products p ${where}`).get(...params).n;
-  const products = db.prepare(`${SELECT} ${where} ${orderBy} LIMIT ? OFFSET ?`).all(...params, limit, offset);
+  const saleMap = liveSaleMap();
+  const products = db.prepare(`${SELECT} ${where} ${orderBy} LIMIT ? OFFSET ?`)
+    .all(...params, limit, offset)
+    .map((p) => withSale(p, saleMap));
+  // Tóm tắt variant 1 query (tránh N+1): product_id -> số biến thể đang bán
+  if (products.length) {
+    const ids = products.map((p) => p.id);
+    const vc = db.prepare(
+      `SELECT product_id, COUNT(*) AS c FROM product_variants
+       WHERE product_id IN (${ids.map(() => '?').join(',')}) AND is_active = 1 GROUP BY product_id`
+    ).all(...ids);
+    const vcMap = new Map(vc.map((r) => [r.product_id, r.c]));
+    for (const p of products) p.variant_count = vcMap.get(p.id) || 0;
+  }
   res.json({ products, page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
@@ -39,6 +97,7 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const p = db.prepare(`${SELECT} WHERE p.id = ?`).get(req.params.id);
   if (!p) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
+  withSale(p, liveSaleMap());
   p.variants = getActiveVariants(p.id); // biến thể đang hoạt động
   p.images = getProductImages(p.id);    // ảnh sắp xếp theo sort_order
   res.json({ product: p });
@@ -47,14 +106,18 @@ router.get('/:id', (req, res) => {
 // POST /api/products — admin
 router.post('/', auth, staffOnly, (req, res) => {
   const { category_id, name, description, price, stock, image_url } = req.body || {};
-  if (!name || price === undefined)
+  if (!String(name || '').trim() || price === undefined)
     return res.status(400).json({ error: 'Tên và giá sản phẩm là bắt buộc' });
+  const priceNum = parseInt(price) || 0;
+  const stockNum = parseInt(stock) || 0;
+  if (priceNum < 0 || stockNum < 0)
+    return res.status(400).json({ error: 'Giá và tồn kho không được âm' });
   const info = db.prepare(
-    `INSERT INTO products (category_id, name, description, price, stock, image_url)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO products (category_id, name, description, price, stock, image_url, name_norm)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).run(
-    category_id || null, name.trim(), (description || '').trim(),
-    parseInt(price) || 0, parseInt(stock) || 0, (image_url || '').trim()
+    category_id || null, String(name).trim(), (description || '').trim(),
+    priceNum, stockNum, (image_url || '').trim(), normVi(name)
   );
   res.status(201).json({ product: db.prepare(`${SELECT} WHERE p.id = ?`).get(info.lastInsertRowid) });
 });
@@ -62,12 +125,18 @@ router.post('/', auth, staffOnly, (req, res) => {
 // PUT /api/products/:id — admin
 router.put('/:id', auth, staffOnly, (req, res) => {
   const { category_id, name, description, price, stock, image_url } = req.body || {};
+  if (!String(name || '').trim())
+    return res.status(400).json({ error: 'Tên sản phẩm không được để trống' });
+  const priceNum = parseInt(price) || 0;
+  const stockNum = parseInt(stock) || 0;
+  if (priceNum < 0 || stockNum < 0)
+    return res.status(400).json({ error: 'Giá và tồn kho không được âm' });
   const info = db.prepare(
-    `UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, image_url = ?
-     WHERE id = ?`
+    `UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, image_url = ?,
+     name_norm = ? WHERE id = ?`
   ).run(
-    category_id || null, (name || '').trim(), (description || '').trim(),
-    parseInt(price) || 0, parseInt(stock) || 0, (image_url || '').trim(), req.params.id
+    category_id || null, String(name).trim(), (description || '').trim(),
+    priceNum, stockNum, (image_url || '').trim(), normVi(name), req.params.id
   );
   if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
   res.json({ product: db.prepare(`${SELECT} WHERE p.id = ?`).get(req.params.id) });

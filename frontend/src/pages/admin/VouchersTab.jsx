@@ -206,33 +206,33 @@ export default function VouchersTab() {
             <h3 style={{ marginBottom: 14 }}>{editing ? `Sửa voucher ${editing.code}` : 'Thêm voucher mới'}</h3>
             {!editing && (
               <>
-                <div className="field"><label>Mã voucher *</label>
-                  <input value={form.code} onChange={(e) => set('code', e.target.value.toUpperCase())} placeholder="VD: GIAM20" />
+                <div className="field"><label htmlFor="voucherstab-ma-voucher">Mã voucher *</label>
+                  <input id="voucherstab-ma-voucher" value={form.code} onChange={(e) => set('code', e.target.value.toUpperCase())} placeholder="VD: GIAM20" />
                 </div>
-                <div className="field"><label>Loại *</label>
-                  <select value={form.type} onChange={(e) => set('type', e.target.value)}>
+                <div className="field"><label htmlFor="voucherstab-loai">Loại *</label>
+                  <select id="voucherstab-loai" value={form.type} onChange={(e) => set('type', e.target.value)}>
                     <option value="percent">Phần trăm (%)</option>
                     <option value="fixed">Số tiền cố định (VND)</option>
                   </select>
                 </div>
               </>
             )}
-            <div className="field"><label>Giá trị * {form.type === 'percent' ? '(1–100)' : '(VND)'}</label>
-              <input type="number" min="1" value={form.value} onChange={(e) => set('value', e.target.value)} />
+            <div className="field"><label htmlFor="voucherstab-gia-tri-form-type-percent-1100-vnd">Giá trị * {form.type === 'percent' ? '(1–100)' : '(VND)'}</label>
+              <input id="voucherstab-gia-tri-form-type-percent-1100-vnd" type="number" min="1" value={form.value} onChange={(e) => set('value', e.target.value)} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div className="field"><label>Đơn tối thiểu (VND)</label>
-                <input type="number" min="0" value={form.min_order} onChange={(e) => set('min_order', e.target.value)} placeholder="0 = không giới hạn" />
+              <div className="field"><label htmlFor="voucherstab-on-toi-thieu-vnd">Đơn tối thiểu (VND)</label>
+                <input id="voucherstab-on-toi-thieu-vnd" type="number" min="0" value={form.min_order} onChange={(e) => set('min_order', e.target.value)} placeholder="0 = không giới hạn" />
               </div>
-              <div className="field"><label>Giới hạn lượt dùng</label>
-                <input type="number" min="0" value={form.usage_limit} onChange={(e) => set('usage_limit', e.target.value)} placeholder="0 = không giới hạn" />
+              <div className="field"><label htmlFor="voucherstab-gioi-han-luot-dung">Giới hạn lượt dùng</label>
+                <input id="voucherstab-gioi-han-luot-dung" type="number" min="0" value={form.usage_limit} onChange={(e) => set('usage_limit', e.target.value)} placeholder="0 = không giới hạn" />
               </div>
             </div>
-            <div className="field"><label>Hạn dùng</label>
-              <input type="datetime-local" value={form.expiry} onChange={(e) => set('expiry', e.target.value)} />
+            <div className="field"><label htmlFor="voucherstab-han-dung">Hạn dùng</label>
+              <input id="voucherstab-han-dung" type="datetime-local" value={form.expiry} onChange={(e) => set('expiry', e.target.value)} />
             </div>
             <div className="field"><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
+              <input aria-label="Ô nhập" type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
               Đang kích hoạt
             </label></div>
             <div className="modal-actions">

@@ -129,10 +129,10 @@ router.post('/', auth, staffOnly, (req, res) => {
   if (exists) return res.status(409).json({ error: 'Mã voucher đã tồn tại' });
   const info = db
     .prepare(
-      `INSERT INTO vouchers (code, type, value, min_order, expiry, usage_limit)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO vouchers (code, type, value, min_order, expiry, usage_limit, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(clean.code, clean.type, clean.value, clean.min_order, clean.expiry, clean.usage_limit);
+    .run(clean.code, clean.type, clean.value, clean.min_order, clean.expiry, clean.usage_limit, clean.is_active ?? 1);
   res.status(201).json({ voucher: db.prepare('SELECT * FROM vouchers WHERE id = ?').get(info.lastInsertRowid) });
 });
 

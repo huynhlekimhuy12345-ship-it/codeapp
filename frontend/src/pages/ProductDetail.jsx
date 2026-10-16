@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { useParams, Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
@@ -60,7 +61,9 @@ export default function ProductDetail() {
   const selectedVariant = hasVariants ? findVariant(selColor, selSize) : null;
 
   // Giá = giá gốc + price_delta của variant đã chọn; tồn kho theo variant
-  const unitPrice = product ? product.price + (selectedVariant ? selectedVariant.price_delta : 0) : 0;
+  const basePrice = product ? (product.sale_price && product.sale_price < product.price ? product.sale_price : product.price) : 0;
+  const unitPrice = product ? basePrice + (selectedVariant ? selectedVariant.price_delta : 0) : 0;
+  const onSale = product && product.sale_price && product.sale_price < product.price;
   const maxStock = hasVariants ? (selectedVariant ? selectedVariant.stock : 0) : (product ? product.stock : 0);
 
   // Đổi màu: nếu size hiện tại không còn tồn tại với màu mới thì chọn size đầu tiên của màu đó
@@ -118,6 +121,7 @@ export default function ProductDetail() {
 
   return (
     <div className="container page">
+      <PageTitle title="Chi tiết sản phẩm" />
       <div className="detail">
         <div>
           <img src={mainImage} alt={product.name}
@@ -146,7 +150,11 @@ export default function ProductDetail() {
             {product.category_name}
           </span>
           <h1>{product.name}</h1>
-          <div className="price">{fmtVND(unitPrice)}</div>
+          {onSale ? (
+            <div className="price"><s className="old-price">{fmtVND(product.price)}</s> <span className="sale-price">{fmtVND(basePrice)}</span> <span className="card-badge" style={{ position: 'static' }}>-{product.discount_percent}%</span></div>
+          ) : (
+            <div className="price">{fmtVND(unitPrice)}</div>
+          )}
           {hasVariants && selectedVariant && selectedVariant.price_delta !== 0 && (
             <div style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
               Giá gốc {fmtVND(product.price)}

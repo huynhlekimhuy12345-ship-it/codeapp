@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
@@ -14,6 +15,7 @@ export default function Home() {
 
   return (
     <>
+      <PageTitle title="Trang chủ" />
       <div className="hero-3d">
         <div className="container">
           <span className="hero-kicker">Xưởng đồ da thủ công</span>
@@ -21,14 +23,14 @@ export default function Home() {
           <p className="hero-sub">Ví da, túi xách, thắt lưng, giày da và phụ kiện làm từ da bò thật 100% — khâu tay tỉ mỉ, bảo hành 12 tháng.</p>
           <div className="hero-cta">
             <Link to="/cua-hang" className="btn btn-primary">Mua sắm ngay</Link>
-            <Link to="/cua-hang" className="btn btn-outline">Xem danh mục</Link>
+            <a href="#danh-muc-noi-bat" className="btn btn-outline">Xem danh mục</a>
           </div>
         </div>
         <div className="hero-scroll">Cuộn xuống</div>
       </div>
 
       <div className="container">
-        <div className="section">
+        <div className="section" id="danh-muc-noi-bat">
           <div className="section-head">
             <h2>Danh mục nổi bật</h2>
           </div>

@@ -1,5 +1,6 @@
 // Trang Liên hệ — port từ web artifact Leather House (ContactView)
 import { useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { api } from '../api';
 
 const INFO = [
@@ -43,6 +44,7 @@ export default function Contact() {
 
   return (
     <div className="container page">
+      <PageTitle title="Liên hệ" />
       <span className="hero-kicker">Liên hệ</span>
       <h1 className="page-title">Ghé xưởng hoặc nhắn cho chúng tôi</h1>
       <p style={{ color: 'var(--muted)', marginBottom: 24 }}>
@@ -73,22 +75,22 @@ export default function Contact() {
             <form onSubmit={submit}>
               {err && <div className="form-error">{err}</div>}
               <div className="field">
-                <label>Họ tên *</label>
-                <input value={form.name} onChange={set('name')} placeholder="Nguyễn Văn A" required />
+                <label htmlFor="contact-ho-ten">Họ tên *</label>
+                <input id="contact-ho-ten" value={form.name} onChange={set('name')} placeholder="Nguyễn Văn A" required />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="field">
-                  <label>Số điện thoại</label>
-                  <input value={form.phone} onChange={set('phone')} placeholder="0901234567" inputMode="tel" />
+                  <label htmlFor="contact-so-ien-thoai">Số điện thoại</label>
+                  <input id="contact-so-ien-thoai" value={form.phone} onChange={set('phone')} placeholder="0901234567" inputMode="tel" />
                 </div>
                 <div className="field">
-                  <label>Email</label>
-                  <input value={form.email} onChange={set('email')} placeholder="email@example.com" type="email" />
+                  <label htmlFor="contact-email">Email</label>
+                  <input id="contact-email" value={form.email} onChange={set('email')} placeholder="email@example.com" type="email" />
                 </div>
               </div>
               <div className="field">
-                <label>Nội dung *</label>
-                <textarea value={form.content} onChange={set('content')} rows={5} required
+                <label htmlFor="contact-noi-dung">Nội dung *</label>
+                <textarea id="contact-noi-dung" value={form.content} onChange={set('content')} rows={5} required
                   placeholder="Bạn cần tư vấn sản phẩm, đặt may theo yêu cầu hay bảo hành? Hãy nhắn cho shop..." />
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={sending}>

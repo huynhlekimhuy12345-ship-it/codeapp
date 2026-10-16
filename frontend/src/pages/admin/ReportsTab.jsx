@@ -124,11 +124,11 @@ export default function ReportsTab() {
       <div className="filters">
         <label>
           Từ&nbsp;
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input aria-label="Ô nhập" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </label>
         <label>
           Đến&nbsp;
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input aria-label="Ô nhập" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
         <select value={group} onChange={(e) => setGroup(e.target.value)}>
           <option value="day">Theo ngày</option>
@@ -144,35 +144,39 @@ export default function ReportsTab() {
       <div className="report-two-cols">
         <div>
           <h3 style={{ color: 'var(--cream)', marginBottom: 12 }}>Đơn hàng theo trạng thái</h3>
-          <table className="data-table">
-            <thead><tr><th>Trạng thái</th><th style={{ textAlign: 'right' }}>Số đơn</th></tr></thead>
-            <tbody>
-              {byStatus.map((r) => (
-                <tr key={r.status}>
-                  <td><span className={`status ${r.status}`}>{ORDER_STATUS[r.status] || r.status}</span></td>
-                  <td style={{ textAlign: 'right' }}>{r.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="data-table">
+                        <thead><tr><th>Trạng thái</th><th style={{ textAlign: 'right' }}>Số đơn</th></tr></thead>
+                        <tbody>
+                          {byStatus.map((r) => (
+                            <tr key={r.status}>
+                              <td><span className={`status ${r.status}`}>{ORDER_STATUS[r.status] || r.status}</span></td>
+                              <td style={{ textAlign: 'right' }}>{r.count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+            </table>
+          </div>
         </div>
         <div>
           <h3 style={{ color: 'var(--cream)', marginBottom: 12 }}>Thanh toán theo phương thức</h3>
           {byPayment.length === 0
             ? <div className="report-empty">Chưa có giao dịch thanh toán nào</div>
             : (
-              <table className="data-table">
-                <thead><tr><th>Phương thức</th><th style={{ textAlign: 'right' }}>Số GD</th><th style={{ textAlign: 'right' }}>Tổng tiền</th></tr></thead>
-                <tbody>
-                  {byPayment.map((r) => (
-                    <tr key={r.method}>
-                      <td>{METHOD_LABEL[r.method] || r.method}</td>
-                      <td style={{ textAlign: 'right' }}>{r.count}</td>
-                      <td style={{ textAlign: 'right' }}>{fmtVND(r.total)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-scroll">
+                <table className="data-table">
+                                <thead><tr><th>Phương thức</th><th style={{ textAlign: 'right' }}>Số GD</th><th style={{ textAlign: 'right' }}>Tổng tiền</th></tr></thead>
+                                <tbody>
+                                  {byPayment.map((r) => (
+                                    <tr key={r.method}>
+                                      <td>{METHOD_LABEL[r.method] || r.method}</td>
+                                      <td style={{ textAlign: 'right' }}>{r.count}</td>
+                                      <td style={{ textAlign: 'right' }}>{fmtVND(r.total)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                </table>
+              </div>
             )}
         </div>
       </div>
@@ -182,21 +186,23 @@ export default function ReportsTab() {
       {topProducts.length === 0
         ? <div className="report-empty">Chưa có sản phẩm nào được bán (đơn delivered)</div>
         : (
-          <table className="data-table" style={{ marginBottom: 24 }}>
-            <thead>
-              <tr><th>#</th><th>Sản phẩm</th><th style={{ textAlign: 'right' }}>Đã bán</th><th style={{ textAlign: 'right' }}>Doanh thu</th></tr>
-            </thead>
-            <tbody>
-              {topProducts.map((p, i) => (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td>{p.product_name}</td>
-                  <td style={{ textAlign: 'right' }}>{p.qty_sold}</td>
-                  <td style={{ textAlign: 'right' }}>{fmtVND(p.revenue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="data-table" style={{ marginBottom: 24 }}>
+                        <thead>
+                          <tr><th>#</th><th>Sản phẩm</th><th style={{ textAlign: 'right' }}>Đã bán</th><th style={{ textAlign: 'right' }}>Doanh thu</th></tr>
+                        </thead>
+                        <tbody>
+                          {topProducts.map((p, i) => (
+                            <tr key={i}>
+                              <td>{i + 1}</td>
+                              <td>{p.product_name}</td>
+                              <td style={{ textAlign: 'right' }}>{p.qty_sold}</td>
+                              <td style={{ textAlign: 'right' }}>{fmtVND(p.revenue)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+            </table>
+          </div>
         )}
 
       {/* Tồn kho thấp */}
@@ -204,21 +210,23 @@ export default function ReportsTab() {
       {lowStock.length === 0
         ? <div className="report-empty">Kho ổn định, không có mặt hàng sắp hết</div>
         : (
-          <table className="data-table">
-            <thead>
-              <tr><th>Sản phẩm</th><th>Loại</th><th>SKU</th><th style={{ textAlign: 'right' }}>Tồn kho</th></tr>
-            </thead>
-            <tbody>
-              {lowStock.map((s, i) => (
-                <tr key={i}>
-                  <td>{s.product_name}</td>
-                  <td>{s.type === 'variant' ? 'Biến thể' : 'Sản phẩm'}</td>
-                  <td>{s.sku || '—'}</td>
-                  <td style={{ textAlign: 'right', color: '#f09280', fontWeight: 700 }}>{s.stock}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="data-table">
+                        <thead>
+                          <tr><th>Sản phẩm</th><th>Loại</th><th>SKU</th><th style={{ textAlign: 'right' }}>Tồn kho</th></tr>
+                        </thead>
+                        <tbody>
+                          {lowStock.map((s, i) => (
+                            <tr key={i}>
+                              <td>{s.product_name}</td>
+                              <td>{s.type === 'variant' ? 'Biến thể' : 'Sản phẩm'}</td>
+                              <td>{s.sku || '—'}</td>
+                              <td style={{ textAlign: 'right', color: '#f09280', fontWeight: 700 }}>{s.stock}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+            </table>
+          </div>
         )}
     </div>
   );

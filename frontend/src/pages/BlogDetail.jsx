@@ -1,5 +1,6 @@
 // Trang chi tiết bài viết Blog — port từ web artifact Leather House (BlogDetailView)
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link, useParams } from 'react-router-dom';
 import { api, fmtDay } from '../api';
 
@@ -27,6 +28,7 @@ export default function BlogDetail() {
   if (loading) {
     return (
       <div className="container page">
+        <PageTitle title="Bài viết" />
         <div className="empty"><h3>Đang tải bài viết...</h3></div>
       </div>
     );

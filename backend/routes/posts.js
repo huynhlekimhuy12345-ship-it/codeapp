@@ -52,13 +52,13 @@ router.get('/', (req, res) => {
   let isAdmin = false;
   if (wantAll) {
     // Kiểm tra quyền admin thủ công vì route này vừa công khai vừa cần auth khi all=1
-    const { auth, staffOnly } = require('../middleware/auth');
+    const { auth, staffOnly, JWT_SECRET } = require('../middleware/auth');
     const jwt = require('jsonwebtoken');
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     try {
       const payload = jwt.verify(token, JWT_SECRET);
-      isAdmin = payload && payload.role === 'admin';
+      isAdmin = payload && ['admin', 'sale'].includes(payload.role);
     } catch { isAdmin = false; }
     if (!isAdmin) return res.status(403).json({ error: 'Chỉ quản trị viên mới xem được bản nháp' });
   }

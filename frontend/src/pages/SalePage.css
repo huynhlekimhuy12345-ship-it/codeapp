@@ -48,9 +48,9 @@
 
 .sale-section { padding: 36px 0 8px; }
 .sale-section h2 { font-family: 'Playfair Display', 'Be Vietnam Pro', serif; font-size: 1.7rem; margin-bottom: 4px; }
-.sale-desc { color: #777; margin-bottom: 20px; font-size: 0.92rem; }
+.sale-desc { color: #666; margin-bottom: 20px; font-size: 0.92rem; }
 
-.sale-vouchers { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.sale-vouchers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .sale-voucher {
   background: linear-gradient(135deg, #33200f, #241407);
   border: 1px dashed rgba(242, 197, 124, 0.45);
@@ -102,9 +102,15 @@
 .sp-body h3 { font-size: 0.98rem; margin: 0 0 8px; }
 .sp-body h3 a, .sp-body a h3 { color: inherit; text-decoration: none; }
 .sp-prices { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.sp-old { text-decoration: line-through; color: #999; font-size: 0.85rem; }
+.sp-old { text-decoration: line-through; color: #767676; font-size: 0.85rem; }
 .sp-sale { color: #c0392b; font-weight: 800; font-size: 1.1rem; }
 
 .sale-empty { text-align: center; padding: 80px 20px; }
 .sale-empty h2 { margin-bottom: 10px; }
-.sale-empty p { color: #777; margin-bottom: 24px; }
+.sale-empty p { color: #666; margin-bottom: 24px; }
+
+@media (max-width: 380px) {
+  .sale-countdown { gap: 8px; }
+  .cd-cell { min-width: 0; flex: 1; padding: 10px 4px; }
+  .cd-num { font-size: 1.4rem; }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { useNavigate } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
@@ -126,6 +127,7 @@ export default function Checkout() {
   if (placedOrder) {
     return (
       <div className="container page">
+        <PageTitle title="Thanh toán" />
         <div className="form-card" style={{ maxWidth: 560 }}>
           <h2>✅ Đặt hàng thành công!</h2>
           <p>Mã đơn hàng: <strong>#{placedOrder.id}</strong> — Tổng: <strong>{fmtVND(placedOrder.total)}</strong></p>
@@ -133,8 +135,8 @@ export default function Checkout() {
           <p>Vui lòng chuyển khoản đúng số tiền trên, nội dung: <strong>DH{placedOrder.id}</strong></p>
           <p style={{ color: '#888' }}>Shop sẽ xác nhận thanh toán và gửi hàng sau khi nhận được tiền.</p>
           <div className="field">
-            <label>Link ảnh bằng chứng chuyển khoản</label>
-            <input
+            <label htmlFor="checkout-link-anh-bang-chung-chuyen-khoan">Link ảnh bằng chứng chuyển khoản</label>
+            <input id="checkout-link-anh-bang-chung-chuyen-khoan"
               value={proofUrl}
               onChange={(e) => setProofUrl(e.target.value)}
               placeholder="https://... (link ảnh chụp màn hình giao dịch)"
@@ -162,33 +164,33 @@ export default function Checkout() {
 
   return (
     <div className="container page">
-      <h2 className="page-title">Thanh toán</h2>
+      <h1 className="page-title">Thanh toán</h1>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }} className="checkout-grid">
         <form className="form-card" style={{ maxWidth: 'none', margin: 0 }} onSubmit={submit}>
           <h2>Thông tin giao hàng</h2>
           {error && <div className="form-error">{error}</div>}
           <div className="field">
-            <label>Họ tên *</label>
-            <input value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} required />
+            <label htmlFor="checkout-ho-ten">Họ tên *</label>
+            <input id="checkout-ho-ten" value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} required />
           </div>
           <div className="field">
-            <label>Số điện thoại *</label>
-            <input value={form.phone} onChange={(e) => set('phone', e.target.value)} required pattern="[0-9+ ]{9,15}" title="Số điện thoại không hợp lệ" />
+            <label htmlFor="checkout-so-ien-thoai">Số điện thoại *</label>
+            <input id="checkout-so-ien-thoai" value={form.phone} onChange={(e) => set('phone', e.target.value)} required pattern="[0-9+ ]{9,15}" title="Số điện thoại không hợp lệ" />
           </div>
           <div className="field">
-            <label>Địa chỉ giao hàng *</label>
-            <textarea value={form.address} onChange={(e) => set('address', e.target.value)} required placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" />
+            <label htmlFor="checkout-ia-chi-giao-hang">Địa chỉ giao hàng *</label>
+            <textarea id="checkout-ia-chi-giao-hang" value={form.address} onChange={(e) => set('address', e.target.value)} required placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" />
           </div>
           <div className="field">
-            <label>Ghi chú</label>
-            <textarea value={form.note} onChange={(e) => set('note', e.target.value)} placeholder="Ghi chú cho shop (tùy chọn)" rows={2} />
+            <label htmlFor="checkout-ghi-chu">Ghi chú</label>
+            <textarea id="checkout-ghi-chu" value={form.note} onChange={(e) => set('note', e.target.value)} placeholder="Ghi chú cho shop (tùy chọn)" rows={2} />
           </div>
 
           <h2 style={{ marginTop: 24 }}>Phương thức vận chuyển</h2>
           {shipMethods.length === 0 && <p className="muted">Đang tải phương thức vận chuyển...</p>}
           {shipMethods.map((m) => (
             <label key={m.id} className="radio-row">
-              <input
+              <input aria-label="Ô nhập"
                 type="radio"
                 name="shipping"
                 checked={shippingId === m.id}
@@ -204,7 +206,7 @@ export default function Checkout() {
 
           <h2 style={{ marginTop: 24 }}>Mã khuyến mãi</h2>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input
+            <input aria-label="Ô nhập"
               value={voucherCode}
               onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucher(null); setVoucherMsg(''); }}
               placeholder="Nhập mã, ví dụ WELCOME10"
@@ -221,7 +223,7 @@ export default function Checkout() {
           <h2 style={{ marginTop: 24 }}>Phương thức thanh toán</h2>
           {PAYMENT_METHODS.map((m) => (
             <label key={m.id} className="radio-row">
-              <input
+              <input aria-label="Ô nhập"
                 type="radio"
                 name="payment"
                 checked={paymentMethod === m.id}
@@ -237,6 +239,9 @@ export default function Checkout() {
           <button className="btn btn-primary" style={{ width: '100%', marginTop: 20 }} disabled={loading}>
             {loading ? 'Đang đặt hàng...' : `Đặt hàng • ${fmtVND(grandTotal)}`}
           </button>
+          <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>
+            Giá ưu đãi khuyến mãi chỉ áp dụng trong thời gian diễn ra chương trình — tổng tiền cuối cùng được tính lại khi đặt hàng.
+          </p>
         </form>
 
         <div className="cart-summary" style={{ margin: 0, maxWidth: 'none' }}>

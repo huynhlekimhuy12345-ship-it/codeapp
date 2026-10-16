@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api, fmtVND, fmtDate, ORDER_STATUS } from '../api';
 
@@ -155,7 +156,8 @@ export default function MyOrders() {
 
   return (
     <div className="container page">
-      <h2 className="page-title">Đơn hàng của tôi</h2>
+      <PageTitle title="Đơn hàng của tôi" />
+      <h1 className="page-title">Đơn hàng của tôi</h1>
       {orders.length === 0 ? (
         <div className="empty">
           <p>Bạn chưa có đơn hàng nào.</p>

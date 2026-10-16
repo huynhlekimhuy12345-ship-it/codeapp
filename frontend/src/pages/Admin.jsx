@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageTitle from '../components/PageTitle';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
 import InventoryTab from './admin/InventoryTab';
@@ -15,6 +16,7 @@ import ReportsTab from './admin/ReportsTab';
 function ConfirmDialog({ title, message, confirmLabel = 'Xác nhận', danger = false, onCancel, onConfirm }) {
   return (
     <div className="modal-backdrop" onClick={onCancel}>
+      <PageTitle title="Quản trị" />
       <div className="modal confirm-dialog" onClick={(e) => e.stopPropagation()}>
         <h3>{title}</h3>
         <p style={{ color: 'var(--muted)', fontSize: '.95rem', marginBottom: 6 }}>{message}</p>
@@ -37,8 +39,9 @@ function ProductsTab() {
   const [deleting, setDeleting] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  const [loadError, setLoadError] = useState('');
   const load = () => {
-    api.getProducts({ limit: 50 }).then((d) => setProducts(d.products)).catch(() => {});
+    api.getProducts({ limit: 50 }).then((d) => { setProducts(d.products); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách sản phẩm'));
     api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
   };
   useEffect(load, []);
@@ -73,7 +76,7 @@ function ProductsTab() {
     } catch (e) { alert(e.message); }
   };
   const doDelete = async () => {
-    try { await api.deleteProduct(deleting.id); } catch (e) { alert(e.message); }
+    try { await api.deleteProduct(deleting.id); } catch (e) { alert(e.message); return; }
     setDeleting(null);
     load();
   };
@@ -82,6 +85,7 @@ function ProductsTab() {
 
   return (
     <div>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
       <div className="toolbar">
         <h3>Quản lý sản phẩm ({products.length})</h3>
         <button className="btn btn-primary" onClick={openNew}>+ Thêm sản phẩm</button>
@@ -162,7 +166,8 @@ function CategoriesTab() {
   const [editingId, setEditingId] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
-  const load = () => api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
+  const [loadError, setLoadError] = useState('');
+  const load = () => api.getCategories().then((d) => { setCategories(d.categories); setLoadError(''); }).catch(() => setLoadError('Không tải được danh mục'));
   useEffect(load, []);
 
   const reset = () => { setName(''); setDescription(''); setEditingId(null); };
@@ -177,13 +182,14 @@ function CategoriesTab() {
   };
   const edit = (c) => { setEditingId(c.id); setName(c.name); setDescription(c.description || ''); };
   const doDelete = async () => {
-    try { await api.deleteCategory(deleting.id); } catch (e) { alert(e.message); }
+    try { await api.deleteCategory(deleting.id); } catch (e) { alert(e.message); return; }
     setDeleting(null);
     load();
   };
 
   return (
     <div>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
       <h3 style={{ marginBottom: 14 }}>Quản lý danh mục</h3>
       <div className="filters" style={{ alignItems: 'end' }}>
         <div className="field" style={{ margin: 0, flex: 1 }}><label>Tên *</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
@@ -230,7 +236,8 @@ function OrdersTab() {
   const [cancelReason, setCancelReason] = useState('');
   const [deletingOrder, setDeletingOrder] = useState(null);
 
-  const load = () => api.getOrders(filter || undefined).then((d) => setOrders(d.orders)).catch(() => {});
+  const [loadError, setLoadError] = useState('');
+  const load = () => api.getOrders(filter || undefined).then((d) => { setOrders(d.orders); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách đơn hàng'));
   useEffect(load, [filter]);
 
   const refreshDetail = async (id) => {
@@ -253,7 +260,7 @@ function OrdersTab() {
   };
 
   const doDeleteOrder = async () => {
-    try { await api.deleteOrder(deletingOrder.id); } catch (e) { alert(e.message); }
+    try { await api.deleteOrder(deletingOrder.id); } catch (e) { alert(e.message); return; }
     setDeletingOrder(null);
     load();
   };
@@ -267,6 +274,7 @@ function OrdersTab() {
 
   return (
     <div>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
       <div className="toolbar">
         <h3>Quản lý đơn hàng ({orders.length})</h3>
         <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8 }}>
@@ -386,10 +394,12 @@ function OrdersTab() {
 
 /* ---------- Tab Người dùng ---------- */
 function UsersTab() {
+  const { user } = useStore();
   const [users, setUsers] = useState([]);
   const [roleTarget, setRoleTarget] = useState(null);
   const [newRole, setNewRole] = useState('customer');
-  const load = () => api.getUsers().then((d) => setUsers(d.users)).catch(() => {});
+  const [loadError, setLoadError] = useState('');
+  const load = () => api.getUsers().then((d) => { setUsers(d.users); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
   useEffect(load, []);
 
   const openRoleChange = (u) => { setRoleTarget(u); setNewRole(u.role); };
@@ -403,6 +413,7 @@ function UsersTab() {
   return (
     <div>
       <h3 style={{ marginBottom: 14 }}>Quản lý người dùng ({users.length})</h3>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
       <table className="data-table">
         <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
         <tbody>
@@ -413,7 +424,7 @@ function UsersTab() {
                 {roleLabel(u.role)}
               </span></td>
               <td>{fmtDate(u.created_at)}</td>
-              <td><button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)}>Đổi vai trò</button></td>
+              <td><button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)} disabled={user && u.id === user.id} title={user && u.id === user.id ? 'Không thể đổi vai trò của chính mình' : ''}>Đổi vai trò</button></td>
             </tr>
           ))}
         </tbody>
@@ -469,7 +480,8 @@ function PostsTab() {
   const empty = { title: '', cover_image_url: '', excerpt: '', content: '', status: 'draft' };
   const [form, setForm] = useState(empty);
 
-  const load = () => api.getPosts(true).then((d) => setPosts(d.posts)).catch(() => {});
+  const [loadError, setLoadError] = useState('');
+  const load = () => api.getPosts(true).then((d) => { setPosts(d.posts); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách bài viết'));
   useEffect(load, []);
 
   const openNew = () => { setEditing(null); setForm(empty); setShowModal(true); };
@@ -496,6 +508,7 @@ function PostsTab() {
 
   return (
     <div>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
       <div className="toolbar">
         <h3>Quản lý bài viết ({posts.length})</h3>
         <button className="btn btn-primary" onClick={openNew}>+ Viết bài mới</button>
@@ -565,7 +578,8 @@ function PostsTab() {
 function MessagesTab() {
   const [messages, setMessages] = useState([]);
   const [deleting, setDeleting] = useState(null);
-  const load = () => api.getContactMessages().then((d) => setMessages(d.messages)).catch(() => {});
+  const [loadError, setLoadError] = useState('');
+  const load = () => api.getContactMessages().then((d) => { setMessages(d.messages); setLoadError(''); }).catch(() => setLoadError('Không tải được tin nhắn liên hệ'));
   useEffect(load, []);
 
   const toggleRead = async (m) => {
@@ -582,6 +596,7 @@ function MessagesTab() {
 
   return (
     <div>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
       <div className="toolbar">
         <h3>Tin nhắn liên hệ ({messages.length}{unread > 0 ? ` — ${unread} chưa đọc` : ''})</h3>
       </div>
@@ -636,7 +651,7 @@ export default function Admin() {
   const visibleNav = user?.role === 'sale' ? NAV.filter((n) => n.key !== 'users') : NAV;
   return (
     <div className="container page">
-      <h2 className="page-title">Bảng quản trị</h2>
+      <h1 className="page-title">Bảng quản trị</h1>
       <div className="admin-layout">
         <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
           <button className="sidebar-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Thu gọn menu">

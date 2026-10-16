@@ -10,7 +10,15 @@ require('./db'); // khởi tạo DB
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS: mặc định phản chiếu origin (dev); production nên đặt CORS_ORIGIN=https://domain1,https://domain2
+const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
+app.use(cors({ origin: corsOrigins.length ? corsOrigins : true }));
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'SAMEORIGIN');
+  next();
+});
 app.use(express.json({ limit: '2mb' }));
 
 // API routes

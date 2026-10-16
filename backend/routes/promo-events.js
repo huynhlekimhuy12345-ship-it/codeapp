@@ -23,6 +23,9 @@ function parseCodes(v) {
 // Validate payload tạo/sửa, trả về { ok, error, clean }
 function validatePayload(body, isCreate, selfId) {
   const clean = {};
+  const cur = !isCreate && selfId
+    ? db.prepare('SELECT start_at, end_at FROM promo_events WHERE id = ?').get(selfId)
+    : null;
   if (isCreate || body.name !== undefined) {
     const name = String(body.name || '').trim();
     if (!name) return { ok: false, error: 'Tên sự kiện là bắt buộc' };
@@ -46,8 +49,8 @@ function validatePayload(body, isCreate, selfId) {
       clean[k] = iso;
     }
   }
-  const start = clean.start_at !== undefined ? clean.start_at : undefined;
-  const end = clean.end_at !== undefined ? clean.end_at : undefined;
+  const start = clean.start_at !== undefined ? clean.start_at : (cur ? cur.start_at : undefined);
+  const end = clean.end_at !== undefined ? clean.end_at : (cur ? cur.end_at : undefined);
   if (start && end && new Date(end) <= new Date(start))
     return { ok: false, error: 'Thời gian kết thúc phải sau thời gian bắt đầu' };
   if (body.voucher_codes !== undefined) {
@@ -175,12 +178,22 @@ router.put('/:id/toggle', auth, staffOnly, (req, res) => {
   res.json({ event: row, vouchers_synced: codes });
 });
 
-// DELETE /api/promo-events/:id — admin: xóa (kèm sản phẩm trong sự kiện; voucher không bị ảnh hưởng)
+// DELETE /api/promo-events/:id — admin: xóa (kèm sản phẩm trong sự kiện;
+// nếu sự kiện đang bật thì tắt voucher liên kết để không còn mã mồ côi)
 router.delete('/:id', auth, staffOnly, (req, res) => {
   const cur = db.prepare('SELECT * FROM promo_events WHERE id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
-  db.prepare('DELETE FROM promo_events WHERE id = ?').run(cur.id);
-  res.json({ message: 'Đã xóa sự kiện' });
+  const codes = parseCodes(cur.voucher_codes ? JSON.parse(cur.voucher_codes || '[]') : []);
+  const txn = db.transaction(() => {
+    if (cur.is_active) {
+      for (const c of codes) {
+        db.prepare('UPDATE vouchers SET is_active = 0 WHERE code = ?').run(c);
+      }
+    }
+    db.prepare('DELETE FROM promo_events WHERE id = ?').run(cur.id);
+  });
+  txn();
+  res.json({ message: 'Đã xóa sự kiện', vouchers_deactivated: cur.is_active ? codes : [] });
 });
 
 // ============ Sản phẩm trong sự kiện (admin) ============

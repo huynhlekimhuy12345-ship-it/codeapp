@@ -6,6 +6,14 @@ const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Loại bỏ thẻ HTML khỏi comment (chống XSS khi client khác render innerHTML)
+function stripHtml(text) {
+  return String(text || '')
+    .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<style[\s\S]*?<\/style\s*>/gi, '')
+    .replace(/<[^>]*>/g, '');
+}
+
 // Chuẩn hoá 1 review thành JSON cho frontend
 const REVIEW_COLS = `
   r.id, r.product_id, r.user_id, r.rating, r.comment, r.is_approved, r.created_at,
@@ -23,7 +31,7 @@ router.get('/', (req, res) => {
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) return res.status(401).json({ error: 'Cần đăng nhập để xem đánh giá của bạn' });
     const jwt = require('jsonwebtoken');
-    const { auth, staffOnly } = require('../middleware/auth');
+    const { auth, staffOnly, JWT_SECRET } = require('../middleware/auth');
     let userId;
     try {
       userId = jwt.verify(token, JWT_SECRET).id;
@@ -88,7 +96,7 @@ router.post('/', auth, (req, res) => {
 
   const info = db.prepare(
     'INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)'
-  ).run(product_id, req.user.id, r, (comment || '').trim());
+  ).run(product_id, req.user.id, r, stripHtml(comment).trim());
   const review = db.prepare(
     `SELECT ${REVIEW_COLS} FROM reviews r LEFT JOIN users u ON u.id = r.user_id WHERE r.id = ?`
   ).get(info.lastInsertRowid);
@@ -108,7 +116,7 @@ router.put('/:id', auth, (req, res) => {
     return res.status(400).json({ error: 'Điểm đánh giá phải từ 1 đến 5' });
 
   db.prepare('UPDATE reviews SET rating = ?, comment = ? WHERE id = ?')
-    .run(r, (comment || '').trim(), req.params.id);
+    .run(r, stripHtml(comment).trim(), req.params.id);
   const updated = db.prepare(
     `SELECT ${REVIEW_COLS} FROM reviews r LEFT JOIN users u ON u.id = r.user_id WHERE r.id = ?`
   ).get(req.params.id);

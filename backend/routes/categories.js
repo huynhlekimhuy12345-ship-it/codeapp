@@ -21,7 +21,7 @@ router.get('/:id', (req, res) => {
 // POST /api/categories — admin
 router.post('/', auth, staffOnly, (req, res) => {
   const { name, description } = req.body || {};
-  if (!name) return res.status(400).json({ error: 'Tên danh mục là bắt buộc' });
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'Tên danh mục là bắt buộc' });
   try {
     const info = db.prepare('INSERT INTO categories (name, description) VALUES (?, ?)')
       .run(name.trim(), (description || '').trim());
@@ -34,7 +34,7 @@ router.post('/', auth, staffOnly, (req, res) => {
 // PUT /api/categories/:id — admin
 router.put('/:id', auth, staffOnly, (req, res) => {
   const { name, description } = req.body || {};
-  if (!name) return res.status(400).json({ error: 'Tên danh mục là bắt buộc' });
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'Tên danh mục là bắt buộc' });
   try {
     const info = db.prepare('UPDATE categories SET name = ?, description = ? WHERE id = ?')
       .run(name.trim(), (description || '').trim(), req.params.id);

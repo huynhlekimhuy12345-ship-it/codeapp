@@ -26,7 +26,10 @@ export const api = {
 
   // Sản phẩm
   getProducts: (params = {}) => {
-    const q = new URLSearchParams(params).toString();
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    );
+    const q = new URLSearchParams(clean).toString();
     return request(`/api/products${q ? '?' + q : ''}`);
   },
   getProduct: (id) => request(`/api/products/${id}`),
