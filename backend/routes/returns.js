@@ -1,7 +1,7 @@
 // Đổi / trả hàng: khách tạo yêu cầu cho đơn đã giao, admin duyệt / từ chối / hoàn thành
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -88,7 +88,7 @@ router.get('/:id', auth, (req, res) => {
 // PUT /api/returns/:id — admin duyệt / từ chối / hoàn thành yêu cầu
 // Khi hoàn thành (completed) kèm refund_amount > 0: đánh dấu payment đã hoàn tiền
 // và ghi nhật ký nhập kho (IN) cho từng mặt hàng của đơn
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const { action, refund_amount } = req.body || {};
   if (!['approved', 'rejected', 'completed'].includes(action))
     return res.status(400).json({ error: 'action phải là approved / rejected / completed' });

@@ -2,7 +2,7 @@
 // Khách chỉ xem bài đã xuất bản; admin (token) xem được cả bản nháp qua ?all=1
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ router.get('/', (req, res) => {
   let isAdmin = false;
   if (wantAll) {
     // Kiểm tra quyền admin thủ công vì route này vừa công khai vừa cần auth khi all=1
-    const { JWT_SECRET } = require('../middleware/auth');
+    const { auth, staffOnly } = require('../middleware/auth');
     const jwt = require('jsonwebtoken');
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -79,7 +79,7 @@ router.get('/:slug', (req, res) => {
 });
 
 // POST /api/posts — admin
-router.post('/', auth, adminOnly, (req, res) => {
+router.post('/', auth, staffOnly, (req, res) => {
   const { title, cover_image_url, excerpt, content, status } = req.body || {};
   if (!title || !String(title).trim())
     return res.status(400).json({ error: 'Tiêu đề bài viết là bắt buộc' });
@@ -94,7 +94,7 @@ router.post('/', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/posts/:id — admin
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const { title, cover_image_url, excerpt, content, status } = req.body || {};
   if (!title || !String(title).trim())
     return res.status(400).json({ error: 'Tiêu đề bài viết là bắt buộc' });
@@ -109,7 +109,7 @@ router.put('/:id', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/posts/:id — admin
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const info = db.prepare('DELETE FROM posts WHERE id = ?').run(req.params.id);
   if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy bài viết' });
   res.json({ ok: true });

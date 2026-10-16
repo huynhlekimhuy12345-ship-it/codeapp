@@ -4,7 +4,7 @@
 // - MoMo: chỉ tạo bản ghi pending chờ webhook, KHÔNG tự động verify
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -125,7 +125,7 @@ router.put('/:id/proof', auth, (req, res) => {
 // Body: { action: 'verified'|'failed', note? }
 // Transaction: cập nhật payments.status + verified_at, đồng thời cập nhật
 // orders.payment_status theo cùng giá trị (dùng SQL trực tiếp, không sửa orders.js)
-router.put('/:id/verify', auth, adminOnly, (req, res) => {
+router.put('/:id/verify', auth, staffOnly, (req, res) => {
   const { action, note } = req.body || {};
   if (!['verified', 'failed'].includes(action))
     return res.status(400).json({ error: "action phải là 'verified' hoặc 'failed'" });
@@ -152,7 +152,7 @@ router.put('/:id/verify', auth, adminOnly, (req, res) => {
 
 // PUT /api/payments/:id/refund — admin đánh dấu hoàn tiền (dùng khi đổi trả)
 // Chỉ hoàn được khi payment đã verified; kèm note ghi lý do
-router.put('/:id/refund', auth, adminOnly, (req, res) => {
+router.put('/:id/refund', auth, staffOnly, (req, res) => {
   const { note } = req.body || {};
   if (!(note || '').trim())
     return res.status(400).json({ error: 'Hoàn tiền cần ghi rõ lý do (note)' });

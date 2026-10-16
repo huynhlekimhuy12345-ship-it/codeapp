@@ -29,12 +29,12 @@ function RequireAuth({ children }) {
   return user ? children : <Navigate to="/dang-nhap" replace />;
 }
 
-// Chặn route chỉ dành cho admin
-function RequireAdmin({ children }) {
+// Chặn route chỉ dành cho nhân sự (admin + sale); quản lý tài khoản do tab UsersTab tự ẩn với sale
+function RequireStaff({ children }) {
   const { user } = useStore();
   if (user === null) return null;
   if (!user) return <Navigate to="/dang-nhap" replace />;
-  return user.role === 'admin' ? children : <Navigate to="/" replace />;
+  return ['admin', 'sale'].includes(user.role) ? children : <Navigate to="/" replace />;
 }
 
 export default function App() {
@@ -71,7 +71,7 @@ export default function App() {
           <Route path="/thanh-toan" element={<RequireAuth><Checkout /></RequireAuth>} />
           <Route path="/don-hang" element={<RequireAuth><MyOrders /></RequireAuth>} />
           <Route path="/ho-so" element={<RequireAuth><ProfilePage /></RequireAuth>} />
-          <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+          <Route path="/admin" element={<RequireStaff><Admin /></RequireStaff>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

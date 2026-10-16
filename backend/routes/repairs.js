@@ -1,7 +1,7 @@
 // Sửa chữa / bảo dưỡng: khách gửi yêu cầu, admin cập nhật trạng thái và phí
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -84,7 +84,7 @@ router.get('/', auth, (req, res) => {
 });
 
 // PUT /api/repairs/:id — admin cập nhật trạng thái và phí sửa chữa
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const { status, fee } = req.body || {};
   if (!VALID_STATUS.includes(status))
     return res.status(400).json({ error: 'Trạng thái không hợp lệ' });

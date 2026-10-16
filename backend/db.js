@@ -6,6 +6,33 @@ const dbPath = process.env.DB_PATH || path.join(__dirname, 'leather_shop.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+// Migration: bổ sung role 'sale' cho bảng users đã tồn tại (SQLite không sửa
+// được CHECK trực tiếp nên dựng lại bảng, giữ nguyên dữ liệu + index)
+try {
+  const userSql = db.prepare("SELECT sql FROM sqlite_master WHERE name='users'").get()?.sql || '';
+  if (userSql && !userSql.includes("'sale'")) {
+    const idxSqls = db.prepare(
+      "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='users' AND sql IS NOT NULL"
+    ).all().map(r => r.sql);
+    db.exec('PRAGMA foreign_keys=OFF');
+    db.exec('BEGIN');
+    try {
+      const newSql = userSql
+        .replace("CHECK(role IN ('admin','customer'))", "CHECK(role IN ('admin','sale','customer'))")
+        .replace(/^CREATE TABLE users/, 'CREATE TABLE users_new');
+      db.exec(newSql);
+      const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name).join(', ');
+      db.exec(`INSERT INTO users_new (${cols}) SELECT ${cols} FROM users`);
+      db.exec('DROP TABLE users');
+      db.exec('ALTER TABLE users_new RENAME TO users');
+      for (const q of idxSqls) db.exec(q);
+      db.exec('COMMIT');
+      console.log('  - Migration: đã thêm role sale vào bảng users');
+    } catch (e) { db.exec('ROLLBACK'); throw e; }
+    db.exec('PRAGMA foreign_keys=ON');
+  }
+} catch (e) { console.error('  - Migration role sale thất bại:', e.message); }
+
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -13,7 +40,7 @@ db.exec(`
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'customer' CHECK(role IN ('admin','customer')),
+    role TEXT NOT NULL DEFAULT 'customer' CHECK(role IN ('admin','sale','customer')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 

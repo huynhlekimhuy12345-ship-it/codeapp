@@ -1,7 +1,7 @@
 // CRUD danh mục sản phẩm
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/categories — admin
-router.post('/', auth, adminOnly, (req, res) => {
+router.post('/', auth, staffOnly, (req, res) => {
   const { name, description } = req.body || {};
   if (!name) return res.status(400).json({ error: 'Tên danh mục là bắt buộc' });
   try {
@@ -32,7 +32,7 @@ router.post('/', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/categories/:id — admin
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const { name, description } = req.body || {};
   if (!name) return res.status(400).json({ error: 'Tên danh mục là bắt buộc' });
   try {
@@ -46,7 +46,7 @@ router.put('/:id', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/categories/:id — admin
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const info = db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
   if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy danh mục' });
   res.json({ message: 'Đã xóa danh mục' });

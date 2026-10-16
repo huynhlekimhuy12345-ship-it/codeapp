@@ -30,6 +30,12 @@ function adminOnly(req, res, next) {
   return res.status(403).json({ error: 'Chỉ quản trị viên mới được thực hiện' });
 }
 
+// Cho admin và nhân viên sale đi tiếp (mọi nghiệp vụ trừ quản lý tài khoản)
+function staffOnly(req, res, next) {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'sale')) return next();
+  return res.status(403).json({ error: 'Chỉ quản trị viên và nhân viên sale mới được thực hiện' });
+}
+
 function signToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -38,4 +44,4 @@ function signToken(user) {
   );
 }
 
-module.exports = { auth, adminOnly, signToken, JWT_SECRET };
+module.exports = { auth, adminOnly, staffOnly, signToken, JWT_SECRET };

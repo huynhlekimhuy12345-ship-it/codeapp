@@ -39,7 +39,7 @@ router.get('/', auth, adminOnly, (req, res) => {
 // PUT /api/users/:id/role — admin đổi vai trò
 router.put('/:id/role', auth, adminOnly, (req, res) => {
   const { role } = req.body || {};
-  if (!['admin', 'customer'].includes(role))
+  if (!['admin', 'sale', 'customer'].includes(role))
     return res.status(400).json({ error: 'Vai trò không hợp lệ' });
   if (parseInt(req.params.id) === req.user.id)
     return res.status(400).json({ error: 'Không thể tự hạ quyền chính mình' });

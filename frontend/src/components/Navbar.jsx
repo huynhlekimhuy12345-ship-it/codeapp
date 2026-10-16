@@ -22,7 +22,7 @@ export default function Navbar() {
           <NavLink to="/blog">Blog</NavLink>
           <NavLink to="/lien-he">Liên hệ</NavLink>
           {user && <NavLink to="/don-hang">Đơn hàng</NavLink>}
-          {user?.role === 'admin' && <NavLink to="/admin">Quản trị</NavLink>}
+          {['admin', 'sale'].includes(user?.role) && <NavLink to="/admin">Quản trị</NavLink>}
         </div>
         <div className="nav-right">
           <Link to="/gio-hang" className="cart-link" title="Giỏ hàng">

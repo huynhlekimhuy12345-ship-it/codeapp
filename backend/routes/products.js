@@ -1,7 +1,7 @@
 // CRUD sản phẩm, hỗ trợ lọc / tìm kiếm / sắp xếp / phân trang
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/products — admin
-router.post('/', auth, adminOnly, (req, res) => {
+router.post('/', auth, staffOnly, (req, res) => {
   const { category_id, name, description, price, stock, image_url } = req.body || {};
   if (!name || price === undefined)
     return res.status(400).json({ error: 'Tên và giá sản phẩm là bắt buộc' });
@@ -60,7 +60,7 @@ router.post('/', auth, adminOnly, (req, res) => {
 });
 
 // PUT /api/products/:id — admin
-router.put('/:id', auth, adminOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, (req, res) => {
   const { category_id, name, description, price, stock, image_url } = req.body || {};
   const info = db.prepare(
     `UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, image_url = ?
@@ -74,7 +74,7 @@ router.put('/:id', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/products/:id — admin
-router.delete('/:id', auth, adminOnly, (req, res) => {
+router.delete('/:id', auth, staffOnly, (req, res) => {
   const info = db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
   if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
   res.json({ message: 'Đã xóa sản phẩm' });
@@ -110,7 +110,7 @@ router.get('/:id/variants', (req, res) => {
 
 // POST /api/products/:id/variants — admin: tạo biến thể mới
 // body: { sku (bắt buộc, duy nhất), color, size, price_delta, stock }
-router.post('/:id/variants', auth, adminOnly, (req, res) => {
+router.post('/:id/variants', auth, staffOnly, (req, res) => {
   const { sku, color, size, price_delta, stock } = req.body || {};
   const cleanSku = String(sku || '').trim();
   if (!cleanSku) return res.status(400).json({ error: 'SKU là bắt buộc và phải duy nhất' });
@@ -153,7 +153,7 @@ router.post('/:id/variants', auth, adminOnly, (req, res) => {
 // PUT /api/products/variants/:variantId — admin: sửa màu/size/chênh giá/trạng thái
 // LƯU Ý: KHÔNG cho sửa stock trực tiếp tại đây — tồn kho phải đi qua
 // phiếu nhập hàng / phiếu điều chỉnh để nhật ký kho luôn đầy đủ.
-router.put('/variants/:variantId', auth, adminOnly, (req, res) => {
+router.put('/variants/:variantId', auth, staffOnly, (req, res) => {
   if (req.body && req.body.stock !== undefined)
     return res.status(400).json({
       error: 'Không được sửa tồn kho trực tiếp tại đây. Hãy dùng phiếu nhập hàng hoặc phiếu điều chỉnh kho.',
@@ -175,7 +175,7 @@ router.put('/variants/:variantId', auth, adminOnly, (req, res) => {
 
 // DELETE /api/products/variants/:variantId — admin: ẩn biến thể (soft delete)
 // Không xóa cứng vì order_items có thể đang tham chiếu tới variant này.
-router.delete('/variants/:variantId', auth, adminOnly, (req, res) => {
+router.delete('/variants/:variantId', auth, staffOnly, (req, res) => {
   const v = db.prepare('SELECT id FROM product_variants WHERE id = ?').get(req.params.variantId);
   if (!v) return res.status(404).json({ error: 'Không tìm thấy biến thể' });
   db.prepare('UPDATE product_variants SET is_active = 0 WHERE id = ?').run(req.params.variantId);
@@ -191,7 +191,7 @@ router.get('/:id/images', (req, res) => {
 
 // POST /api/products/:id/images — admin: thêm ảnh
 // body: { image_url (bắt buộc), variant_id (tùy chọn, phải thuộc SP này), sort_order }
-router.post('/:id/images', auth, adminOnly, (req, res) => {
+router.post('/:id/images', auth, staffOnly, (req, res) => {
   const { image_url, variant_id, sort_order } = req.body || {};
   const url = String(image_url || '').trim();
   if (!url) return res.status(400).json({ error: 'image_url là bắt buộc' });
@@ -212,7 +212,7 @@ router.post('/:id/images', auth, adminOnly, (req, res) => {
 });
 
 // DELETE /api/products/images/:imageId — admin: xóa ảnh khỏi thư viện
-router.delete('/images/:imageId', auth, adminOnly, (req, res) => {
+router.delete('/images/:imageId', auth, staffOnly, (req, res) => {
   const info = db.prepare('DELETE FROM product_images WHERE id = ?').run(req.params.imageId);
   if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy ảnh' });
   res.json({ message: 'Đã xóa ảnh' });

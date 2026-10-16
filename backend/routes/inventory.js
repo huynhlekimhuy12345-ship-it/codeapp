@@ -1,12 +1,12 @@
 // Tồn kho & Nhà cung cấp: CRUD nhà cung cấp, phiếu nhập hàng, nhật ký xuất-nhập, điều chỉnh kho
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Tất cả endpoint trong router này đều cần đăng nhập + quyền admin
-router.use(auth, adminOnly);
+router.use(auth, staffOnly);
 
 const PO_STATUSES = ['draft', 'confirmed', 'received', 'cancelled'];
 const PO_STATUS_LABEL = {
