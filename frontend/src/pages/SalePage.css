@@ -48,7 +48,7 @@
 
 .sale-section { padding: 36px 0 8px; }
 .sale-section h2 { font-family: 'Playfair Display', 'Be Vietnam Pro', serif; font-size: 1.7rem; margin-bottom: 4px; }
-.sale-desc { color: #666; margin-bottom: 20px; font-size: 0.92rem; }
+.sale-desc { color: var(--muted); margin-bottom: 20px; font-size: 0.92rem; }
 
 .sale-vouchers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .sale-voucher {
@@ -78,36 +78,46 @@
 
 .sale-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
 .sale-product {
-  background: #fff;
-  border: 1px solid #eee;
+  background: linear-gradient(165deg, rgba(58, 38, 24, 0.72), rgba(30, 19, 10, 0.85));
+  border: 1px solid rgba(232, 181, 106, 0.18);
   border-radius: 14px;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
 }
-.sale-product:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12); }
-.sp-img { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #f4efe6; }
-.sp-img img { width: 100%; height: 100%; object-fit: cover; }
+.sale-product:hover {
+  transform: translateY(-3px);
+  border-color: rgba(242, 197, 124, 0.45);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(242, 197, 124, 0.15);
+}
+.sp-img { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #241a10; }
+.sp-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+.sale-product:hover .sp-img img { transform: scale(1.04); }
 .sp-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #c0392b;
-  color: #fff;
+  background: linear-gradient(135deg, #d43d2a, #a93226);
+  color: #ffe9bd;
   font-weight: 800;
   font-size: 0.8rem;
   padding: 4px 10px;
   border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
-.sp-body { padding: 14px 16px 18px; }
-.sp-body h3 { font-size: 0.98rem; margin: 0 0 8px; }
+.sp-body { padding: 14px 16px 18px; display: flex; flex-direction: column; flex: 1; }
+.sp-body h3 { font-size: 0.98rem; margin: 0 0 8px; color: var(--cream); line-height: 1.4; }
 .sp-body h3 a, .sp-body a h3 { color: inherit; text-decoration: none; }
+.sp-body h3 a:hover { color: var(--amber-light); }
 .sp-prices { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.sp-old { text-decoration: line-through; color: #767676; font-size: 0.85rem; }
-.sp-sale { color: #c0392b; font-weight: 800; font-size: 1.1rem; }
+.sp-old { text-decoration: line-through; color: var(--muted); font-size: 0.85rem; }
+.sp-sale { color: #f2c57c; font-weight: 800; font-size: 1.15rem; }
+.sp-body .btn { margin-top: auto; }
 
 .sale-empty { text-align: center; padding: 80px 20px; }
 .sale-empty h2 { margin-bottom: 10px; }
-.sale-empty p { color: #666; margin-bottom: 24px; }
+.sale-empty p { color: var(--muted); margin-bottom: 24px; }
 
 @media (max-width: 380px) {
   .sale-countdown { gap: 8px; }
