@@ -3,8 +3,10 @@ import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
+import { useLang } from '../i18n/LanguageContext';
 
 export default function Home() {
+  const { t } = useLang();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
 
@@ -13,26 +15,33 @@ export default function Home() {
     api.getCategories().then((d) => setCategories(d.categories)).catch(() => {});
   }, []);
 
+  const reasons = [
+    { icon: '🐄', title: t('home.reason1t'), desc: t('home.reason1d') },
+    { icon: '🧵', title: t('home.reason2t'), desc: t('home.reason2d') },
+    { icon: '🛡️', title: t('home.reason3t'), desc: t('home.reason3d') },
+    { icon: '🚚', title: t('home.reason4t'), desc: t('home.reason4d') },
+  ];
+
   return (
     <>
-      <PageTitle title="Trang chủ" />
+      <PageTitle title={t('nav.home')} />
       <div className="hero-3d">
         <div className="container">
-          <span className="hero-kicker">Xưởng đồ da thủ công</span>
-          <h1 className="hero-title">Đồ da thật <em>cao cấp</em>,<br />bền đẹp theo năm tháng</h1>
-          <p className="hero-sub">Ví da, túi xách, thắt lưng, giày da và phụ kiện làm từ da bò thật 100% — khâu tay tỉ mỉ, bảo hành 12 tháng.</p>
+          <span className="hero-kicker">{t('home.kicker')}</span>
+          <h1 className="hero-title">{t('home.titleA')} <em>{t('home.titleEm')}</em>,<br />{t('home.titleB')}</h1>
+          <p className="hero-sub">{t('home.subtitle')}</p>
           <div className="hero-cta">
-            <Link to="/cua-hang" className="btn btn-primary">Mua sắm ngay</Link>
-            <a href="#danh-muc-noi-bat" className="btn btn-outline">Xem danh mục</a>
+            <Link to="/cua-hang" className="btn btn-primary">{t('home.shopNow')}</Link>
+            <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
           </div>
         </div>
-        <div className="hero-scroll">Cuộn xuống</div>
+        <div className="hero-scroll">{t('home.scrollDown')}</div>
       </div>
 
       <div className="container">
         <div className="section" id="danh-muc-noi-bat">
           <div className="section-head">
-            <h2>Danh mục nổi bật</h2>
+            <h2>{t('home.featuredCategories')}</h2>
           </div>
           <div className="cat-grid">
             {categories.map((c) => (
@@ -46,8 +55,8 @@ export default function Home() {
 
         <div className="section">
           <div className="section-head">
-            <h2>Sản phẩm nổi bật</h2>
-            <Link to="/cua-hang" className="link-more">Xem tất cả →</Link>
+            <h2>{t('home.featuredProducts')}</h2>
+            <Link to="/cua-hang" className="link-more">{t('home.viewAll')}</Link>
           </div>
           <div className="product-grid">
             {products.map((p) => <ProductCard key={p.id} product={p} />)}
@@ -55,12 +64,11 @@ export default function Home() {
         </div>
 
         <div className="section">
-          <div className="section-head"><h2>Vì sao chọn chúng tôi?</h2></div>
+          <div className="section-head"><h2>{t('home.whyUs')}</h2></div>
           <div className="cat-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-            <div className="cat-card">🐄 Da thật 100%<small>Cam kết hoàn tiền nếu phát hiện da giả</small></div>
-            <div className="cat-card">🧵 Khâu tay thủ công<small>Tỉ mỉ từng đường kim mũi chỉ</small></div>
-            <div className="cat-card">🛡️ Bảo hành 12 tháng<small>Miễn phí sửa chữa, đánh bóng</small></div>
-            <div className="cat-card">🚚 COD toàn quốc<small>Thanh toán khi nhận hàng, kiểm tra trước</small></div>
+            {reasons.map((r, i) => (
+              <div className="cat-card" key={i}>{r.icon} {r.title}<small>{r.desc}</small></div>
+            ))}
           </div>
         </div>
       </div>

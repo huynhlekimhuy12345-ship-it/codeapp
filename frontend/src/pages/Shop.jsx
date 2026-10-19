@@ -3,10 +3,12 @@ import PageTitle from '../components/PageTitle';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
+import { useLang } from '../i18n/LanguageContext';
 
 const LIMIT = 12;
 
 export default function Shop() {
+  const { t } = useLang();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -30,14 +32,14 @@ export default function Shop() {
   }, [searchParams]);
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const tm = setTimeout(() => {
       setLoading(true);
       api.getProducts({ category, search, sort, page, limit: LIMIT, min_price: minPrice || undefined, max_price: maxPrice || undefined })
         .then((d) => { setProducts(d.products); setTotalPages(d.totalPages); })
         .catch(() => {})
         .finally(() => setLoading(false));
     }, 250); // debounce tìm kiếm
-    return () => clearTimeout(t);
+    return () => clearTimeout(tm);
   }, [category, search, sort, page, minPrice, maxPrice]);
 
   const pickCategory = (id) => {
@@ -46,38 +48,38 @@ export default function Shop() {
 
   return (
     <div className="container page">
-      <PageTitle title="Cửa hàng" />
-      <h1 className="page-title">Cửa hàng</h1>
+      <PageTitle title={t('shop.title')} />
+      <h1 className="page-title">{t('shop.title')}</h1>
       <div className="filters">
         <input
-          className="search" placeholder="🔍 Tìm ví da, túi xách..." aria-label="Tìm kiếm sản phẩm"
+          className="search" placeholder={t('shop.searchPlaceholder')} aria-label={t('shop.searchLabel')}
           value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
-        <select value={category} onChange={(e) => pickCategory(e.target.value)}>
-          <option value="">Tất cả danh mục</option>
+        <select value={category} onChange={(e) => pickCategory(e.target.value)} aria-label={t('shop.allCategories')}>
+          <option value="">{t('shop.allCategories')}</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} aria-label="Sắp xếp">
-          <option value="">Sắp xếp</option>
-          <option value="newest">Mới nhất</option>
-          <option value="price-asc">Giá tăng dần</option>
-          <option value="price-desc">Giá giảm dần</option>
-          <option value="name">Tên A–Z</option>
+        <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} aria-label={t('shop.sortLabel')}>
+          <option value="">{t('shop.sort')}</option>
+          <option value="newest">{t('shop.newest')}</option>
+          <option value="price-asc">{t('shop.priceAsc')}</option>
+          <option value="price-desc">{t('shop.priceDesc')}</option>
+          <option value="name">{t('shop.nameAZ')}</option>
         </select>
         <input
-          className="price-filter" type="number" min="0" placeholder="Giá từ" aria-label="Giá thấp nhất"
+          className="price-filter" type="number" min="0" placeholder={t('shop.priceFrom')} aria-label={t('shop.minPriceLabel')}
           value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
         />
         <input
-          className="price-filter" type="number" min="0" placeholder="Đến" aria-label="Giá cao nhất"
+          className="price-filter" type="number" min="0" placeholder={t('shop.priceTo')} aria-label={t('shop.maxPriceLabel')}
           value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
         />
       </div>
 
       {loading ? (
-        <div className="empty">Đang tải sản phẩm...</div>
+        <div className="empty">{t('shop.loading')}</div>
       ) : products.length === 0 ? (
-        <div className="empty">Không tìm thấy sản phẩm nào phù hợp.</div>
+        <div className="empty">{t('shop.empty')}</div>
       ) : (
         <div className="product-grid">
           {products.map((p) => (

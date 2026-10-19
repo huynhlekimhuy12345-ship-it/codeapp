@@ -3,6 +3,7 @@ import PageTitle from '../components/PageTitle';
 import { useParams, Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
+import { useLang } from '../i18n/LanguageContext';
 import ProductCard from '../components/ProductCard';
 import ProductReviews from '../components/ProductReviews';
 
@@ -10,6 +11,7 @@ const PLACEHOLDER = 'https://via.placeholder.com/600?text=Do+Da+Shop';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const { t } = useLang();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [qty, setQty] = useState(1);
@@ -116,12 +118,12 @@ export default function ProductDetail() {
     }
   };
 
-  if (product === null) return <div className="container page"><div className="empty">Đang tải...</div></div>;
-  if (product === false) return <div className="container page"><div className="empty">Không tìm thấy sản phẩm. <Link to="/cua-hang" className="btn">Về cửa hàng</Link></div></div>;
+  if (product === null) return <div className="container page"><div className="empty">{t('common.loading')}</div></div>;
+  if (product === false) return <div className="container page"><div className="empty">{t('productDetail.notFound')} <Link to="/cua-hang" className="btn">{t('productDetail.backToShop')}</Link></div></div>;
 
   return (
     <div className="container page">
-      <PageTitle title="Chi tiết sản phẩm" />
+      <PageTitle title={t('productDetail.title')} />
       <div className="detail">
         <div>
           <img src={mainImage} alt={product.name}
@@ -157,7 +159,7 @@ export default function ProductDetail() {
           )}
           {hasVariants && selectedVariant && selectedVariant.price_delta !== 0 && (
             <div style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
-              Giá gốc {fmtVND(product.price)}
+              {t('productDetail.basePrice')} {fmtVND(product.price)}
               {selectedVariant.price_delta > 0 ? ` + ${fmtVND(selectedVariant.price_delta)}` : ` − ${fmtVND(-selectedVariant.price_delta)}`}
               {' '}({selectedVariant.sku})
             </div>
@@ -168,7 +170,7 @@ export default function ProductDetail() {
             <>
               {colors.length > 0 && (
                 <div style={{ margin: '10px 0' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>Màu sắc:</div>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{t('productDetail.color')}</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {colors.map((c) => (
                       <button
@@ -185,7 +187,7 @@ export default function ProductDetail() {
               )}
               {sizes.length > 0 && (
                 <div style={{ margin: '10px 0' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>Kích thước:</div>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{t('productDetail.size')}</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {sizes.map((s) => {
                       const v = findVariant(selColor, s);
@@ -197,9 +199,9 @@ export default function ProductDetail() {
                           disabled={!v}
                           className={active ? 'btn btn-primary btn-small' : 'btn btn-small'}
                           style={active ? {} : { background: 'transparent', border: '1px solid var(--border, #ccc)' }}
-                          title={v ? (v.stock > 0 ? `Còn ${v.stock}` : 'Hết hàng') : 'Không có biến thể này'}
+                          title={v ? (v.stock > 0 ? t('productCard.onlyLeft', { count: v.stock }) : t('productCard.outOfStock')) : t('productDetail.noVariant')}
                         >
-                          {s}{v && v.stock <= 0 ? ' (hết)' : ''}
+                          {s}{v && v.stock <= 0 ? t('productDetail.outSuffix') : ''}
                         </button>
                       );
                     })}
@@ -210,7 +212,7 @@ export default function ProductDetail() {
           )}
 
           <div style={{ color: maxStock > 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
-            {maxStock > 0 ? `Còn ${maxStock} sản phẩm` : 'Hết hàng'}
+            {maxStock > 0 ? t('productDetail.stockLeft', { count: maxStock }) : t('productCard.outOfStock')}
           </div>
           <div className="qty-row">
             <button onClick={() => setQty((q) => Math.max(1, q - 1))}>−</button>
@@ -222,7 +224,7 @@ export default function ProductDetail() {
             disabled={maxStock <= 0 || (hasVariants && !selectedVariant)}
             onClick={handleAddToCart}
           >
-            🛒 Thêm vào giỏ hàng
+            {t('productDetail.addToCart')}
           </button>
         </div>
       </div>
@@ -231,7 +233,7 @@ export default function ProductDetail() {
 
       {related.length > 0 && (
         <div className="section">
-          <div className="section-head"><h2>Sản phẩm liên quan</h2></div>
+          <div className="section-head"><h2>{t('productDetail.related')}</h2></div>
           <div className="product-grid">
             {related.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>

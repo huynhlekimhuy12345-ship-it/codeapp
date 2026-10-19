@@ -30,7 +30,7 @@ function fmtDate(iso) {
   return isNaN(d.getTime()) ? iso : d.toLocaleDateString('vi-VN');
 }
 
-// Input datetime-local → chuỗi ISO gửi API
+import DateTimeField from '../../components/DateTimeField';
 function toInputValue(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -229,7 +229,7 @@ export default function VouchersTab() {
               </div>
             </div>
             <div className="field"><label htmlFor="voucherstab-han-dung">Hạn dùng</label>
-              <input id="voucherstab-han-dung" type="datetime-local" value={form.expiry} onChange={(e) => set('expiry', e.target.value)} />
+              <DateTimeField id="voucherstab-han-dung" value={form.expiry} onChange={(v) => set('expiry', v)} />
             </div>
             <div className="field"><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input aria-label="Ô nhập" type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />

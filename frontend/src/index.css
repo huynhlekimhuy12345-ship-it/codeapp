@@ -132,6 +132,32 @@ h1, h2, h3, .logo, .hero-title {
   font-size: 0.88rem; color: var(--muted); white-space: nowrap;
   max-width: 150px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;
 }
+/* Nút chuyển ngôn ngữ */
+.lang-switcher { position: relative; flex-shrink: 0; }
+.lang-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 38px; padding: 0 10px;
+  background: none; border: 1px solid rgba(232, 181, 106, 0.3); border-radius: 10px;
+  color: var(--cream); font-size: 0.85rem; cursor: pointer; transition: 0.2s;
+}
+.lang-btn:hover { border-color: var(--amber-light); background: rgba(232, 181, 106, 0.08); }
+.lang-code { font-weight: 600; letter-spacing: 0.5px; }
+.lang-caret { font-size: 0.7rem; opacity: 0.7; }
+.lang-backdrop { position: fixed; inset: 0; z-index: 98; }
+.lang-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 99;
+  min-width: 160px; padding: 6px;
+  background: #2b1d10; border: 1px solid rgba(232, 181, 106, 0.3); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+.lang-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 12px; border: none; background: none; border-radius: 8px;
+  color: var(--cream); font-size: 0.9rem; cursor: pointer; text-align: left;
+}
+.lang-item:hover { background: rgba(232, 181, 106, 0.12); }
+.lang-item.active { color: var(--amber-light); font-weight: 600; }
+.lang-check { margin-left: auto; }
 
 /* --- Nút bấm --- */
 .btn {

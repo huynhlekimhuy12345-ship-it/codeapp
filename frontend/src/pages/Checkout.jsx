@@ -3,15 +3,17 @@ import PageTitle from '../components/PageTitle';
 import { useNavigate } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
+import { useLang } from '../i18n/LanguageContext';
 
 const PAYMENT_METHODS = [
-  { id: 'cod', label: '💵 Thanh toán khi nhận hàng (COD)', hint: 'Thanh toán tiền mặt khi nhận hàng.' },
-  { id: 'bank', label: '🏦 Chuyển khoản ngân hàng', hint: 'Chuyển khoản trước, shop xác nhận sau.' },
-  { id: 'momo', label: '📱 Ví MoMo', hint: 'Thanh toán qua ví điện tử MoMo.' },
+  { id: 'cod', labelKey: 'checkout.payCod', hintKey: 'checkout.payCodHint' },
+  { id: 'bank', labelKey: 'checkout.payBank', hintKey: 'checkout.payBankHint' },
+  { id: 'momo', labelKey: 'checkout.payMomo', hintKey: 'checkout.payMomoHint' },
 ];
 
 export default function Checkout() {
   const { cart, cartTotal, clearCart, user } = useStore();
+  const { t } = useLang();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     customer_name: user?.name || '',
@@ -62,10 +64,10 @@ export default function Checkout() {
       const r = await api.validateVoucher(code, cartTotal);
       if (r.valid) {
         setVoucher({ valid: true, discount: r.discount });
-        setVoucherMsg(`Áp dụng thành công, giảm ${fmtVND(r.discount)}`);
+        setVoucherMsg(t('checkout.voucherOk', { amount: fmtVND(r.discount) }));
       } else {
         setVoucher(null);
-        setVoucherMsg(r.message || 'Mã không hợp lệ');
+        setVoucherMsg(r.message || t('checkout.voucherInvalid'));
       }
     } catch (err) {
       setVoucher(null);
@@ -78,8 +80,8 @@ export default function Checkout() {
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (cart.length === 0) return setError('Giỏ hàng trống');
-    if (!shippingId) return setError('Vui lòng chọn phương thức vận chuyển');
+    if (cart.length === 0) return setError(t('checkout.emptyCart'));
+    if (!shippingId) return setError(t('checkout.pickShipping'));
     setLoading(true);
     try {
       const { order } = await api.createOrder({
@@ -129,25 +131,25 @@ export default function Checkout() {
       <div className="container page">
         <PageTitle title="Thanh toán" />
         <div className="form-card" style={{ maxWidth: 560 }}>
-          <h2>✅ Đặt hàng thành công!</h2>
-          <p>Mã đơn hàng: <strong>#{placedOrder.id}</strong> — Tổng: <strong>{fmtVND(placedOrder.total)}</strong></p>
-          <h3 style={{ marginTop: 16 }}>Hướng dẫn chuyển khoản</h3>
-          <p>Vui lòng chuyển khoản đúng số tiền trên, nội dung: <strong>DH{placedOrder.id}</strong></p>
-          <p style={{ color: '#888' }}>Shop sẽ xác nhận thanh toán và gửi hàng sau khi nhận được tiền.</p>
+          <h2>{t('checkout.orderSuccess')}</h2>
+          <p>{t('checkout.orderCode')} <strong>#{placedOrder.id}</strong> — {t('checkout.total')}: <strong>{fmtVND(placedOrder.total)}</strong></p>
+          <h3 style={{ marginTop: 16 }}>{t('checkout.bankGuide')}</h3>
+          <p>{t('checkout.bankTransferNote')} <strong>DH{placedOrder.id}</strong></p>
+          <p style={{ color: '#888' }}>{t('checkout.bankWait')}</p>
           <div className="field">
-            <label htmlFor="checkout-link-anh-bang-chung-chuyen-khoan">Link ảnh bằng chứng chuyển khoản</label>
+            <label htmlFor="checkout-link-anh-bang-chung-chuyen-khoan">{t('checkout.proofLabel')}</label>
             <input id="checkout-link-anh-bang-chung-chuyen-khoan"
               value={proofUrl}
               onChange={(e) => setProofUrl(e.target.value)}
-              placeholder="https://... (link ảnh chụp màn hình giao dịch)"
+              placeholder={t('checkout.proofPlaceholder')}
               disabled={proofSaved}
             />
           </div>
           {proofSaved ? (
-            <div className="form-success">Đã ghi nhận bằng chứng của bạn. Shop sẽ kiểm tra sớm.</div>
+            <div className="form-success">{t('checkout.proofSaved')}</div>
           ) : (
             <button className="btn btn-secondary" style={{ width: '100%', marginBottom: 8 }} onClick={saveProof}>
-              Gửi bằng chứng
+              {t('checkout.sendProof')}
             </button>
           )}
           <button
@@ -155,7 +157,7 @@ export default function Checkout() {
             style={{ width: '100%' }}
             onClick={() => { clearCart(); navigate('/don-hang', { state: { newOrderId: placedOrder.id } }); }}
           >
-            Về đơn hàng của tôi
+            {t('checkout.myOrders')}
           </button>
         </div>
       </div>
@@ -164,30 +166,30 @@ export default function Checkout() {
 
   return (
     <div className="container page">
-      <h1 className="page-title">Thanh toán</h1>
+      <h1 className="page-title">{t('checkout.title')}</h1>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }} className="checkout-grid">
         <form className="form-card" style={{ maxWidth: 'none', margin: 0 }} onSubmit={submit}>
-          <h2>Thông tin giao hàng</h2>
+          <h2>{t('checkout.shippingInfo')}</h2>
           {error && <div className="form-error">{error}</div>}
           <div className="field">
-            <label htmlFor="checkout-ho-ten">Họ tên *</label>
+            <label htmlFor="checkout-ho-ten">{t('checkout.fullName')}</label>
             <input id="checkout-ho-ten" value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} required />
           </div>
           <div className="field">
-            <label htmlFor="checkout-so-ien-thoai">Số điện thoại *</label>
-            <input id="checkout-so-ien-thoai" value={form.phone} onChange={(e) => set('phone', e.target.value)} required pattern="[0-9+ ]{9,15}" title="Số điện thoại không hợp lệ" />
+            <label htmlFor="checkout-so-ien-thoai">{t('checkout.phone')}</label>
+            <input id="checkout-so-ien-thoai" value={form.phone} onChange={(e) => set('phone', e.target.value)} required pattern="[0-9+ ]{9,15}" title={t('checkout.phoneInvalid')} />
           </div>
           <div className="field">
-            <label htmlFor="checkout-ia-chi-giao-hang">Địa chỉ giao hàng *</label>
-            <textarea id="checkout-ia-chi-giao-hang" value={form.address} onChange={(e) => set('address', e.target.value)} required placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" />
+            <label htmlFor="checkout-ia-chi-giao-hang">{t('checkout.address')}</label>
+            <textarea id="checkout-ia-chi-giao-hang" value={form.address} onChange={(e) => set('address', e.target.value)} required placeholder={t('checkout.addressPlaceholder')} />
           </div>
           <div className="field">
-            <label htmlFor="checkout-ghi-chu">Ghi chú</label>
-            <textarea id="checkout-ghi-chu" value={form.note} onChange={(e) => set('note', e.target.value)} placeholder="Ghi chú cho shop (tùy chọn)" rows={2} />
+            <label htmlFor="checkout-ghi-chu">{t('checkout.note')}</label>
+            <textarea id="checkout-ghi-chu" value={form.note} onChange={(e) => set('note', e.target.value)} placeholder={t('checkout.notePlaceholder')} rows={2} />
           </div>
 
-          <h2 style={{ marginTop: 24 }}>Phương thức vận chuyển</h2>
-          {shipMethods.length === 0 && <p className="muted">Đang tải phương thức vận chuyển...</p>}
+          <h2 style={{ marginTop: 24 }}>{t('checkout.shipMethod')}</h2>
+          {shipMethods.length === 0 && <p className="muted">{t('checkout.loadingShip')}</p>}
           {shipMethods.map((m) => (
             <label key={m.id} className="radio-row">
               <input aria-label="Ô nhập"
@@ -198,29 +200,29 @@ export default function Checkout() {
               />
               <span style={{ flex: 1 }}>
                 {m.name}
-                {m.eta_days ? <span className="muted"> (dự kiến {m.eta_days} ngày)</span> : null}
+                {m.eta_days ? <span className="muted"> {t('checkout.etaDays', { days: m.eta_days })}</span> : null}
               </span>
               <strong>{fmtVND(m.fee)}</strong>
             </label>
           ))}
 
-          <h2 style={{ marginTop: 24 }}>Mã khuyến mãi</h2>
+          <h2 style={{ marginTop: 24 }}>{t('checkout.voucher')}</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <input aria-label="Ô nhập"
               value={voucherCode}
               onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucher(null); setVoucherMsg(''); }}
-              placeholder="Nhập mã, ví dụ WELCOME10"
+              placeholder={t('checkout.voucherPlaceholder')}
               style={{ flex: 1 }}
             />
             <button type="button" className="btn btn-secondary" onClick={applyVoucher} disabled={voucherLoading || !voucherCode.trim()}>
-              {voucherLoading ? '...' : 'Áp dụng'}
+              {voucherLoading ? '...' : t('checkout.apply')}
             </button>
           </div>
           {voucherMsg && (
             <div className={voucher?.valid ? 'form-success' : 'form-error'} style={{ marginTop: 8 }}>{voucherMsg}</div>
           )}
 
-          <h2 style={{ marginTop: 24 }}>Phương thức thanh toán</h2>
+          <h2 style={{ marginTop: 24 }}>{t('checkout.payMethod')}</h2>
           {PAYMENT_METHODS.map((m) => (
             <label key={m.id} className="radio-row">
               <input aria-label="Ô nhập"
@@ -230,32 +232,32 @@ export default function Checkout() {
                 onChange={() => setPaymentMethod(m.id)}
               />
               <span style={{ flex: 1 }}>
-                {m.label}
-                <div className="muted" style={{ fontSize: 13 }}>{m.hint}</div>
+                {t(m.labelKey)}
+                <div className="muted" style={{ fontSize: 13 }}>{t(m.hintKey)}</div>
               </span>
             </label>
           ))}
 
           <button className="btn btn-primary" style={{ width: '100%', marginTop: 20 }} disabled={loading}>
-            {loading ? 'Đang đặt hàng...' : `Đặt hàng • ${fmtVND(grandTotal)}`}
+            {loading ? t('checkout.placing') : t('checkout.placeOrder', { total: fmtVND(grandTotal) })}
           </button>
           <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>
-            Giá ưu đãi khuyến mãi chỉ áp dụng trong thời gian diễn ra chương trình — tổng tiền cuối cùng được tính lại khi đặt hàng.
+            {t('checkout.priceNote')}
           </p>
         </form>
 
         <div className="cart-summary" style={{ margin: 0, maxWidth: 'none' }}>
-          <h3 style={{ marginBottom: 12 }}>Đơn hàng của bạn</h3>
+          <h3 style={{ marginBottom: 12 }}>{t('checkout.yourOrder')}</h3>
           {cart.map((i) => (
             <div className="row" key={cartKey(i)}>
               <span>{i.name} × {i.quantity}</span>
               <span>{fmtVND(i.price * i.quantity)}</span>
             </div>
           ))}
-          <div className="row"><span>Tạm tính</span><span>{fmtVND(cartTotal)}</span></div>
-          <div className="row"><span>Vận chuyển</span><span>{fmtVND(shipFee)}</span></div>
-          {discount > 0 && <div className="row"><span>Voucher giảm</span><span>-{fmtVND(discount)}</span></div>}
-          <div className="row total"><span>Tổng cộng</span><span>{fmtVND(grandTotal)}</span></div>
+          <div className="row"><span>{t('cart.subtotal')}</span><span>{fmtVND(cartTotal)}</span></div>
+          <div className="row"><span>{t('checkout.shipping')}</span><span>{fmtVND(shipFee)}</span></div>
+          {discount > 0 && <div className="row"><span>{t('checkout.voucherDiscount')}</span><span>-{fmtVND(discount)}</span></div>}
+          <div className="row total"><span>{t('cart.total')}</span><span>{fmtVND(grandTotal)}</span></div>
         </div>
       </div>
     </div>

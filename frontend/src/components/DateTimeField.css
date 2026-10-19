@@ -1,0 +1,63 @@
+/* Ô chọn ngày giờ — đồng bộ theme nâu tối */
+.dt-field { position: relative; }
+.dt-field .dt-input {
+  width: 100%; padding: 11px 40px 11px 13px; border: 1.5px solid rgba(232,181,106,.22);
+  border-radius: 9px; font-size: 0.95rem; font-family: inherit;
+  background: rgba(12, 8, 5, 0.6); color: var(--text); cursor: pointer;
+}
+.dt-field .dt-input:focus { outline: none; border-color: var(--amber); }
+.dt-icon {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 1.05rem; pointer-events: none; opacity: 0.8;
+}
+
+/* Popup lịch react-datepicker — theme tối */
+.dt-calendar {
+  background: #2b1d10 !important;
+  border: 1px solid rgba(232, 181, 106, 0.35) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55) !important;
+  font-family: inherit !important;
+  color: var(--cream) !important;
+}
+.dt-calendar .react-datepicker__header {
+  background: #3a2412 !important;
+  border-bottom: 1px solid rgba(232, 181, 106, 0.25) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+.dt-calendar .react-datepicker__current-month,
+.dt-calendar .react-datepicker__day-name,
+.dt-calendar .react-datepicker-time__header {
+  color: #f2c57c !important;
+}
+.dt-calendar .react-datepicker__day,
+.dt-calendar .react-datepicker__time-name {
+  color: var(--cream) !important;
+  border-radius: 8px !important;
+}
+.dt-calendar .react-datepicker__day:hover,
+.dt-calendar .react-datepicker__time-list-item:hover {
+  background: rgba(232, 181, 106, 0.18) !important;
+}
+.dt-calendar .react-datepicker__day--selected,
+.dt-calendar .react-datepicker__day--keyboard-selected,
+.dt-calendar .react-datepicker__time-list-item--selected {
+  background: var(--amber) !important;
+  color: #231408 !important;
+  font-weight: 700 !important;
+}
+.dt-calendar .react-datepicker__day--disabled,
+.dt-calendar .react-datepicker__day--outside-month {
+  color: #6b5a44 !important;
+}
+.dt-calendar .react-datepicker__navigation-icon::before {
+  border-color: #f2c57c !important;
+}
+.dt-calendar .react-datepicker__time-container {
+  border-left: 1px solid rgba(232, 181, 106, 0.25) !important;
+}
+.dt-calendar .react-datepicker__time-list-item { color: var(--cream) !important; }
+.dt-calendar select {
+  background: #221910; color: var(--cream);
+  border: 1px solid rgba(232, 181, 106, 0.3); border-radius: 6px; padding: 2px 4px;
+}

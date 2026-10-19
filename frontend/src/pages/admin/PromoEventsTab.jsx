@@ -1,6 +1,7 @@
 // Tab quản lý sự kiện khuyến mãi (admin): bật/tắt sự kiện, sửa nội dung.
 // Bật sự kiện sẽ đồng thời bật các voucher liên kết (qua PUT /:id/toggle).
 import { useEffect, useState } from 'react';
+import DateTimeField from '../../components/DateTimeField';
 
 function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -195,11 +196,11 @@ export default function PromoEventsTab() {
             <div style={{ display: 'flex', gap: 12 }}>
               <div className="field" style={{ flex: 1 }}>
                 <label htmlFor="promoeventstab-bat-au">Bắt đầu</label>
-                <input id="promoeventstab-bat-au" type="datetime-local" value={form.start_at} onChange={(e) => set('start_at', e.target.value)} />
+                <DateTimeField id="promoeventstab-bat-au" value={form.start_at} onChange={(v) => set('start_at', v)} />
               </div>
               <div className="field" style={{ flex: 1 }}>
                 <label htmlFor="promoeventstab-ket-thuc">Kết thúc</label>
-                <input id="promoeventstab-ket-thuc" type="datetime-local" value={form.end_at} onChange={(e) => set('end_at', e.target.value)} />
+                <DateTimeField id="promoeventstab-ket-thuc" value={form.end_at} onChange={(v) => set('end_at', v)} />
               </div>
             </div>
             <div className="field">
