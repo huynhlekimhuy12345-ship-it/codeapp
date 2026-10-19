@@ -4,14 +4,14 @@ import { useParams, Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
+import { useProductName, useProductDesc, useTranslatedText } from '../i18n/TranslatedProduct';
 import ProductCard from '../components/ProductCard';
 import ProductReviews from '../components/ProductReviews';
-
-const PLACEHOLDER = 'https://via.placeholder.com/600?text=Do+Da+Shop';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const { t } = useLang();
+  const PLACEHOLDER = `https://via.placeholder.com/600?text=${encodeURIComponent(t('fix1.placeholderText'))}`;
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [qty, setQty] = useState(1);
@@ -19,6 +19,9 @@ export default function ProductDetail() {
   const [selSize, setSelSize] = useState('');
   const [mainIdx, setMainIdx] = useState(0);
   const { addToCart } = useStore();
+  const name = useProductName(product);
+  const desc = useProductDesc(product);
+  const catName = useTranslatedText(product?.category_name);
 
   useEffect(() => {
     api.getProduct(id).then(({ product }) => {
@@ -126,7 +129,7 @@ export default function ProductDetail() {
       <PageTitle title={t('productDetail.title')} />
       <div className="detail">
         <div>
-          <img src={mainImage} alt={product.name}
+          <img src={mainImage} alt={name}
             onError={(e) => { e.target.src = PLACEHOLDER; }} />
           {galleryImages.length > 1 && (
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
@@ -134,7 +137,7 @@ export default function ProductDetail() {
                 <img
                   key={i}
                   src={src}
-                  alt={`${product.name} ${i + 1}`}
+                  alt={`${name} ${i + 1}`}
                   onError={(e) => { e.target.src = PLACEHOLDER; }}
                   onClick={() => setMainIdx(i)}
                   style={{
@@ -149,9 +152,9 @@ export default function ProductDetail() {
         </div>
         <div>
           <span className="cat" style={{ fontSize: '.85rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
-            {product.category_name}
+            {catName}
           </span>
-          <h1>{product.name}</h1>
+          <h1>{name}</h1>
           {onSale ? (
             <div className="price"><s className="old-price">{fmtVND(product.price)}</s> <span className="sale-price">{fmtVND(basePrice)}</span> <span className="card-badge" style={{ position: 'static' }}>-{product.discount_percent}%</span></div>
           ) : (
@@ -164,7 +167,7 @@ export default function ProductDetail() {
               {' '}({selectedVariant.sku})
             </div>
           )}
-          <p className="desc">{product.description}</p>
+          <p className="desc">{desc}</p>
 
           {hasVariants && (
             <>

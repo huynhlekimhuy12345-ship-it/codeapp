@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useStore } from './context/StoreContext';
+import { useLang } from './i18n/LanguageContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 // Tải lười Three.js: tách thành chunk riêng, trang hiện ngay với nền gradient,
@@ -41,6 +42,7 @@ function RequireStaff({ children }) {
 
 export default function App() {
   const location = useLocation();
+  const { t } = useLang();
   // Trang quản trị dùng nền 3D tối giản để tập trung thao tác
   const variant = location.pathname.startsWith('/admin') ? 'subtle' : 'hero';
   // Trang Bộ sưu tập có canvas 3D riêng che kín màn hình → tắt Scene3D
@@ -56,7 +58,7 @@ export default function App() {
         </Suspense>
       )}
       <div className="page-veil" aria-hidden="true" />
-      <a className="skip-link" href="#main-content">Bỏ qua tới nội dung chính</a>
+      <a className="skip-link" href="#main-content">{t('common.skipLink')}</a>
       <Navbar />
       <main id="main-content">
         <Routes>

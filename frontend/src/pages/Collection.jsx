@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../i18n/LanguageContext';
+import { useProductName, useProductDesc, useTranslatedText } from '../i18n/TranslatedProduct';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
@@ -51,7 +52,7 @@ const FALLBACK_PRODUCTS = [
  * OrbitControls, kèm panel thông tin + thêm vào giỏ hàng.
  */
 
-const PHASE_LABELS = ['Mở đầu', 'Khám phá', 'Bộ sưu tập'];
+const PHASE_LABELS = ['phase1', 'phase2', 'phase3'];
 
 export default function Collection() {
   const { t } = useLang();
@@ -920,9 +921,7 @@ export default function Collection() {
       <div className="container page">
         <PageTitle title={t('nav.collection')} />
         <h1 className="page-title">{t('nav.collection')}</h1>
-        <p className="collection-lead">
-          Những món đồ da thủ công được chế tác tỉ mỉ từ xưởng của chúng tôi.
-        </p>
+        <p className="collection-lead">{t('fix2.collectionLead')}</p>
         {!products && <p>{t('common.loading')}</p>}
         <div className="collection-grid">
           {list.map((p) => (
@@ -950,7 +949,7 @@ export default function Collection() {
               ref={(el) => (dotsRef.current[i] = el)}
             >
               <i />
-              {label}
+              {t('fix2.' + label)}
             </span>
           ))}
         </div>
@@ -961,13 +960,10 @@ export default function Collection() {
           <p className="hero-title">
             {t('collection.titleA')} <em>{t('collection.titleEm')}</em> {t('collection.titleB')}
           </p>
-          <p className="hero-sub">
-            Cuộn xuống để xem nắp túi mở ra và từng sản phẩm thủ công bay lên —
-            tất cả được làm từ da bò thật 100%.
-          </p>
+          <p className="hero-sub">{t('fix2.heroSub')}</p>
           <div className="hero-cta">
             <Link to="/cua-hang" className="btn btn-primary">
-              Xem tất cả sản phẩm
+              {t('fix2.viewAllProducts')}
             </Link>
           </div>
         </div>
@@ -981,43 +977,21 @@ export default function Collection() {
         {/* Phase 3: thẻ thông tin DỮ LIỆU THẬT từ API */}
         <div className="collection-cards">
           {products.map((p, i) => (
-            <article
+            <CollectionCardItem
               key={p.id}
-              className="collection-card glass"
-              ref={(el) => (cardsRef.current[i] = el)}
-            >
-              <div className="cc-index">
-                {String(i + 1).padStart(2, '0')} / {String(products.length).padStart(2, '0')}
-              </div>
-              <h3>{p.name}</h3>
-              <p className="cc-cat">{p.category_name || t('collection.defaultCategory')}</p>
-              <div className="cc-price">{fmtVND(p.price)}</div>
-              <div className="cc-actions">
-                {p.fallback ? (
-                  <Link to="/cua-hang" className="btn btn-primary btn-small">
-                    {t('about.viewProducts')}
-                  </Link>
-                ) : (
-                  <Link to={`/san-pham/${p.id}`} className="btn btn-primary btn-small">
-                    Xem chi tiết
-                  </Link>
-                )}
-                <button
-                  className="btn btn-ghost btn-small"
-                  onClick={() => openInspector(i)}
-                >
-                  Xem 3D
-                </button>
-              </div>
-            </article>
+              p={p}
+              index={i}
+              total={products.length}
+              t={t}
+              cardRef={(idx, el) => (cardsRef.current[idx] = el)}
+              onInspect={openInspector}
+            />
           ))}
         </div>
 
         {/* Ghi công model 3D (yêu cầu của giấy phép CC-BY) */}
         <div className="collection-credits" aria-hidden="true">
-          Model 3D: “Wrist Watch” của Poly by Google (CC BY 3.0), “A Wallet” của
-          senior design (CC BY), “Briefcase” của Poly by Google (CC BY 3.0),
-          Key của Quaternius (CC0) — qua Poly Pizza
+          {t('fix2.credits')}
         </div>
 
         {!ready && <div className="collection-loading">{t('collection.preparing')}</div>}
@@ -1044,10 +1018,49 @@ export default function Collection() {
  * ESC / bấm nền / nút Đóng để thoát. Model tải lỗi → hiện mesh
  * procedural fallback, không bao giờ trống.
  * ============================================================ */
+/* Thẻ phase-3: tên + danh mục SP từ API dịch theo ngôn ngữ */
+function CollectionCardItem({ p, index, total, t, cardRef, onInspect }) {
+  const name = useProductName(p);
+  const cat = useTranslatedText(p.category_name);
+  return (
+    <article
+      className="collection-card glass"
+      ref={(el) => cardRef(index, el)}
+    >
+      <div className="cc-index">
+        {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+      </div>
+      <h3>{name}</h3>
+      <p className="cc-cat">{cat || t('collection.defaultCategory')}</p>
+      <div className="cc-price">{fmtVND(p.price)}</div>
+      <div className="cc-actions">
+        {p.fallback ? (
+          <Link to="/cua-hang" className="btn btn-primary btn-small">
+            {t('about.viewProducts')}
+          </Link>
+        ) : (
+          <Link to={`/san-pham/${p.id}`} className="btn btn-primary btn-small">
+            {t('collection.viewDetail')}
+          </Link>
+        )}
+        <button
+          className="btn btn-ghost btn-small"
+          onClick={() => onInspect(index)}
+        >
+          {t('fix2.view3d')}
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function ProductInspector({ product, modelObject, onClose, addToCart, t }) {
   const viewRef = useRef(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const name = useProductName(product);
+  const cat = useTranslatedText(product.category_name);
+  const desc = useProductDesc(product);
 
   // Phím ESC đóng inspector
   useEffect(() => {
@@ -1206,7 +1219,7 @@ function ProductInspector({ product, modelObject, onClose, addToCart, t }) {
       className="inspect-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label={`Xem 3D ${product.name}`}
+      aria-label={t('fix2.view3dAria', { name })}
     >
       <div className="inspect-backdrop" onClick={onClose} />
       <div className="inspect-box glass">
@@ -1217,12 +1230,12 @@ function ProductInspector({ product, modelObject, onClose, addToCart, t }) {
           <button className="inspect-close" onClick={onClose} aria-label={t('myOrders.close')}>
             ✕
           </button>
-          <div className="cc-index">Xem 3D</div>
-          <h2>{product.name}</h2>
-          <p className="cc-cat">{product.category_name || t('collection.defaultCategory')}</p>
+          <div className="cc-index">{t('fix2.view3d')}</div>
+          <h2>{name}</h2>
+          <p className="cc-cat">{cat || t('collection.defaultCategory')}</p>
           <div className="cc-price">{fmtVND(product.price)}</div>
           {product.description && (
-            <p className="inspect-desc">{product.description}</p>
+            <p className="inspect-desc">{desc}</p>
           )}
           {!product.fallback && (
             <div
@@ -1246,7 +1259,7 @@ function ProductInspector({ product, modelObject, onClose, addToCart, t }) {
           <div className="inspect-actions">
             {product.fallback ? (
               <Link to="/cua-hang" className="btn btn-primary">
-                Xem cửa hàng
+                {t('fix2.viewShop')}
               </Link>
             ) : (
               <button
@@ -1273,10 +1286,12 @@ function ProductInspector({ product, modelObject, onClose, addToCart, t }) {
 
 /* Thẻ sản phẩm dùng cho chế độ tĩnh / không WebGL */
 function ProductCard({ p, t }) {
+  const name = useProductName(p);
+  const cat = useTranslatedText(p.category_name);
   return (
     <article className="collection-card glass static">
-      <h3>{p.name}</h3>
-      <p className="cc-cat">{p.category_name || t('collection.defaultCategory')}</p>
+      <h3>{name}</h3>
+      <p className="cc-cat">{cat || t('collection.defaultCategory')}</p>
       <div className="cc-price">{fmtVND(p.price)}</div>
       {p.fallback ? (
         <Link to="/cua-hang" className="btn btn-primary btn-small">

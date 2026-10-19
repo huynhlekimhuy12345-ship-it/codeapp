@@ -3,6 +3,7 @@
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DateTimeField.css';
+import { useLang } from '../i18n/LanguageContext';
 
 function parseValue(v) {
   if (!v) return null;
@@ -17,6 +18,7 @@ function toLocalString(d) {
 }
 
 export default function DateTimeField({ id, value, onChange, placeholder }) {
+  const { t } = useLang();
   return (
     <div className="dt-field">
       <DatePicker
@@ -27,7 +29,7 @@ export default function DateTimeField({ id, value, onChange, placeholder }) {
         timeFormat="HH:mm"
         timeIntervals={15}
         dateFormat="dd/MM/yyyy HH:mm"
-        placeholderText={placeholder || 'Chọn ngày giờ...'}
+        placeholderText={placeholder || t('fix2.datetimePlaceholder')}
         className="dt-input"
         calendarClassName="dt-calendar"
         isClearable

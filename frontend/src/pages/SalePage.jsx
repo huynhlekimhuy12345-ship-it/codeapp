@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
+import { useProductName, useTranslatedText } from '../i18n/TranslatedProduct';
 import './SalePage.css';
 
 function useCountdown(targetIso) {
@@ -28,6 +29,40 @@ function useCountdown(targetIso) {
 
 function voucherText(v, t) {
   return v.type === 'percent' ? t('sale.percentOff', { value: v.value }) : t('sale.amountOff', { amount: fmtVND(v.value) });
+}
+
+/** Thẻ SP khuyến mãi: tên SP từ DB dịch theo ngôn ngữ. */
+function SaleProductItem({ p }) {
+  const { addToCart } = useStore();
+  const { t } = useLang();
+  const name = useProductName(p);
+  return (
+    <div className="sale-product">
+      <Link to={`/san-pham/${p.id}`} className="sp-img">
+        <img
+          src={p.image_url}
+          alt={name}
+          loading="lazy"
+          onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=Leather+House'; }}
+        />
+        <span className="sp-badge">-{p.discount_percent}%</span>
+      </Link>
+      <div className="sp-body">
+        <Link to={`/san-pham/${p.id}`}><h3>{name}</h3></Link>
+        <div className="sp-prices">
+          <span className="sp-old">{fmtVND(p.price)}</span>
+          <span className="sp-sale">{fmtVND(p.sale_price)}</span>
+        </div>
+        <button
+          className="btn btn-primary btn-small"
+          disabled={p.stock <= 0}
+          onClick={() => addToCart({ ...p, price: p.sale_price })}
+        >
+          {t('common.addToCart')}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function SalePage() {
@@ -56,6 +91,10 @@ export default function SalePage() {
   const target = event ? (status === 'live' ? event.end_at : event.start_at) : null;
   const cd = useCountdown(target);
   const pad = (n) => String(n).padStart(2, '0');
+  // Tiêu đề / phụ đề / tên sự kiện từ DB (tiếng Việt) dịch theo ngôn ngữ
+  const eventTitle = useTranslatedText(event ? (event.title || event.name) : '');
+  const eventName = useTranslatedText(event?.name || '');
+  const eventSub = useTranslatedText(event?.subtitle || '');
 
   const copyCode = async (code) => {
     try {
@@ -100,8 +139,8 @@ export default function SalePage() {
           <span className="sale-kicker">
             {status === 'live' ? t('sale.live') : t('sale.upcoming')} · Leather House
           </span>
-          <h1>{event.title || event.name}</h1>
-          {event.subtitle && <p className="sale-sub">{event.subtitle}</p>}
+          <h1>{eventTitle}</h1>
+          {event.subtitle && <p className="sale-sub">{eventSub}</p>}
           {target && (
             <div className="sale-countdown">
               {[
@@ -128,7 +167,7 @@ export default function SalePage() {
       <main className="container">
         {!!vouchers.length && (
           <section className="sale-section">
-            <h2>{t('sale.voucherTitle', { name: event.name })}</h2>
+            <h2>{t('sale.voucherTitle', { name: eventName })}</h2>
             <p className="sale-desc">{t('sale.voucherDesc')}</p>
             <div className="sale-vouchers">
               {vouchers.map((v) => (
@@ -159,31 +198,7 @@ export default function SalePage() {
             <p className="sale-desc">{t('sale.productsDesc')}</p>
             <div className="sale-products">
               {products.map((p) => (
-                <div className="sale-product" key={p.id}>
-                  <Link to={`/san-pham/${p.id}`} className="sp-img">
-                    <img
-                      src={p.image_url}
-                      alt={p.name}
-                      loading="lazy"
-                      onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=Leather+House'; }}
-                    />
-                    <span className="sp-badge">-{p.discount_percent}%</span>
-                  </Link>
-                  <div className="sp-body">
-                    <Link to={`/san-pham/${p.id}`}><h3>{p.name}</h3></Link>
-                    <div className="sp-prices">
-                      <span className="sp-old">{fmtVND(p.price)}</span>
-                      <span className="sp-sale">{fmtVND(p.sale_price)}</span>
-                    </div>
-                    <button
-                      className="btn btn-primary btn-small"
-                      disabled={p.stock <= 0}
-                      onClick={() => addToCart({ ...p, price: p.sale_price })}
-                    >
-                      {t('common.addToCart')}
-                    </button>
-                  </div>
-                </div>
+                <SaleProductItem key={p.id} p={p} />
               ))}
             </div>
           </section>

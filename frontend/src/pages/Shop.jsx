@@ -4,8 +4,15 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
 import { useLang } from '../i18n/LanguageContext';
+import { useTranslatedText } from '../i18n/TranslatedProduct';
 
 const LIMIT = 12;
+
+/** Option danh mục trong bộ lọc: tên từ DB dịch theo ngôn ngữ. */
+function CategoryOption({ c }) {
+  const name = useTranslatedText(c.name);
+  return <option value={c.id}>{name}</option>;
+}
 
 export default function Shop() {
   const { t } = useLang();
@@ -57,7 +64,7 @@ export default function Shop() {
         />
         <select value={category} onChange={(e) => pickCategory(e.target.value)} aria-label={t('shop.allCategories')}>
           <option value="">{t('shop.allCategories')}</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {categories.map((c) => <CategoryOption key={c.id} c={c} />)}
         </select>
         <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} aria-label={t('shop.sortLabel')}>
           <option value="">{t('shop.sort')}</option>

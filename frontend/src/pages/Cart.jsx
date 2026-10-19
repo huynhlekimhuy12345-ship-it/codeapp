@@ -3,9 +3,33 @@ import PageTitle from '../components/PageTitle';
 import { fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
+import { useProductName, PName } from '../i18n/TranslatedProduct';
+
+function CartRow({ i }) {
+  const { updateQty, removeFromCart } = useStore();
+  const { t } = useLang();
+  const name = useProductName(i);
+  return (
+    <div className="cart-row">
+      <img src={i.image_url} alt={name}
+        onError={(e) => { e.target.src = `https://via.placeholder.com/100?text=${encodeURIComponent(t('fix1.leatherWord'))}`; }} />
+      <div>
+        <div className="pname"><PName product={i} /></div>
+        <div className="pprice">{fmtVND(i.price)}</div>
+      </div>
+      <div className="qty-row" style={{ margin: 0 }}>
+        <button onClick={() => updateQty(i.product_id, i.quantity - 1, i.variant_id)} aria-label={t('cart.decrease')}>−</button>
+        <span>{i.quantity}</span>
+        <button onClick={() => updateQty(i.product_id, i.quantity + 1, i.variant_id)} aria-label={t('cart.increase')}>+</button>
+      </div>
+      <div className="line-total" style={{ fontWeight: 700 }}>{fmtVND(i.price * i.quantity)}</div>
+      <button className="btn btn-small btn-danger" onClick={() => removeFromCart(i.product_id, i.variant_id)} aria-label={t('cart.remove')}>✕</button>
+    </div>
+  );
+}
 
 export default function Cart() {
-  const { cart, updateQty, removeFromCart, clearCart, cartTotal, user } = useStore();
+  const { cart, clearCart, cartTotal, user } = useStore();
   const { t } = useLang();
   const navigate = useNavigate();
 
@@ -27,21 +51,7 @@ export default function Cart() {
       <h1 className="page-title">{t('cart.title')}</h1>
       <div className="cart-table">
         {cart.map((i) => (
-          <div className="cart-row" key={`${i.product_id}|${i.variant_id || 0}`}>
-            <img src={i.image_url} alt={i.name}
-              onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=Da'; }} />
-            <div>
-              <div className="pname">{i.name}</div>
-              <div className="pprice">{fmtVND(i.price)}</div>
-            </div>
-            <div className="qty-row" style={{ margin: 0 }}>
-              <button onClick={() => updateQty(i.product_id, i.quantity - 1, i.variant_id)} aria-label={t('cart.decrease')}>−</button>
-              <span>{i.quantity}</span>
-              <button onClick={() => updateQty(i.product_id, i.quantity + 1, i.variant_id)} aria-label={t('cart.increase')}>+</button>
-            </div>
-            <div className="line-total" style={{ fontWeight: 700 }}>{fmtVND(i.price * i.quantity)}</div>
-            <button className="btn btn-small btn-danger" onClick={() => removeFromCart(i.product_id, i.variant_id)} aria-label={t('cart.remove')}>✕</button>
-          </div>
+          <CartRow key={`${i.product_id}|${i.variant_id || 0}`} i={i} />
         ))}
       </div>
       <div className="cart-summary">

@@ -4,12 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
+import { useTranslatedText, PName } from '../i18n/TranslatedProduct';
 
 const PAYMENT_METHODS = [
   { id: 'cod', labelKey: 'checkout.payCod', hintKey: 'checkout.payCodHint' },
   { id: 'bank', labelKey: 'checkout.payBank', hintKey: 'checkout.payBankHint' },
   { id: 'momo', labelKey: 'checkout.payMomo', hintKey: 'checkout.payMomoHint' },
 ];
+
+/** Tên phương thức vận chuyển từ DB (tiếng Việt) dịch theo ngôn ngữ. */
+function ShipMethodName({ name }) {
+  const tname = useTranslatedText(name);
+  return tname;
+}
 
 export default function Checkout() {
   const { cart, cartTotal, clearCart, user } = useStore();
@@ -129,7 +136,7 @@ export default function Checkout() {
   if (placedOrder) {
     return (
       <div className="container page">
-        <PageTitle title="Thanh toán" />
+        <PageTitle title={t('checkout.title')} />
         <div className="form-card" style={{ maxWidth: 560 }}>
           <h2>{t('checkout.orderSuccess')}</h2>
           <p>{t('checkout.orderCode')} <strong>#{placedOrder.id}</strong> — {t('checkout.total')}: <strong>{fmtVND(placedOrder.total)}</strong></p>
@@ -192,14 +199,14 @@ export default function Checkout() {
           {shipMethods.length === 0 && <p className="muted">{t('checkout.loadingShip')}</p>}
           {shipMethods.map((m) => (
             <label key={m.id} className="radio-row">
-              <input aria-label="Ô nhập"
+              <input aria-label={t('fix1.radioOption')}
                 type="radio"
                 name="shipping"
                 checked={shippingId === m.id}
                 onChange={() => setShippingId(m.id)}
               />
               <span style={{ flex: 1 }}>
-                {m.name}
+                <ShipMethodName name={m.name} />
                 {m.eta_days ? <span className="muted"> {t('checkout.etaDays', { days: m.eta_days })}</span> : null}
               </span>
               <strong>{fmtVND(m.fee)}</strong>
@@ -208,7 +215,7 @@ export default function Checkout() {
 
           <h2 style={{ marginTop: 24 }}>{t('checkout.voucher')}</h2>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input aria-label="Ô nhập"
+            <input aria-label={t('fix1.radioOption')}
               value={voucherCode}
               onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucher(null); setVoucherMsg(''); }}
               placeholder={t('checkout.voucherPlaceholder')}
@@ -225,7 +232,7 @@ export default function Checkout() {
           <h2 style={{ marginTop: 24 }}>{t('checkout.payMethod')}</h2>
           {PAYMENT_METHODS.map((m) => (
             <label key={m.id} className="radio-row">
-              <input aria-label="Ô nhập"
+              <input aria-label={t('fix1.radioOption')}
                 type="radio"
                 name="payment"
                 checked={paymentMethod === m.id}
@@ -250,7 +257,7 @@ export default function Checkout() {
           <h3 style={{ marginBottom: 12 }}>{t('checkout.yourOrder')}</h3>
           {cart.map((i) => (
             <div className="row" key={cartKey(i)}>
-              <span>{i.name} × {i.quantity}</span>
+              <span><PName product={i} /> × {i.quantity}</span>
               <span>{fmtVND(i.price * i.quantity)}</span>
             </div>
           ))}

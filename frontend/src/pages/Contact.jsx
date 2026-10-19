@@ -78,7 +78,7 @@ export default function Contact() {
               {err && <div className="form-error">{err}</div>}
               <div className="field">
                 <label htmlFor="contact-ho-ten">{t('checkout.fullName')}</label>
-                <input id="contact-ho-ten" value={form.name} onChange={set('name')} placeholder="Nguyễn Văn A" required />
+                <input id="contact-ho-ten" value={form.name} onChange={set('name')} placeholder={t('fix2.nameExample')} required />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="field">

@@ -20,6 +20,11 @@ export default {
   common: {
     addToCart: '🛒 Thêm vào giỏ',
     loading: 'Đang tải...',
+    skipLink: 'Bỏ qua tới nội dung chính',
+    defaultTitle: 'Leather House - Đồ da thật cao cấp',
+  },
+  store: {
+    unknownError: 'Có lỗi xảy ra',
   },
   footer: {
     brand: 'LEATHER HOUSE',
@@ -341,5 +346,27 @@ export default {
     dragHint: 'Kéo để xoay · Cuộn để phóng to',
     stockLeft: 'Còn {count} sản phẩm',
     viewDetail: 'Xem chi tiết',
+  },
+  fix1: {
+    leatherWord: 'Da',
+    placeholderText: 'Do Da Shop',
+    radioOption: 'Chọn tùy chọn',
+    errorGeneric: 'Có lỗi xảy ra',
+  },
+  fix2: {
+    collectionLead: 'Những món đồ da thủ công được chế tác tỉ mỉ từ xưởng của chúng tôi.',
+    phase1: 'Mở đầu',
+    phase2: 'Khám phá',
+    phase3: 'Bộ sưu tập',
+    heroSub: 'Cuộn xuống để xem nắp túi mở ra và từng sản phẩm thủ công bay lên — tất cả được làm từ da bò thật 100%.',
+    viewAllProducts: 'Xem tất cả sản phẩm',
+    view3d: 'Xem 3D',
+    view3dAria: 'Xem 3D {name}',
+    viewShop: 'Xem cửa hàng',
+    credits: 'Model 3D: “Wrist Watch” của Poly by Google (CC BY 3.0), “A Wallet” của senior design (CC BY), “Briefcase” của Poly by Google (CC BY 3.0), Key của Quaternius (CC0) — qua Poly Pizza',
+    nameExample: 'Nguyễn Văn A',
+    fullNameInput: 'Ô nhập họ tên',
+    phoneInput: 'Ô nhập số điện thoại',
+    datetimePlaceholder: 'Chọn ngày giờ...',
   },
 };

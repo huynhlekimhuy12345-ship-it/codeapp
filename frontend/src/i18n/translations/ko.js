@@ -20,6 +20,11 @@ export default {
   common: {
     addToCart: '🛒 장바구니에 담기',
     loading: '불러오는 중...',
+    skipLink: '주요 콘텐츠로 건너뛰기',
+    defaultTitle: 'Leather House - 프리미엄 천연 가죽',
+  },
+  store: {
+    unknownError: '오류가 발생했습니다',
   },
   footer: {
     brand: 'LEATHER HOUSE',
@@ -341,5 +346,27 @@ export default {
     dragHint: '드래그하여 회전 · 스크롤하여 확대',
     stockLeft: '재고 {count}개',
     viewDetail: '상세 보기',
+  },
+  fix1: {
+    leatherWord: '가죽',
+    placeholderText: '가죽 제품',
+    radioOption: '옵션 선택',
+    errorGeneric: '오류가 발생했습니다',
+  },
+  fix2: {
+    collectionLead: '우리 공방에서 정성껏 만든 핸드메이드 가죽 제품들이에요.',
+    phase1: '인트로',
+    phase2: '탐색',
+    phase3: '컬렉션',
+    heroSub: '아래로 스크롤하면 가방이 열리고 핸드메이드 제품들이 하나씩 올라와요 — 모두 100% 진짜 소가죽으로 만들어요.',
+    viewAllProducts: '전체 상품 보기',
+    view3d: '3D로 보기',
+    view3dAria: '{name} 3D로 보기',
+    viewShop: '매장 보기',
+    credits: '3D 모델: "Wrist Watch" (Poly by Google, CC BY 3.0), "A Wallet" (senior design, CC BY), "Briefcase" (Poly by Google, CC BY 3.0), Key (Quaternius, CC0) — Poly Pizza 제공',
+    nameExample: '홍길동',
+    fullNameInput: '이름 입력란',
+    phoneInput: '전화번호 입력란',
+    datetimePlaceholder: '날짜와 시간을 선택하세요…',
   },
 };

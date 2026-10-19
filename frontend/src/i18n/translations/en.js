@@ -20,6 +20,11 @@ export default {
   common: {
     addToCart: '🛒 Add to cart',
     loading: 'Loading...',
+    skipLink: 'Skip to main content',
+    defaultTitle: 'Leather House - Premium Genuine Leather',
+  },
+  store: {
+    unknownError: 'Something went wrong',
   },
   footer: {
     brand: 'LEATHER HOUSE',
@@ -341,5 +346,27 @@ export default {
     dragHint: 'Drag to rotate · Scroll to zoom',
     stockLeft: '{count} in stock',
     viewDetail: 'View details',
+  },
+  fix1: {
+    leatherWord: 'Leather',
+    placeholderText: 'Leather Goods Shop',
+    radioOption: 'Choose an option',
+    errorGeneric: 'Something went wrong',
+  },
+  fix2: {
+    collectionLead: 'Handcrafted leather pieces, made with care in our own workshop.',
+    phase1: 'Intro',
+    phase2: 'Explore',
+    phase3: 'Collection',
+    heroSub: 'Scroll down to watch the bag open and each handcrafted piece rise up — all made from 100% genuine cowhide.',
+    viewAllProducts: 'View all products',
+    view3d: 'View 3D',
+    view3dAria: 'View {name} in 3D',
+    viewShop: 'View shop',
+    credits: '3D models: "Wrist Watch" by Poly by Google (CC BY 3.0), "A Wallet" by senior design (CC BY), "Briefcase" by Poly by Google (CC BY 3.0), Key by Quaternius (CC0) — via Poly Pizza',
+    nameExample: 'John Smith',
+    fullNameInput: 'Full name input',
+    phoneInput: 'Phone number input',
+    datetimePlaceholder: 'Pick date & time...',
   },
 };

@@ -70,11 +70,11 @@ export default function ProfilePage() {
             <p><strong>Email:</strong> {profile?.email}</p>
             <label>
               {t('auth.fullName')}
-              <input aria-label="Ô nhập" value={name} onChange={(e) => setName(e.target.value)} required />
+              <input aria-label={t('fix2.fullNameInput')} value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label style={{ marginTop: '.75rem' }}>
               {t('checkout.phone')}
-              <input aria-label="Ô nhập" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxx" />
+              <input aria-label={t('fix2.phoneInput')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxx" />
             </label>
             {msg && <p className="success">{msg}</p>}
             <button className="btn" type="submit" disabled={saving} style={{ marginTop: '1rem' }}>

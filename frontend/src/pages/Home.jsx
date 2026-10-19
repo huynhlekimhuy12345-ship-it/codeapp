@@ -4,6 +4,19 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
 import { useLang } from '../i18n/LanguageContext';
+import { useTranslatedText } from '../i18n/TranslatedProduct';
+
+/** Thẻ danh mục nổi bật: tên + mô tả danh mục từ DB dịch theo ngôn ngữ. */
+function CategoryCard({ c }) {
+  const name = useTranslatedText(c.name);
+  const desc = useTranslatedText(c.description || '');
+  return (
+    <Link to={`/cua-hang?category=${c.id}`} className="cat-card">
+      👜 {name}
+      <small>{desc.slice(0, 40)}</small>
+    </Link>
+  );
+}
 
 export default function Home() {
   const { t } = useLang();
@@ -45,10 +58,7 @@ export default function Home() {
           </div>
           <div className="cat-grid">
             {categories.map((c) => (
-              <Link key={c.id} to={`/cua-hang?category=${c.id}`} className="cat-card">
-                👜 {c.name}
-                <small>{c.description?.slice(0, 40)}</small>
-              </Link>
+              <CategoryCard key={c.id} c={c} />
             ))}
           </div>
         </div>

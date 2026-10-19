@@ -3,12 +3,13 @@ import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api, fmtVND, fmtDate } from '../api';
 import { useLang } from '../i18n/LanguageContext';
+import { useProductName } from '../i18n/TranslatedProduct';
 
 // Nhãn phương thức thanh toán (khớp backend routes/orders.js) — qua i18n
 
 // Gọi API có auth — bản rút gọn dùng riêng trong trang này cho các route mới
 // (không sửa api.js dùng chung để tránh xung đột với các trang khác)
-async function authFetch(path, { method = 'GET', body } = {}) {
+async function authFetch(path, { method = 'GET', body } = {}, t) {
   const headers = { 'Content-Type': 'application/json' };
   const token = localStorage.getItem('token');
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -18,7 +19,7 @@ async function authFetch(path, { method = 'GET', body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Có lỗi xảy ra');
+  if (!res.ok) throw new Error(data.error || t('fix1.errorGeneric'));
   return data;
 }
 
@@ -40,6 +41,17 @@ function Toast({ toast, onClose }) {
   );
 }
 
+/** Một dòng hàng trong chi tiết đơn: tên SP dịch theo ngôn ngữ. */
+function OrderItemRow({ i }) {
+  const name = useProductName({ name: i.product_name });
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+      <span>{name} × {i.quantity}</span>
+      <span>{fmtVND(i.price * i.quantity)}</span>
+    </div>
+  );
+}
+
 function OrderDetail({ id }) {
   const { t } = useLang();
   const [order, setOrder] = useState(null);
@@ -57,10 +69,7 @@ function OrderDetail({ id }) {
       <p><strong>{t('myOrders.payment')}</strong> {t('checkout.pay' + order.payment_method[0].toUpperCase() + order.payment_method.slice(1)) || order.payment_method}</p>
       <div className="order-items">
         {order.items.map((i) => (
-          <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-            <span>{i.product_name} × {i.quantity}</span>
-            <span>{fmtVND(i.price * i.quantity)}</span>
-          </div>
+          <OrderItemRow key={i.id} i={i} />
         ))}
       </div>
       {/* Chi tiết tiền: tạm tính + phí ship - giảm giá voucher = tổng */}
@@ -116,7 +125,7 @@ export default function MyOrders() {
       await authFetch(`/api/orders/${cancelTarget.id}/cancel`, {
         method: 'PUT',
         body: { reason: cancelReason.trim() },
-      });
+      }, t);
       showToast(t('myOrders.cancelled', { id: cancelTarget.id }));
       const cancelledId = cancelTarget.id;
       setCancelTarget(null);
@@ -133,7 +142,7 @@ export default function MyOrders() {
       await authFetch('/api/returns', {
         method: 'POST',
         body: { order_id: returnTarget.id, type: returnType, reason: returnReason.trim() },
-      });
+      }, t);
       showToast(t('myOrders.returnSent', { type: returnType === 'exchange' ? t('myOrders.exchange') : t('myOrders.return'), id: returnTarget.id }));
       setReturnTarget(null);
       setReturnType('return');
@@ -147,7 +156,7 @@ export default function MyOrders() {
       await authFetch('/api/warranties', {
         method: 'POST',
         body: { order_id: id, months: 12 },
-      });
+      }, t);
       showToast(t('myOrders.warrantyCreated', { id }));
     } catch (e) { showToast(e.message, true); }
   };

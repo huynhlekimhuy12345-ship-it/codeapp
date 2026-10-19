@@ -1,8 +1,24 @@
 // Client gọi API backend, tự gắn JWT token
+import vi from './i18n/translations/vi';
+import en from './i18n/translations/en';
+import zh from './i18n/translations/zh';
+import ko from './i18n/translations/ko';
+
 const API_BASE = '';
 
 function getToken() {
   return localStorage.getItem('token');
+}
+
+// Dịch ở cấp module (không dùng hook được ở đây): đọc ngôn ngữ đã lưu,
+// cùng key localStorage mà LanguageContext dùng.
+const dicts = { vi, en, zh, ko };
+function apiT(key) {
+  let lang = 'vi';
+  try { lang = localStorage.getItem('leatherhouse_lang') || 'vi'; } catch {}
+  const d = dicts[lang] || vi;
+  const s = key.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : undefined), d);
+  return s !== undefined ? s : vi.store.unknownError;
 }
 
 async function request(path, { method = 'GET', body, auth = false } = {}) {
@@ -14,7 +30,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Có lỗi xảy ra');
+  if (!res.ok) throw new Error(data.error || apiT('store.unknownError'));
   return data;
 }
 

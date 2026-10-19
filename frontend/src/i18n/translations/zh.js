@@ -20,6 +20,11 @@ export default {
   common: {
     addToCart: '🛒 加入购物车',
     loading: '加载中...',
+    skipLink: '跳转到主要内容',
+    defaultTitle: 'Leather House - 高端真皮制品',
+  },
+  store: {
+    unknownError: '发生错误，请稍后重试',
   },
   footer: {
     brand: 'LEATHER HOUSE',
@@ -341,5 +346,27 @@ export default {
     dragHint: '拖动旋转 · 滚动放大',
     stockLeft: '还剩 {count} 件',
     viewDetail: '查看详情',
+  },
+  fix1: {
+    leatherWord: '皮革',
+    placeholderText: '皮具店',
+    radioOption: '选择选项',
+    errorGeneric: '发生错误',
+  },
+  fix2: {
+    collectionLead: '手工皮具，皆出自我们自家工坊，精工细作。',
+    phase1: '开场',
+    phase2: '探索',
+    phase3: '系列',
+    heroSub: '向下滚动，看包盖打开、一件件手工皮具升起——全部采用100%真牛皮。',
+    viewAllProducts: '查看全部商品',
+    view3d: '查看3D',
+    view3dAria: '3D查看{name}',
+    viewShop: '逛逛店铺',
+    credits: '3D模型：“Wrist Watch”由 Poly by Google 提供 (CC BY 3.0)，“A Wallet”由 senior design 提供 (CC BY)，“Briefcase”由 Poly by Google 提供 (CC BY 3.0)，Key 由 Quaternius 提供 (CC0)——来自 Poly Pizza',
+    nameExample: '张三',
+    fullNameInput: '姓名输入框',
+    phoneInput: '电话号码输入框',
+    datetimePlaceholder: '选择日期时间…',
   },
 };
