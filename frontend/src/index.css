@@ -5,6 +5,7 @@
    - Không bao giờ render chữ trong WebGL
    ============================================================ */
 :root {
+  color-scheme: dark;
   --bg-0: #1a130c;
   --bg-1: #241a10;
   --panel: rgba(46, 33, 20, 0.80);
@@ -326,6 +327,26 @@ h1, h2, h3, .logo, .hero-title {
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--amber); }
 .field select option { background: #221910; }
 .field input:disabled { opacity: 0.6; }
+/* Ô chọn ngày/giờ: icon lịch rõ, chữ đều, popup native theo dark scheme */
+input[type="date"], input[type="time"], input[type="datetime-local"] {
+  color-scheme: dark;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+  padding: 4px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  background: rgba(232, 181, 106, 0.15);
+}
 .field textarea { min-height: 90px; resize: vertical; }
 .form-error { background: rgba(179,64,46,.18); border: 1px solid rgba(232,112,95,.4); color: #f0a196; padding: 11px 15px; border-radius: 9px; margin-bottom: 16px; font-size: 0.9rem; }
 .form-success { background: rgba(64,150,90,.15); border: 1px solid rgba(110,200,140,.4); color: #8fd6a3; padding: 11px 15px; border-radius: 9px; margin-bottom: 16px; font-size: 0.9rem; }
