@@ -43,7 +43,7 @@ function SaleProductItem({ p }) {
           src={p.image_url}
           alt={name}
           loading="lazy"
-          onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=Leather+House'; }}
+          onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=BI99'; }}
         />
         <span className="sp-badge">-{p.discount_percent}%</span>
       </Link>
