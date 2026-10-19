@@ -7,8 +7,10 @@ import PageTitle from '../components/PageTitle';
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useStore } from '../context/StoreContext';
+import { useLang } from '../i18n/LanguageContext';
 
 export default function ProfilePage() {
+  const { t } = useLang();
   const store = useStore();
   const user = store.user;
   // setUser sẽ được coordinator expose từ StoreContext (chưa có thì dùng hàm rỗng)
@@ -46,7 +48,7 @@ export default function ProfilePage() {
       const { user: u } = await api.updateMe({ name: name.trim(), phone: phone.trim() });
       setProfile(u);
       setUser(u);
-      setMsg('Đã cập nhật thông tin.');
+      setMsg(t('profile.updated'));
     } catch (err) {
       setMsg(err.message);
     } finally {
@@ -56,48 +58,48 @@ export default function ProfilePage() {
 
   return (
     <div className="container page">
-      <PageTitle title="Hồ sơ" />
-      <h1>Hồ sơ của tôi</h1>
+      <PageTitle title={t('profile.title')} />
+      <h1>{t('profile.title')}</h1>
 
       {loading ? (
-        <p>Đang tải...</p>
+        <p>{t('common.loading')}</p>
       ) : (
         <>
           <form onSubmit={save} className="card" style={{ padding: '1.25rem', maxWidth: 560 }}>
-            <h3 style={{ marginTop: 0 }}>Thông tin cá nhân</h3>
+            <h3 style={{ marginTop: 0 }}>{t('profile.personalInfo')}</h3>
             <p><strong>Email:</strong> {profile?.email}</p>
             <label>
-              Họ tên:
+              {t('auth.fullName')}
               <input aria-label="Ô nhập" value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label style={{ marginTop: '.75rem' }}>
-              Số điện thoại:
+              {t('checkout.phone')}
               <input aria-label="Ô nhập" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxx" />
             </label>
             {msg && <p className="success">{msg}</p>}
             <button className="btn" type="submit" disabled={saving} style={{ marginTop: '1rem' }}>
-              {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              {saving ? t('profile.saving') : t('profile.save')}
             </button>
           </form>
 
           <p style={{ marginTop: '1rem' }}>
-            <Link to="/don-hang" className="btn">Xem đơn hàng của tôi</Link>
+            <Link to="/don-hang" className="btn">{t('profile.myOrders')}</Link>
           </p>
 
-          <h2 style={{ marginTop: '2rem' }}>Đánh giá đã viết ({reviews.length})</h2>
+          <h2 style={{ marginTop: '2rem' }}>{t('profile.myReviews', { count: reviews.length })}</h2>
           {reviews.length === 0 ? (
-            <p style={{ color: 'var(--muted)' }}>Bạn chưa viết đánh giá nào.</p>
+            <p style={{ color: 'var(--muted)' }}>{t('profile.noReviews')}</p>
           ) : (
             reviews.map((r) => (
               <article key={r.id} className="card" style={{ padding: '1rem', marginBottom: '1rem', maxWidth: 720 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <strong>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</strong>
                   <small style={{ color: 'var(--muted)' }}>
-                    {r.is_approved ? 'Đã duyệt' : 'Đang chờ duyệt'}
+                    {r.is_approved ? t('profile.approved') : t('profile.pending')}
                   </small>
                 </div>
                 {r.comment && <p style={{ margin: '.5rem 0 0' }}>{r.comment}</p>}
-                <Link to={`/san-pham/${r.product_id}`}>Xem sản phẩm</Link>
+                <Link to={`/san-pham/${r.product_id}`}>{t('profile.viewProduct')}</Link>
               </article>
             ))
           )}

@@ -3,6 +3,7 @@ import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
+import { useLang } from '../i18n/LanguageContext';
 import './SalePage.css';
 
 function useCountdown(targetIso) {
@@ -25,12 +26,13 @@ function useCountdown(targetIso) {
   return left;
 }
 
-function voucherText(v) {
-  return v.type === 'percent' ? `Giảm ${v.value}%` : `Giảm ${fmtVND(v.value)}`;
+function voucherText(v, t) {
+  return v.type === 'percent' ? t('sale.percentOff', { value: v.value }) : t('sale.amountOff', { amount: fmtVND(v.value) });
 }
 
 export default function SalePage() {
   const { addToCart } = useStore();
+  const { t } = useLang();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   const [status, setStatus] = useState(null);
@@ -73,8 +75,8 @@ export default function SalePage() {
   if (loading) {
     return (
       <div className="container page sale-page">
-        <PageTitle title="Khuyến mãi" />
-        <p style={{ textAlign: 'center', padding: 60 }}>Đang tải chương trình khuyến mãi...</p>
+        <PageTitle title={t('nav.sale')} />
+        <p style={{ textAlign: 'center', padding: 60 }}>{t('sale.loading')}</p>
       </div>
     );
   }
@@ -83,9 +85,9 @@ export default function SalePage() {
     return (
       <div className="container page sale-page">
         <div className="sale-empty">
-          <h2>Chưa có chương trình khuyến mãi nào</h2>
-          <p>Hãy quay lại sau — Leather House sẽ sớm có ưu đãi hấp dẫn dành cho bạn.</p>
-          <Link className="btn btn-primary" to="/cua-hang">Xem sản phẩm</Link>
+          <h2>{t('sale.empty')}</h2>
+          <p>{t('sale.emptyDesc')}</p>
+          <Link className="btn btn-primary" to="/cua-hang">{t('about.viewProducts')}</Link>
         </div>
       </div>
     );
@@ -96,17 +98,17 @@ export default function SalePage() {
       <header className="sale-hero">
         <div className="container">
           <span className="sale-kicker">
-            {status === 'live' ? '🔥 Đang diễn ra' : '⏳ Sắp diễn ra'} · Leather House
+            {status === 'live' ? t('sale.live') : t('sale.upcoming')} · Leather House
           </span>
           <h1>{event.title || event.name}</h1>
           {event.subtitle && <p className="sale-sub">{event.subtitle}</p>}
           {target && (
             <div className="sale-countdown">
               {[
-                [pad(cd.d), 'Ngày'],
-                [pad(cd.h), 'Giờ'],
-                [pad(cd.m), 'Phút'],
-                [pad(cd.s), 'Giây'],
+                [pad(cd.d), t('sale.days')],
+                [pad(cd.h), t('sale.hours')],
+                [pad(cd.m), t('sale.minutes')],
+                [pad(cd.s), t('sale.seconds')],
               ].map(([n, l]) => (
                 <div className="cd-cell" key={l}>
                   <div className="cd-num">{n}</div>
@@ -117,8 +119,8 @@ export default function SalePage() {
           )}
           <p className="sale-note">
             {status === 'live'
-              ? 'Ưu đãi kết thúc khi hết giờ — số lượng voucher có hạn.'
-              : 'Lưu mã trước, áp dụng lúc thanh toán khi chương trình bắt đầu.'}
+              ? t('sale.liveNote')
+              : t('sale.upcomingNote')}
           </p>
         </div>
       </header>
@@ -126,23 +128,23 @@ export default function SalePage() {
       <main className="container">
         {!!vouchers.length && (
           <section className="sale-section">
-            <h2>Voucher {event.name}</h2>
-            <p className="sale-desc">Áp dụng lúc thanh toán. Mỗi mã 1 lượt/khách.</p>
+            <h2>{t('sale.voucherTitle', { name: event.name })}</h2>
+            <p className="sale-desc">{t('sale.voucherDesc')}</p>
             <div className="sale-vouchers">
               {vouchers.map((v) => (
                 <div className="sale-voucher" key={v.code}>
-                  <div className="sv-off">{voucherText(v)}</div>
+                  <div className="sv-off">{voucherText(v, t)}</div>
                   <button
                     className={`sv-code ${copied === v.code ? 'copied' : ''}`}
                     onClick={() => copyCode(v.code)}
-                    title="Bấm để lưu mã"
+                    title={t('sale.copyHint')}
                   >
-                    {copied === v.code ? 'Đã lưu ✓' : v.code}
+                    {copied === v.code ? t('sale.copied') : v.code}
                   </button>
                   <ul>
-                    {!!v.min_order && <li>Đơn tối thiểu: <b>{fmtVND(v.min_order)}</b></li>}
+                    {!!v.min_order && <li>{t('sale.minOrder')}: <b>{fmtVND(v.min_order)}</b></li>}
                     {!!v.usage_limit && (
-                      <li>Còn <b>{Math.max(0, v.usage_limit - v.used_count)}</b> lượt</li>
+                      <li>{t('sale.remaining', { count: Math.max(0, v.usage_limit - v.used_count) })}</li>
                     )}
                   </ul>
                 </div>
@@ -153,8 +155,8 @@ export default function SalePage() {
 
         {!!products.length && (
           <section className="sale-section">
-            <h2>Sản phẩm sale</h2>
-            <p className="sale-desc">Giá ưu đãi chỉ áp dụng trong thời gian diễn ra chương trình.</p>
+            <h2>{t('sale.productsTitle')}</h2>
+            <p className="sale-desc">{t('sale.productsDesc')}</p>
             <div className="sale-products">
               {products.map((p) => (
                 <div className="sale-product" key={p.id}>
@@ -178,7 +180,7 @@ export default function SalePage() {
                       disabled={p.stock <= 0}
                       onClick={() => addToCart({ ...p, price: p.sale_price })}
                     >
-                      🛒 Thêm vào giỏ
+                      {t('common.addToCart')}
                     </button>
                   </div>
                 </div>

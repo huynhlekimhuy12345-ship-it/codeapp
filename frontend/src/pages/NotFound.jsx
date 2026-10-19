@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
+import { useLang } from '../i18n/LanguageContext';
 
 export default function NotFound() {
+  const { t } = useLang();
   return (
     <div className="container page">
-      <PageTitle title="Không tìm thấy trang" />
+      <PageTitle title={t('notFound.title')} />
       <div className="sale-empty">
-        <h1>404 — Không tìm thấy trang</h1>
-        <p>Địa chỉ bạn vừa mở không tồn tại hoặc đã bị di chuyển.</p>
-        <Link className="btn btn-primary" to="/">Về trang chủ</Link>
+        <h1>404 — {t('notFound.title')}</h1>
+        <p>{t('notFound.desc')}</p>
+        <Link className="btn btn-primary" to="/">{t('notFound.backHome')}</Link>
       </div>
     </div>
   );

@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link, useParams } from 'react-router-dom';
 import { api, fmtDay } from '../api';
+import { useLang } from '../i18n/LanguageContext';
 
 export default function BlogDetail() {
+  const { t } = useLang();
   const { slug } = useParams();
   const [post, setPost] = useState(null);
   const [related, setRelated] = useState([]);
@@ -28,8 +30,8 @@ export default function BlogDetail() {
   if (loading) {
     return (
       <div className="container page">
-        <PageTitle title="Bài viết" />
-        <div className="empty"><h3>Đang tải bài viết...</h3></div>
+        <PageTitle title={t('blogDetail.title')} />
+        <div className="empty"><h3>{t('blog.loading')}</h3></div>
       </div>
     );
   }
@@ -38,9 +40,9 @@ export default function BlogDetail() {
     return (
       <div className="container page">
         <div className="empty">
-          <h3>Không tìm thấy bài viết</h3>
-          <p>Bài viết có thể đã bị gỡ hoặc đang ở trạng thái nháp.</p>
-          <Link to="/blog" className="btn btn-primary">← Quay lại Blog</Link>
+          <h3>{t('blogDetail.notFound')}</h3>
+          <p>{t('blogDetail.notFoundDesc')}</p>
+          <Link to="/blog" className="btn btn-primary">{t('blogDetail.backToBlog')}</Link>
         </div>
       </div>
     );
@@ -49,9 +51,9 @@ export default function BlogDetail() {
   return (
     <div className="container page">
       <article className="glass blog-article">
-        <Link to="/blog" className="back-link">← Tất cả bài viết</Link>
+        <Link to="/blog" className="back-link">{t('blogDetail.allPosts')}</Link>
         <h1>{post.title}</h1>
-        <p className="meta">📅 Đăng ngày {fmtDay(post.created_at)} • Leather House</p>
+        <p className="meta">📅 {t('blogDetail.publishedOn')} {fmtDay(post.created_at)} • Leather House</p>
         {post.cover_image_url && (
           <img className="cover" src={post.cover_image_url} alt={post.title}
             onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -64,11 +66,11 @@ export default function BlogDetail() {
 
       {related.length > 0 && (
         <div className="section">
-          <div className="section-head"><h2>Bài viết khác</h2></div>
+          <div className="section-head"><h2>{t('blogDetail.related')}</h2></div>
           <div className="product-grid">
             {related.map((r) => (
               <article key={r.id} className="product-card blog-card">
-                <Link to={`/blog/${r.slug}`} className="thumb" aria-label={`Đọc bài: ${r.title}`}>
+                <Link to={`/blog/${r.slug}`} className="thumb" aria-label={t('blog.readPost', { title: r.title })}>
                   {r.cover_image_url ? (
                     <img src={r.cover_image_url} alt="" loading="lazy"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }} />

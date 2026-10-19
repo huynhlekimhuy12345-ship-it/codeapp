@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLang } from '../i18n/LanguageContext';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api, fmtVND } from '../api';
@@ -53,6 +54,7 @@ const FALLBACK_PRODUCTS = [
 const PHASE_LABELS = ['Mở đầu', 'Khám phá', 'Bộ sưu tập'];
 
 export default function Collection() {
+  const { t } = useLang();
   const [products, setProducts] = useState(null); // null = đang tải API
   const [ready, setReady] = useState(false);     // scene 3D đã dựng xong
   const [inspectIdx, setInspectIdx] = useState(null); // index SP đang mở inspector 3D
@@ -916,15 +918,15 @@ export default function Collection() {
     const list = products || [];
     return (
       <div className="container page">
-        <PageTitle title="Bộ sưu tập" />
-        <h1 className="page-title">Bộ sưu tập</h1>
+        <PageTitle title={t('nav.collection')} />
+        <h1 className="page-title">{t('nav.collection')}</h1>
         <p className="collection-lead">
           Những món đồ da thủ công được chế tác tỉ mỉ từ xưởng của chúng tôi.
         </p>
-        {!products && <p>Đang tải sản phẩm…</p>}
+        {!products && <p>{t('common.loading')}</p>}
         <div className="collection-grid">
           {list.map((p) => (
-            <ProductCard key={p.id} p={p} />
+            <ProductCard key={p.id} p={p} t={t} />
           ))}
         </div>
       </div>
@@ -955,9 +957,9 @@ export default function Collection() {
 
         {/* Phase 1: hero copy HTML */}
         <div className="collection-hero" ref={heroRef}>
-          <span className="hero-kicker">Bộ sưu tập thủ công</span>
+          <span className="hero-kicker">{t('collection.kicker')}</span>
           <p className="hero-title">
-            Mở chiếc túi, <em>khám phá</em> từng món đồ da
+            {t('collection.titleA')} <em>{t('collection.titleEm')}</em> {t('collection.titleB')}
           </p>
           <p className="hero-sub">
             Cuộn xuống để xem nắp túi mở ra và từng sản phẩm thủ công bay lên —
@@ -972,7 +974,7 @@ export default function Collection() {
 
         {/* Gợi ý cuộn */}
         <div className="collection-hint" ref={hintRef} aria-hidden="true">
-          <span>Cuộn xuống</span>
+          <span>{t('home.scrollDown')}</span>
           <i />
         </div>
 
@@ -988,12 +990,12 @@ export default function Collection() {
                 {String(i + 1).padStart(2, '0')} / {String(products.length).padStart(2, '0')}
               </div>
               <h3>{p.name}</h3>
-              <p className="cc-cat">{p.category_name || 'Đồ da thủ công'}</p>
+              <p className="cc-cat">{p.category_name || t('collection.defaultCategory')}</p>
               <div className="cc-price">{fmtVND(p.price)}</div>
               <div className="cc-actions">
                 {p.fallback ? (
                   <Link to="/cua-hang" className="btn btn-primary btn-small">
-                    Xem cửa hàng
+                    {t('about.viewProducts')}
                   </Link>
                 ) : (
                   <Link to={`/san-pham/${p.id}`} className="btn btn-primary btn-small">
@@ -1018,12 +1020,12 @@ export default function Collection() {
           Key của Quaternius (CC0) — qua Poly Pizza
         </div>
 
-        {!ready && <div className="collection-loading">Đang chuẩn bị trải nghiệm 3D…</div>}
+        {!ready && <div className="collection-loading">{t('collection.preparing')}</div>}
       </section>
 
       {/* Inspector 3D: xem chi tiết từng món, xoay qua xoay lại */}
       {inspectIdx !== null && products[inspectIdx] && (
-        <ProductInspector
+        <ProductInspector t={t}
           product={products[inspectIdx]}
           modelObject={modelsRef.current[inspectIdx] || null}
           onClose={closeInspector}
@@ -1042,7 +1044,7 @@ export default function Collection() {
  * ESC / bấm nền / nút Đóng để thoát. Model tải lỗi → hiện mesh
  * procedural fallback, không bao giờ trống.
  * ============================================================ */
-function ProductInspector({ product, modelObject, onClose, addToCart }) {
+function ProductInspector({ product, modelObject, onClose, addToCart, t }) {
   const viewRef = useRef(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -1209,15 +1211,15 @@ function ProductInspector({ product, modelObject, onClose, addToCart }) {
       <div className="inspect-backdrop" onClick={onClose} />
       <div className="inspect-box glass">
         <div className="inspect-view" ref={viewRef}>
-          <div className="inspect-hint3d">Kéo để xoay · Cuộn để phóng to</div>
+          <div className="inspect-hint3d">{t('collection.dragHint')}</div>
         </div>
         <aside className="inspect-panel">
-          <button className="inspect-close" onClick={onClose} aria-label="Đóng">
+          <button className="inspect-close" onClick={onClose} aria-label={t('myOrders.close')}>
             ✕
           </button>
           <div className="cc-index">Xem 3D</div>
           <h2>{product.name}</h2>
-          <p className="cc-cat">{product.category_name || 'Đồ da thủ công'}</p>
+          <p className="cc-cat">{product.category_name || t('collection.defaultCategory')}</p>
           <div className="cc-price">{fmtVND(product.price)}</div>
           {product.description && (
             <p className="inspect-desc">{product.description}</p>
@@ -1227,7 +1229,7 @@ function ProductInspector({ product, modelObject, onClose, addToCart }) {
               className="inspect-stock"
               style={{ color: inStock ? '#8fd18f' : '#e08a8a' }}
             >
-              {inStock ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'}
+              {inStock ? t('collection.stockLeft', { count: product.stock }) : t('productCard.outOfStock')}
             </div>
           )}
           {!product.fallback && (
@@ -1256,11 +1258,11 @@ function ProductInspector({ product, modelObject, onClose, addToCart }) {
                   setTimeout(() => setAdded(false), 1800);
                 }}
               >
-                {added ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ hàng'}
+                {added ? t('productDetail.addedToCart') : t('common.addToCart')}
               </button>
             )}
             <button className="btn btn-ghost" onClick={onClose}>
-              Đóng
+              {t('myOrders.close')}
             </button>
           </div>
         </aside>
@@ -1270,19 +1272,19 @@ function ProductInspector({ product, modelObject, onClose, addToCart }) {
 }
 
 /* Thẻ sản phẩm dùng cho chế độ tĩnh / không WebGL */
-function ProductCard({ p }) {
+function ProductCard({ p, t }) {
   return (
     <article className="collection-card glass static">
       <h3>{p.name}</h3>
-      <p className="cc-cat">{p.category_name || 'Đồ da thủ công'}</p>
+      <p className="cc-cat">{p.category_name || t('collection.defaultCategory')}</p>
       <div className="cc-price">{fmtVND(p.price)}</div>
       {p.fallback ? (
         <Link to="/cua-hang" className="btn btn-primary btn-small">
-          Xem cửa hàng
+          {t('about.viewProducts')}
         </Link>
       ) : (
         <Link to={`/san-pham/${p.id}`} className="btn btn-primary btn-small">
-          Xem chi tiết
+          {t('collection.viewDetail')}
         </Link>
       )}
     </article>

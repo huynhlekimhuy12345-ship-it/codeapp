@@ -2,15 +2,17 @@
 import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { api } from '../api';
+import { useLang } from '../i18n/LanguageContext';
 
 const INFO = [
-  ['📞', 'Điện thoại / Zalo', '0901 234 567'],
-  ['✉️', 'Email', 'lienhe@leatherhouse.vn'],
-  ['📍', 'Địa chỉ cửa hàng', '45 Trần Phú, Phường Minh An, TP. Hội An, Quảng Nam'],
-  ['🕗', 'Giờ mở cửa', 'Thứ 2 – Thứ 7: 8:00 – 21:00 • Chủ nhật: 9:00 – 20:00'],
+  ['📞', 'phone', '0901 234 567'],
+  ['✉️', 'email', 'lienhe@leatherhouse.vn'],
+  ['📍', 'address', '45 Trần Phú, Phường Minh An, TP. Hội An, Quảng Nam'],
+  ['🕗', 'hours', 'contact.hoursValue'],
 ];
 
 export default function Contact() {
+  const { t } = useLang();
   const [form, setForm] = useState({ name: '', phone: '', email: '', content: '' });
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState('');
@@ -21,7 +23,7 @@ export default function Contact() {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.content.trim()) {
-      setErr('Vui lòng điền Họ tên và Nội dung tin nhắn.');
+      setErr(t('contact.needNameContent'));
       return;
     }
     setErr('');
@@ -36,7 +38,7 @@ export default function Contact() {
       setSent(true);
       setForm({ name: '', phone: '', email: '', content: '' });
     } catch (ex) {
-      setErr(ex.message || 'Gửi tin nhắn thất bại, vui lòng thử lại.');
+      setErr(ex.message || t('contact.sendFailed'));
     } finally {
       setSending(false);
     }
@@ -44,43 +46,43 @@ export default function Contact() {
 
   return (
     <div className="container page">
-      <PageTitle title="Liên hệ" />
-      <span className="hero-kicker">Liên hệ</span>
-      <h1 className="page-title">Ghé xưởng hoặc nhắn cho chúng tôi</h1>
+      <PageTitle title={t('nav.contact')} />
+      <span className="hero-kicker">{t('nav.contact')}</span>
+      <h1 className="page-title">{t('contact.title')}</h1>
       <p style={{ color: 'var(--muted)', marginBottom: 24 }}>
-        Đội ngũ Leather House phản hồi trong vòng 24 giờ làm việc.
+        {t('contact.subtitle')}
       </p>
 
       <div className="cat-grid" style={{ marginBottom: 26 }}>
-        {INFO.map(([icon, t, s]) => (
+        {INFO.map(([icon, tk, s]) => (
           <div key={t} className="cat-card" style={{ textAlign: 'left', padding: 18 }}>
             <span style={{ fontSize: '1.6rem' }} aria-hidden>{icon}</span>
-            <strong style={{ display: 'block', marginTop: 8, color: 'var(--cream)' }}>{t}</strong>
-            <small style={{ fontSize: '0.9rem' }}>{s}</small>
+            <strong style={{ display: 'block', marginTop: 8, color: 'var(--cream)' }}>{t('contact.' + tk)}</strong>
+            <small style={{ fontSize: '0.9rem' }}>{tk === 'hours' ? t(s) : s}</small>
           </div>
         ))}
       </div>
 
       <div className="contact-grid">
         <div className="glass" style={{ padding: 26 }}>
-          <h2 style={{ color: 'var(--cream)', marginBottom: 16 }}>Gửi tin nhắn</h2>
+          <h2 style={{ color: 'var(--cream)', marginBottom: 16 }}>{t('contact.sendMessage')}</h2>
           {sent ? (
             <div className="empty" style={{ padding: '40px 20px' }}>
               <p style={{ fontSize: '2.5rem' }}>✅</p>
-              <h3>Đã gửi tin nhắn thành công!</h3>
-              <p>Cảm ơn bạn đã liên hệ. Shop sẽ phản hồi sớm nhất có thể.</p>
-              <button className="btn btn-primary" onClick={() => setSent(false)}>Gửi thêm tin nhắn</button>
+              <h3>{t('contact.sentTitle')}</h3>
+              <p>{t('contact.sentDesc')}</p>
+              <button className="btn btn-primary" onClick={() => setSent(false)}>{t('contact.sendMore')}</button>
             </div>
           ) : (
             <form onSubmit={submit}>
               {err && <div className="form-error">{err}</div>}
               <div className="field">
-                <label htmlFor="contact-ho-ten">Họ tên *</label>
+                <label htmlFor="contact-ho-ten">{t('checkout.fullName')}</label>
                 <input id="contact-ho-ten" value={form.name} onChange={set('name')} placeholder="Nguyễn Văn A" required />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="field">
-                  <label htmlFor="contact-so-ien-thoai">Số điện thoại</label>
+                  <label htmlFor="contact-so-ien-thoai">{t('contact.phoneLabel')}</label>
                   <input id="contact-so-ien-thoai" value={form.phone} onChange={set('phone')} placeholder="0901234567" inputMode="tel" />
                 </div>
                 <div className="field">
@@ -89,12 +91,12 @@ export default function Contact() {
                 </div>
               </div>
               <div className="field">
-                <label htmlFor="contact-noi-dung">Nội dung *</label>
+                <label htmlFor="contact-noi-dung">{t('contact.content')}</label>
                 <textarea id="contact-noi-dung" value={form.content} onChange={set('content')} rows={5} required
-                  placeholder="Bạn cần tư vấn sản phẩm, đặt may theo yêu cầu hay bảo hành? Hãy nhắn cho shop..." />
+                  placeholder={t('contact.contentPlaceholder')} />
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={sending}>
-                {sending ? 'Đang gửi...' : 'Gửi tin nhắn'}
+                {sending ? t('reviews.sending') : t('contact.send')}
               </button>
             </form>
           )}
@@ -102,7 +104,7 @@ export default function Contact() {
 
         <div className="glass" style={{ padding: 0, overflow: 'hidden' }}>
           <iframe
-            title="Bản đồ khu vực Hội An — vị trí cửa hàng Leather House"
+            title={t('contact.mapTitle')}
             src="https://maps.google.com/maps?q=H%E1%BB%99i%20An%2C%20Qu%E1%BA%A3ng%20Nam&t=&z=14&ie=UTF8&iwloc=&output=embed"
             className="map-frame"
             loading="lazy"

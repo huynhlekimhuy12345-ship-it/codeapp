@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
-import { api, fmtVND, fmtDate, ORDER_STATUS } from '../api';
+import { api, fmtVND, fmtDate } from '../api';
+import { useLang } from '../i18n/LanguageContext';
 
-// Nhãn tiếng Việt cho phương thức thanh toán (khớp backend routes/orders.js)
-const PAYMENT_LABELS = {
-  cod: 'Thanh toán khi nhận hàng (COD)',
-  bank: 'Chuyển khoản ngân hàng',
-  momo: 'Ví MoMo',
-};
+// Nhãn phương thức thanh toán (khớp backend routes/orders.js) — qua i18n
 
 // Gọi API có auth — bản rút gọn dùng riêng trong trang này cho các route mới
 // (không sửa api.js dùng chung để tránh xung đột với các trang khác)
@@ -45,19 +41,20 @@ function Toast({ toast, onClose }) {
 }
 
 function OrderDetail({ id }) {
+  const { t } = useLang();
   const [order, setOrder] = useState(null);
   useEffect(() => {
     api.getOrder(id).then(({ order }) => setOrder(order)).catch(() => {});
   }, [id]);
-  if (!order) return <div>Đang tải...</div>;
+  if (!order) return <div>{t('common.loading')}</div>;
   // Tạm tính từ các dòng hàng (chỉ để hiển thị chi tiết — server mới là nguồn tính toán)
   const subtotal = order.items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
   return (
     <div>
-      <p><strong>Người nhận:</strong> {order.customer_name} • {order.phone}</p>
-      <p><strong>Địa chỉ:</strong> {order.address}</p>
-      <p><strong>Ngày đặt:</strong> {fmtDate(order.created_at)}</p>
-      <p><strong>Thanh toán:</strong> {PAYMENT_LABELS[order.payment_method] || order.payment_method}</p>
+      <p><strong>{t('myOrders.recipient')}</strong> {order.customer_name} • {order.phone}</p>
+      <p><strong>{t('myOrders.address')}</strong> {order.address}</p>
+      <p><strong>{t('myOrders.orderDate')}</strong> {fmtDate(order.created_at)}</p>
+      <p><strong>{t('myOrders.payment')}</strong> {t('checkout.pay' + order.payment_method[0].toUpperCase() + order.payment_method.slice(1)) || order.payment_method}</p>
       <div className="order-items">
         {order.items.map((i) => (
           <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
@@ -69,21 +66,22 @@ function OrderDetail({ id }) {
       {/* Chi tiết tiền: tạm tính + phí ship - giảm giá voucher = tổng */}
       <div style={{ fontSize: '.9rem', color: 'var(--muted)', marginTop: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-          <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
+          <span>{t('cart.subtotal')}</span><span>{fmtVND(subtotal)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-          <span>Phí vận chuyển</span><span>{fmtVND(order.shipping_fee)}</span>
+          <span>{t('checkout.shipping')}</span><span>{fmtVND(order.shipping_fee)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-          <span>Giảm giá voucher</span><span>-{fmtVND(order.discount_total)}</span>
+          <span>{t('checkout.voucherDiscount')}</span><span>-{fmtVND(order.discount_total)}</span>
         </div>
       </div>
-      <div className="order-total">Tổng: {fmtVND(order.total)}</div>
+      <div className="order-total">{t('myOrders.total')} {fmtVND(order.total)}</div>
     </div>
   );
 }
 
 export default function MyOrders() {
+  const { t } = useLang();
   const [orders, setOrders] = useState([]);
   const [openId, setOpenId] = useState(null);
 
@@ -113,13 +111,13 @@ export default function MyOrders() {
 
   // Khách tự hủy đơn đang chờ xác nhận → PUT /api/orders/:id/cancel
   const doCancel = async () => {
-    if (!cancelReason.trim()) { showToast('Vui lòng nhập lý do hủy đơn hàng', true); return; }
+    if (!cancelReason.trim()) { showToast(t('myOrders.needCancelReason'), true); return; }
     try {
       await authFetch(`/api/orders/${cancelTarget.id}/cancel`, {
         method: 'PUT',
         body: { reason: cancelReason.trim() },
       });
-      showToast(`Đã hủy đơn #${cancelTarget.id}, tồn kho được hoàn lại`);
+      showToast(t('myOrders.cancelled', { id: cancelTarget.id }));
       const cancelledId = cancelTarget.id;
       setCancelTarget(null);
       setCancelReason('');
@@ -130,13 +128,13 @@ export default function MyOrders() {
 
   // Tạo yêu cầu đổi/trả cho đơn đã giao → POST /api/returns
   const doRequestReturn = async () => {
-    if (!returnReason.trim()) { showToast('Vui lòng ghi rõ lý do đổi/trả', true); return; }
+    if (!returnReason.trim()) { showToast(t('myOrders.needReturnReason'), true); return; }
     try {
       await authFetch('/api/returns', {
         method: 'POST',
         body: { order_id: returnTarget.id, type: returnType, reason: returnReason.trim() },
       });
-      showToast(`Đã gửi yêu cầu ${returnType === 'exchange' ? 'đổi hàng' : 'trả hàng'} cho đơn #${returnTarget.id}`);
+      showToast(t('myOrders.returnSent', { type: returnType === 'exchange' ? t('myOrders.exchange') : t('myOrders.return'), id: returnTarget.id }));
       setReturnTarget(null);
       setReturnType('return');
       setReturnReason('');
@@ -150,39 +148,39 @@ export default function MyOrders() {
         method: 'POST',
         body: { order_id: id, months: 12 },
       });
-      showToast(`Đã tạo bảo hành 12 tháng cho đơn #${id}`);
+      showToast(t('myOrders.warrantyCreated', { id }));
     } catch (e) { showToast(e.message, true); }
   };
 
   return (
     <div className="container page">
-      <PageTitle title="Đơn hàng của tôi" />
-      <h1 className="page-title">Đơn hàng của tôi</h1>
+      <PageTitle title={t('myOrders.title')} />
+      <h1 className="page-title">{t('myOrders.title')}</h1>
       {orders.length === 0 ? (
         <div className="empty">
-          <p>Bạn chưa có đơn hàng nào.</p>
-          <Link to="/cua-hang" className="btn btn-primary">Mua sắm ngay</Link>
+          <p>{t('myOrders.empty')}</p>
+          <Link to="/cua-hang" className="btn btn-primary">{t('home.shopNow')}</Link>
         </div>
       ) : orders.map((o) => (
         <div className="order-card" key={o.id}>
           <div className="order-head">
-            <strong>Đơn #{o.id}</strong>
-            <span className={`status ${o.status}`}>{ORDER_STATUS[o.status]}</span>
+            <strong>{t('myOrders.orderId', { id: o.id })}</strong>
+            <span className={`status ${o.status}`}>{t('orderStatus.' + o.status)}</span>
           </div>
           <div style={{ fontSize: '.9rem', color: 'var(--muted)' }}>
-            {fmtDate(o.created_at)} • {o.item_count} sản phẩm • <span className="order-total">{fmtVND(o.total)}</span>
+            {fmtDate(o.created_at)} • {t('myOrders.itemCount', { count: o.item_count })} • <span className="order-total">{fmtVND(o.total)}</span>
           </div>
           <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn-small btn-outline"
               onClick={() => setOpenId(openId === o.id ? null : o.id)}>
-              {openId === o.id ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+              {openId === o.id ? t('myOrders.hideDetail') : t('myOrders.viewDetail')}
             </button>
             {/* Chỉ đơn đang chờ xác nhận mới được khách tự hủy */}
             {o.status === 'pending' && (
               <button className="btn btn-small btn-outline"
                 style={{ color: '#b3261e', borderColor: '#b3261e' }}
                 onClick={() => { setCancelTarget(o); setCancelReason(''); }}>
-                Hủy đơn
+                {t('myOrders.cancelOrder')}
               </button>
             )}
             {/* Đơn đã giao: các nút hậu mãi đổi/trả + bảo hành */}
@@ -190,10 +188,10 @@ export default function MyOrders() {
               <>
                 <button className="btn btn-small btn-outline"
                   onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); }}>
-                  Yêu cầu đổi trả
+                  {t('myOrders.requestReturn')}
                 </button>
                 <button className="btn btn-small btn-outline" onClick={() => doRequestWarranty(o.id)}>
-                  Yêu cầu bảo hành
+                  {t('myOrders.requestWarranty')}
                 </button>
               </>
             )}
@@ -206,23 +204,22 @@ export default function MyOrders() {
       {cancelTarget && (
         <div className="modal-backdrop" onClick={() => setCancelTarget(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Hủy đơn #{cancelTarget.id}</h3>
+            <h3>{t('myOrders.cancelTitle', { id: cancelTarget.id })}</h3>
             <p style={{ color: 'var(--muted)', fontSize: '.95rem' }}>
-              Tồn kho của các sản phẩm trong đơn sẽ được hoàn lại tự động.
-              Vui lòng ghi rõ lý do hủy (bắt buộc):
+              {t('myOrders.cancelDesc')}
             </p>
             <div className="field">
-              <label>Lý do hủy *</label>
+              <label>{t('myOrders.cancelReason')}</label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Ví dụ: Đặt nhầm sản phẩm, đổi ý không mua nữa…"
+                placeholder={t('myOrders.cancelPlaceholder')}
                 rows={3}
               />
             </div>
             <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setCancelTarget(null)}>Đóng</button>
-              <button className="btn btn-danger" onClick={doCancel}>Xác nhận hủy đơn</button>
+              <button className="btn btn-outline" onClick={() => setCancelTarget(null)}>{t('myOrders.close')}</button>
+              <button className="btn btn-danger" onClick={doCancel}>{t('myOrders.confirmCancel')}</button>
             </div>
           </div>
         </div>
@@ -232,29 +229,29 @@ export default function MyOrders() {
       {returnTarget && (
         <div className="modal-backdrop" onClick={() => setReturnTarget(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Yêu cầu đổi/trả — đơn #{returnTarget.id}</h3>
+            <h3>{t('myOrders.returnTitle', { id: returnTarget.id })}</h3>
             <p style={{ color: 'var(--muted)', fontSize: '.95rem' }}>
-              Cửa hàng sẽ xem xét yêu cầu của bạn. Vui lòng ghi rõ lý do (bắt buộc):
+              {t('myOrders.returnDesc')}
             </p>
             <div className="field">
-              <label>Hình thức</label>
+              <label>{t('myOrders.returnType')}</label>
               <select value={returnType} onChange={(e) => setReturnType(e.target.value)}>
-                <option value="return">Trả hàng (hoàn tiền)</option>
-                <option value="exchange">Đổi hàng (đổi sản phẩm khác)</option>
+                <option value="return">{t('myOrders.returnRefund')}</option>
+                <option value="exchange">{t('myOrders.returnExchange')}</option>
               </select>
             </div>
             <div className="field">
-              <label>Lý do *</label>
+              <label>{t('myOrders.reason')}</label>
               <textarea
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
-                placeholder="Ví dụ: Sản phẩm bị lỗi khóa kéo, sai màu so với mô tả…"
+                placeholder={t('myOrders.returnPlaceholder')}
                 rows={3}
               />
             </div>
             <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setReturnTarget(null)}>Đóng</button>
-              <button className="btn btn-primary" onClick={doRequestReturn}>Gửi yêu cầu</button>
+              <button className="btn btn-outline" onClick={() => setReturnTarget(null)}>{t('myOrders.close')}</button>
+              <button className="btn btn-primary" onClick={doRequestReturn}>{t('myOrders.sendRequest')}</button>
             </div>
           </div>
         </div>
