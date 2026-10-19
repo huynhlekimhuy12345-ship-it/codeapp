@@ -145,8 +145,8 @@ const sampleAnnouncements = [
     content: 'Từ 00:00 ngày 11/11, toàn bộ ví da, túi xách và thắt lưng giảm đến 30%, kèm voucher SALE1111 giảm thêm 11% cho đơn từ 500.000đ. Số lượng voucher có hạn — lưu mã ngay từ hôm nay.',
     badge: 'Khuyến mãi sắp diễn ra',
     cta_text: 'Săn sale ngay', cta_link: '/khuyen-mai',
-    image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1200&q=80',
-    image_caption: 'BST túi xách da BI99',
+    image_url: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=1200&q=80',
+    image_caption: 'Ví da bò BI99',
     show_on_banner: 1, send_notification: 1, daysAgo: 0,
   },
   {
@@ -154,8 +154,8 @@ const sampleAnnouncements = [
     content: 'Từ nay, mọi sản phẩm da thật tại BI99 đều được bảo hành 12 tháng về đường chỉ, khóa kéo và lỗi chất liệu; hỗ trợ đánh bóng, dưỡng da miễn phí trong 6 tháng đầu.',
     badge: 'Chính sách mới',
     cta_text: '', cta_link: '',
-    image_url: 'https://images.unsplash.com/photo-1473188588951-666fce8e7c68?auto=format&fit=crop&w=1200&q=80',
-    image_caption: 'Xưởng da thủ công BI99 tại Hội An',
+    image_url: 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=1200&q=80',
+    image_caption: 'Thắt lưng da bò BI99',
     show_on_banner: 0, send_notification: 1, daysAgo: 2,
   },
   {
@@ -163,8 +163,8 @@ const sampleAnnouncements = [
     content: '12 mẫu túi xách và ví da bò sáp mới với tông nâu cognac chủ đạo đã có mặt tại cửa hàng và trên website. Ghé xem và trải nghiệm chất da thật ngay hôm nay.',
     badge: 'Hàng mới về',
     cta_text: 'Khám phá ngay', cta_link: '/bo-suu-tap',
-    image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=80',
-    image_caption: 'Balo da du lịch BI99',
+    image_url: 'https://images.unsplash.com/photo-1473188588951-666fce8e7c68?auto=format&fit=crop&w=1200&q=80',
+    image_caption: 'Túi xách da bò BI99',
     show_on_banner: 0, send_notification: 0, daysAgo: 4,
   },
 ];
