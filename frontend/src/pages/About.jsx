@@ -1,4 +1,4 @@
-// Trang Giới thiệu — port từ web artifact Leather House (AboutView)
+// Trang Giới thiệu — port từ web artifact BI99 (AboutView)
 import { Link } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import { useLang } from '../i18n/LanguageContext';

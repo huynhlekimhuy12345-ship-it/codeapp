@@ -5,7 +5,7 @@ import { useLang } from '../i18n/LanguageContext';
 export default function PageTitle({ title }) {
   const { t } = useLang();
   useEffect(() => {
-    document.title = title ? `${title} — Leather House` : t('common.defaultTitle');
+    document.title = title ? `${title} — BI99` : t('common.defaultTitle');
   }, [title, t]);
   return null;
 }

@@ -1,4 +1,4 @@
-// Trang chi tiết bài viết Blog — port từ web artifact Leather House (BlogDetailView)
+// Trang chi tiết bài viết Blog — port từ web artifact BI99 (BlogDetailView)
 import { useEffect, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link, useParams } from 'react-router-dom';
@@ -53,7 +53,7 @@ export default function BlogDetail() {
       <article className="glass blog-article">
         <Link to="/blog" className="back-link">{t('blogDetail.allPosts')}</Link>
         <h1>{post.title}</h1>
-        <p className="meta">📅 {t('blogDetail.publishedOn')} {fmtDay(post.created_at)} • Leather House</p>
+        <p className="meta">📅 {t('blogDetail.publishedOn')} {fmtDay(post.created_at)} • BI99</p>
         {post.cover_image_url && (
           <img className="cover" src={post.cover_image_url} alt={post.title}
             onError={(e) => { e.currentTarget.style.display = 'none'; }} />

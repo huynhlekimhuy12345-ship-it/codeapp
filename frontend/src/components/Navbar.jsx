@@ -57,7 +57,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="logo">LEATHER <span>HOUSE</span></Link>
+        <Link to="/" className="logo">BI<span>99</span></Link>
         <div className={`nav-links${menuOpen ? ' open' : ''}`} onClick={() => setMenuOpen(false)} onKeyDown={() => {}} role="presentation">
           <NavLink to="/" end>{t('nav.home')}</NavLink>
           <NavLink to="/gioi-thieu">{t('nav.about')}</NavLink>

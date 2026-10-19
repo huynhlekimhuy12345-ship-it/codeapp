@@ -137,7 +137,7 @@ export default function SalePage() {
       <header className="sale-hero">
         <div className="container">
           <span className="sale-kicker">
-            {status === 'live' ? t('sale.live') : t('sale.upcoming')} · Leather House
+            {status === 'live' ? t('sale.live') : t('sale.upcoming')} · BI99
           </span>
           <h1>{eventTitle}</h1>
           {event.subtitle && <p className="sale-sub">{eventSub}</p>}

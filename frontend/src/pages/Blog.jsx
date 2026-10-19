@@ -1,4 +1,4 @@
-// Trang Blog (danh sách) — port từ web artifact Leather House (BlogListView)
+// Trang Blog (danh sách) — port từ web artifact BI99 (BlogListView)
 import { useEffect, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
@@ -43,7 +43,7 @@ export default function Blog() {
                     onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 ) : (
                   <span style={{ display: 'grid', placeItems: 'center', height: '100%', color: 'var(--cream)', fontWeight: 700, padding: 16, textAlign: 'center' }}>
-                    Leather House Blog
+                    BI99 Blog
                   </span>
                 )}
               </Link>

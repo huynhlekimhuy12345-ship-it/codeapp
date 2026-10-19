@@ -1,4 +1,4 @@
-// Trang Liên hệ — port từ web artifact Leather House (ContactView)
+// Trang Liên hệ — port từ web artifact BI99 (ContactView)
 import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { api } from '../api';
