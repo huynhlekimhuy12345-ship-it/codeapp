@@ -25,16 +25,18 @@ function isValidDate(s) {
 }
 
 // GET /api/reports/summary — tổng quan dashboard:
-// doanh thu hôm nay / tháng này (chỉ đơn delivered; đơn cancelled không tính),
+// doanh thu hôm nay / tháng này (chỉ đơn đã hoàn tất thanh toán: payment verified;
+// đơn cancelled / hoàn tiền (refunded) không tính),
 // số đơn hôm nay, số đơn chờ xử lý, số SP sắp hết, số khách hàng
 router.get('/summary', (req, res) => {
   const revenue_today = db.prepare(
     `SELECT COALESCE(SUM(total), 0) AS v FROM orders
-     WHERE status = 'delivered' AND date(created_at, 'localtime') = ${LOCAL}`
+     WHERE payment_status = 'verified' AND status != 'cancelled'
+       AND date(created_at, 'localtime') = ${LOCAL}`
   ).get().v;
   const revenue_month = db.prepare(
     `SELECT COALESCE(SUM(total), 0) AS v FROM orders
-     WHERE status = 'delivered'
+     WHERE payment_status = 'verified' AND status != 'cancelled'
        AND strftime('%Y-%m', created_at, 'localtime') = strftime('%Y-%m', ${LOCAL})`
   ).get().v;
   const orders_today = db.prepare(
@@ -62,7 +64,8 @@ router.get('/summary', (req, res) => {
 });
 
 // GET /api/reports/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD&group=day|month
-// Doanh thu thực tế: chỉ đơn status = 'delivered' (đơn cancelled/hủy không tính).
+// Doanh thu thực tế: chỉ đơn đã hoàn tất thanh toán (payment_status = 'verified';
+// đơn cancelled / hoàn tiền không tính).
 // Trả về đủ mọi ngày/tháng trong khoảng (ngày không có đơn => revenue 0) để vẽ biểu đồ.
 router.get('/revenue', (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
@@ -82,7 +85,7 @@ router.get('/revenue', (req, res) => {
     `SELECT strftime(?, created_at, 'localtime') AS label,
             COUNT(*) AS orders, COALESCE(SUM(total), 0) AS revenue
      FROM orders
-     WHERE status = 'delivered'
+     WHERE payment_status = 'verified' AND status != 'cancelled'
        AND date(created_at, 'localtime') >= date(?) AND date(created_at, 'localtime') <= date(?)
      GROUP BY label`
   ).all(fmt, from, to);
@@ -112,7 +115,7 @@ router.get('/revenue', (req, res) => {
 });
 
 // GET /api/reports/top-products?limit=10 — sản phẩm bán chạy nhất,
-// tính từ order_items của đơn đã delivered
+// tính từ order_items của đơn đã hoàn tất thanh toán
 router.get('/top-products', (req, res) => {
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
   const rows = db.prepare(
@@ -121,7 +124,7 @@ router.get('/top-products', (req, res) => {
             COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue
      FROM order_items oi
      JOIN orders o ON o.id = oi.order_id
-     WHERE o.status = 'delivered'
+     WHERE o.payment_status = 'verified' AND o.status != 'cancelled'
      GROUP BY oi.product_name
      ORDER BY qty_sold DESC
      LIMIT ?`
@@ -158,11 +161,12 @@ router.get('/orders-by-status', (req, res) => {
 });
 
 // GET /api/reports/payments-by-method — thống kê thanh toán theo phương thức.
+// Chỉ tính giao dịch đã hoàn tất (verified); chờ duyệt / thất bại / hoàn tiền không tính.
 // Trả về mảng rỗng khi chưa có giao dịch payments nào.
 router.get('/payments-by-method', (req, res) => {
   const rows = db.prepare(
     `SELECT method, COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
-     FROM payments GROUP BY method ORDER BY count DESC`
+     FROM payments WHERE status = 'verified' GROUP BY method ORDER BY count DESC`
   ).all();
   res.json(rows.map((r) => ({
     method: r.method,

@@ -138,7 +138,7 @@ export default function ReportsTab() {
       {revenueLoading
         ? <div className="report-empty">Đang tải…</div>
         : <RevenueChart data={revenue} />}
-      <p className="report-note">Chỉ tính các đơn đã giao thành công (đơn đã hủy không tính doanh thu).</p>
+      <p className="report-note">Chỉ tính các đơn đã hoàn tất thanh toán (đã xác nhận thu tiền). Đơn hoàn tiền và đơn đã hủy không tính doanh thu.</p>
 
       {/* Bảng đơn theo trạng thái + thanh toán theo phương thức */}
       <div className="report-two-cols">
