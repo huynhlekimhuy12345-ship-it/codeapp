@@ -81,6 +81,7 @@ export const api = {
 
   // Bài viết Blog
   getPosts: (all = false) => request(`/api/posts${all ? '?all=1' : ''}`, { auth: all }),
+  getActiveAnnouncements: () => request('/api/announcements/active'),
   getPost: (slug) => request(`/api/posts/${encodeURIComponent(slug)}`),
   createPost: (p) => request('/api/posts', { method: 'POST', body: p, auth: true }),
   updatePost: (id, p) => request(`/api/posts/${id}`, { method: 'PUT', body: p, auth: true }),

@@ -369,4 +369,9 @@ export default {
     phoneInput: '전화번호 입력란',
     datetimePlaceholder: '날짜와 시간을 선택하세요…',
   },
+  bell: {
+    title: '알림',
+    empty: '알림이 없습니다.',
+    markRead: '모두 읽음으로 표시',
+  },
 };

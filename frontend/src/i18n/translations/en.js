@@ -369,4 +369,9 @@ export default {
     phoneInput: 'Phone number input',
     datetimePlaceholder: 'Pick date & time...',
   },
+  bell: {
+    title: 'Notifications',
+    empty: 'No notifications yet.',
+    markRead: 'Mark all as read',
+  },
 };

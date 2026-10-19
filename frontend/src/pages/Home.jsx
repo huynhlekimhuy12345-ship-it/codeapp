@@ -6,6 +6,53 @@ import ProductCard from '../components/ProductCard';
 import { useLang } from '../i18n/LanguageContext';
 import { useTranslatedText } from '../i18n/TranslatedProduct';
 
+/** Banner hero động: lấy tin mới nhất có show_on_banner từ admin. */
+function HeroBanner() {
+  const { t } = useLang();
+  const [ann, setAnn] = useState(null);
+  useEffect(() => {
+    api.getActiveAnnouncements()
+      .then((d) => {
+        const list = (d.announcements || []).filter((a) => a.show_on_banner);
+        setAnn(list.length ? list[0] : null);
+      })
+      .catch(() => setAnn(null));
+  }, []);
+  const badge = useTranslatedText(ann?.badge || '');
+  const title = useTranslatedText(ann?.title || '');
+  const content = useTranslatedText(ann?.content || '');
+  const cta = useTranslatedText(ann?.cta_text || '');
+
+  if (!ann) {
+    return (
+      <>
+        <span className="hero-kicker">{t('home.kicker')}</span>
+        <h1 className="hero-title">{t('home.titleA')} <em>{t('home.titleEm')}</em>,<br />{t('home.titleB')}</h1>
+        <p className="hero-sub">{t('home.subtitle')}</p>
+        <div className="hero-cta">
+          <Link to="/cua-hang" className="btn btn-primary">{t('home.shopNow')}</Link>
+          <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
+        </div>
+      </>
+    );
+  }
+  return (
+    <>
+      {(badge || t('home.kicker')) && <span className="hero-kicker">{badge || t('home.kicker')}</span>}
+      <h1 className="hero-title">{title}</h1>
+      <p className="hero-sub">{content}</p>
+      <div className="hero-cta">
+        {cta && ann.cta_link ? (
+          <Link to={ann.cta_link} className="btn btn-primary">{cta}</Link>
+        ) : (
+          <Link to="/cua-hang" className="btn btn-primary">{t('home.shopNow')}</Link>
+        )}
+        <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
+      </div>
+    </>
+  );
+}
+
 /** Thẻ danh mục nổi bật: tên + mô tả danh mục từ DB dịch theo ngôn ngữ. */
 function CategoryCard({ c }) {
   const name = useTranslatedText(c.name);
@@ -40,13 +87,7 @@ export default function Home() {
       <PageTitle title={t('nav.home')} />
       <div className="hero-3d">
         <div className="container">
-          <span className="hero-kicker">{t('home.kicker')}</span>
-          <h1 className="hero-title">{t('home.titleA')} <em>{t('home.titleEm')}</em>,<br />{t('home.titleB')}</h1>
-          <p className="hero-sub">{t('home.subtitle')}</p>
-          <div className="hero-cta">
-            <Link to="/cua-hang" className="btn btn-primary">{t('home.shopNow')}</Link>
-            <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
-          </div>
+          <HeroBanner />
         </div>
         <div className="hero-scroll">{t('home.scrollDown')}</div>
       </div>

@@ -369,4 +369,9 @@ export default {
     phoneInput: '电话号码输入框',
     datetimePlaceholder: '选择日期时间…',
   },
+  bell: {
+    title: '通知',
+    empty: '暂无通知。',
+    markRead: '全部标为已读',
+  },
 };

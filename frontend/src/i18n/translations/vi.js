@@ -369,4 +369,9 @@ export default {
     phoneInput: 'Ô nhập số điện thoại',
     datetimePlaceholder: 'Chọn ngày giờ...',
   },
+  bell: {
+    title: 'Thông báo',
+    empty: 'Chưa có thông báo nào.',
+    markRead: 'Đánh dấu đã đọc',
+  },
 };

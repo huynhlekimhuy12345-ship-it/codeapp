@@ -8,6 +8,7 @@ import ShippingTab from './admin/ShippingTab';
 import AftersalesTab from './admin/AftersalesTab';
 import VouchersTab from './admin/VouchersTab';
 import PromoEventsTab from './admin/PromoEventsTab';
+import NewsTab from './admin/NewsTab';
 import EventProductsSection from './admin/EventProductsSection';
 import ReviewsTab from './admin/ReviewsTab';
 import ReportsTab from './admin/ReportsTab';
@@ -464,6 +465,7 @@ const NAV = [
   { key: 'aftersales', icon: '🛠️', label: 'Hậu mãi' },
   { key: 'vouchers', icon: '🎟️', label: 'Voucher' },
   { key: 'promos', icon: '🎉', label: 'Sự kiện' },
+  { key: 'news', icon: '📰', label: 'Tin tức', badge: 'MỚI' },
   { key: 'reviews', icon: '⭐', label: 'Đánh giá' },
   { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
@@ -667,6 +669,7 @@ export default function Admin() {
               >
                 <span className="nav-icon">{n.icon}</span>
                 {!collapsed && <span className="nav-label">{n.label}</span>}
+                {!collapsed && n.badge && <span className="nav-badge">{n.badge}</span>}
               </button>
             ))}
           </nav>
@@ -681,6 +684,7 @@ export default function Admin() {
           {tab === 'aftersales' && <AftersalesTab />}
           {tab === 'vouchers' && <VouchersTab />}
           {tab === 'promos' && <PromoEventsTab />}
+          {tab === 'news' && <NewsTab />}
           {tab === 'reviews' && <ReviewsTab />}
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}

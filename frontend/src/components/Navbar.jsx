@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { useLang, LANGS } from '../i18n/LanguageContext';
+import NotificationBell from './NotificationBell';
 
 function LangSwitcher() {
   const { lang, setLang, t } = useLang();
@@ -79,6 +80,7 @@ export default function Navbar() {
             {menuOpen ? '✕' : '☰'}
           </button>
           <LangSwitcher />
+          <NotificationBell />
           <Link to="/gio-hang" className="cart-link" title={t('nav.cart')}>
             🛒
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}

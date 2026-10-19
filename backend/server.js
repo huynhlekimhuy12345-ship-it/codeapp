@@ -39,6 +39,7 @@ app.use('/api/vouchers', require('./routes/vouchers')); // khuyến mãi
 app.use('/api/promo-events', require('./routes/promo-events')); // sự kiện khuyến mãi
 app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩm
 app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
+app.use('/api/announcements', require('./routes/announcements')); // thông báo / tin tức
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

@@ -284,6 +284,21 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- Thông báo / tin tức của shop: hiện banner trang chủ + chuông thông báo mọi tài khoản
+  CREATE TABLE IF NOT EXISTS announcements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    badge TEXT NOT NULL DEFAULT '',
+    cta_text TEXT NOT NULL DEFAULT '',
+    cta_link TEXT NOT NULL DEFAULT '',
+    show_on_banner INTEGER NOT NULL DEFAULT 1,
+    send_notification INTEGER NOT NULL DEFAULT 1,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS vouchers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
