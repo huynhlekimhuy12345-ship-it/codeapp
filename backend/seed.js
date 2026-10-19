@@ -138,4 +138,49 @@ if (blogBefore === 0) {
   console.log(`  - Đã có ${blogBefore} bài viết, bỏ qua seed blog`);
 }
 
+// 5. Thông báo / tin tức mẫu (kèm hình banner)
+const sampleAnnouncements = [
+  {
+    title: 'Sale 11.11 — Ưu đãi lớn nhất năm sắp bắt đầu',
+    content: 'Từ 00:00 ngày 11/11, toàn bộ ví da, túi xách và thắt lưng giảm đến 30%, kèm voucher SALE1111 giảm thêm 11% cho đơn từ 500.000đ. Số lượng voucher có hạn — lưu mã ngay từ hôm nay.',
+    badge: 'Khuyến mãi sắp diễn ra',
+    cta_text: 'Săn sale ngay', cta_link: '/khuyen-mai',
+    image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1200&q=80',
+    image_caption: 'BST túi xách da BI99',
+    show_on_banner: 1, send_notification: 1, daysAgo: 0,
+  },
+  {
+    title: 'Chính sách bảo hành 12 tháng cho mọi sản phẩm da thật',
+    content: 'Từ nay, mọi sản phẩm da thật tại BI99 đều được bảo hành 12 tháng về đường chỉ, khóa kéo và lỗi chất liệu; hỗ trợ đánh bóng, dưỡng da miễn phí trong 6 tháng đầu.',
+    badge: 'Chính sách mới',
+    cta_text: '', cta_link: '',
+    image_url: 'https://images.unsplash.com/photo-1473188588951-666fce8e7c68?auto=format&fit=crop&w=1200&q=80',
+    image_caption: 'Xưởng da thủ công BI99 tại Hội An',
+    show_on_banner: 0, send_notification: 1, daysAgo: 2,
+  },
+  {
+    title: 'Bộ sưu tập Thu — Đông 2026 vừa cập bến',
+    content: '12 mẫu túi xách và ví da bò sáp mới với tông nâu cognac chủ đạo đã có mặt tại cửa hàng và trên website. Ghé xem và trải nghiệm chất da thật ngay hôm nay.',
+    badge: 'Hàng mới về',
+    cta_text: 'Khám phá ngay', cta_link: '/bo-suu-tap',
+    image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=80',
+    image_caption: 'Balo da du lịch BI99',
+    show_on_banner: 0, send_notification: 0, daysAgo: 4,
+  },
+];
+const annIns = db.prepare(
+  'INSERT INTO announcements (title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)'
+);
+let annAdded = 0;
+for (const a of sampleAnnouncements) {
+  const exists = db.prepare('SELECT id FROM announcements WHERE title = ?').get(a.title);
+  if (!exists) {
+    const d = new Date(Date.now() - a.daysAgo * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    annIns.run(a.title, a.content, a.badge, a.cta_text, a.cta_link, a.image_url, a.image_caption,
+      a.show_on_banner, a.send_notification, d, d);
+    annAdded++;
+  }
+}
+console.log(annAdded > 0 ? `  - Đã thêm ${annAdded} thông báo mẫu` : '  - Đã có thông báo, bỏ qua seed announcements');
+
 console.log('Seed hoàn tất!');

@@ -374,4 +374,16 @@ export default {
     empty: 'Chưa có thông báo nào.',
     markRead: 'Đánh dấu đã đọc',
   },
+  news: {
+    title: 'Tin tức',
+    subtitle: 'Cập nhật mới nhất từ BI99: khuyến mãi, chính sách và hàng mới về.',
+    homeTitle: 'Tin tức & cập nhật',
+    viewAll: 'Xem tất cả tin tức',
+    readMore: 'Đọc tiếp →',
+    empty: 'Chưa có tin tức nào',
+    emptyDesc: 'Tin mới sẽ sớm xuất hiện. Mời bạn quay lại sau nhé!',
+    backToList: '← Tất cả tin tức',
+    notFound: 'Không tìm thấy tin tức',
+    notFoundDesc: 'Tin này có thể đã bị gỡ hoặc đang ẩn.',
+  },
 };

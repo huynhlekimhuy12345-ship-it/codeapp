@@ -53,6 +53,55 @@ function HeroBanner() {
   );
 }
 
+/** Mục "Tin tức & cập nhật" trên trang chủ — 3 tin mới nhất có hình. */
+function HomeNews() {
+  const { t } = useLang();
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    api.getActiveAnnouncements()
+      .then((d) => setItems((d.announcements || []).slice(0, 3)))
+      .catch(() => setItems([]));
+  }, []);
+  if (items.length === 0) return null;
+  return (
+    <div className="section">
+      <div className="section-head">
+        <h2>{t('news.homeTitle')}</h2>
+        <Link to="/tin-tuc" className="link-more">{t('news.viewAll')}</Link>
+      </div>
+      <div className="news-grid">
+        {items.map((a) => <HomeNewsCard key={a.id} a={a} />)}
+      </div>
+    </div>
+  );
+}
+
+function HomeNewsCard({ a }) {
+  const { t } = useLang();
+  const title = useTranslatedText(a.title);
+  const content = useTranslatedText(a.content);
+  const badge = useTranslatedText(a.badge || '');
+  return (
+    <article className="glass news-card">
+      {a.image_url && (
+        <Link to={`/tin-tuc/${a.id}`} className="news-thumb" aria-label={title}>
+          <img src={a.image_url} alt={title} loading="lazy"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        </Link>
+      )}
+      <div className="news-info">
+        <div className="news-meta">
+          {badge && <span className="news-badge">{badge}</span>}
+          <span className="date">📅 {new Date(a.created_at).toLocaleDateString('vi-VN')}</span>
+        </div>
+        <h3><Link to={`/tin-tuc/${a.id}`}>{title}</Link></h3>
+        <p className="excerpt">{content.length > 110 ? content.slice(0, 110) + '…' : content}</p>
+        <Link to={`/tin-tuc/${a.id}`} className="link-more">{t('news.readMore')}</Link>
+      </div>
+    </article>
+  );
+}
+
 /** Thẻ danh mục nổi bật: tên + mô tả danh mục từ DB dịch theo ngôn ngữ. */
 function CategoryCard({ c }) {
   const name = useTranslatedText(c.name);
@@ -113,6 +162,8 @@ export default function Home() {
             {products.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
         </div>
+
+        <HomeNews />
 
         <div className="section">
           <div className="section-head"><h2>{t('home.whyUs')}</h2></div>

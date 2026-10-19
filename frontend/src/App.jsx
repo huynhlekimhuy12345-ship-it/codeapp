@@ -12,6 +12,8 @@ import Shop from './pages/Shop';
 import About from './pages/About';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
+import NewsList from './pages/NewsList';
+import NewsDetail from './pages/NewsDetail';
 import Contact from './pages/Contact';
 import ProductDetail from './pages/ProductDetail';
 import Collection from './pages/Collection';
@@ -68,6 +70,8 @@ export default function App() {
           <Route path="/gioi-thieu" element={<About />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
+          <Route path="/tin-tuc" element={<NewsList />} />
+          <Route path="/tin-tuc/:id" element={<NewsDetail />} />
           <Route path="/lien-he" element={<Contact />} />
           <Route path="/san-pham/:id" element={<ProductDetail />} />
           <Route path="/bo-suu-tap" element={<Collection />} />

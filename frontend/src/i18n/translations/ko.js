@@ -374,4 +374,16 @@ export default {
     empty: '알림이 없습니다.',
     markRead: '모두 읽음으로 표시',
   },
+  news: {
+    title: '소식',
+    subtitle: 'BI99의 최신 소식: 프로모션, 정책 및 신상품 입고.',
+    homeTitle: '뉴스 & 업데이트',
+    viewAll: '전체 소식 보기',
+    readMore: '더 읽기 →',
+    empty: '아직 소식이 없습니다',
+    emptyDesc: '새 소식이 곧 올라옵니다. 나중에 다시 확인해 주세요!',
+    backToList: '← 전체 소식',
+    notFound: '소식을 찾을 수 없습니다',
+    notFoundDesc: '이 소식은 삭제되었거나 숨겨졌을 수 있습니다.',
+  },
 };

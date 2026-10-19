@@ -347,6 +347,9 @@ function addColumnIfMissing(table, columnName, columnDef) {
 // --- Cột mới cho orders ---
 addColumnIfMissing('orders', 'payment_method', "payment_method TEXT NOT NULL DEFAULT 'cod'");
 addColumnIfMissing('orders', 'payment_status', "payment_status TEXT NOT NULL DEFAULT 'pending'");
+addColumnIfMissing('announcements', 'image_url', "image_url TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('announcements', 'created_by', "created_by INTEGER REFERENCES users(id) ON DELETE SET NULL");
+addColumnIfMissing('announcements', 'image_caption', "image_caption TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('orders', 'shipping_fee', 'shipping_fee INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'discount_total', 'discount_total INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'shipping_method_id', 'shipping_method_id INTEGER REFERENCES shipping_methods(id) ON DELETE SET NULL');

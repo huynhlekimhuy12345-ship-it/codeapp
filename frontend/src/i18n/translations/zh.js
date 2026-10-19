@@ -374,4 +374,16 @@ export default {
     empty: '暂无通知。',
     markRead: '全部标为已读',
   },
+  news: {
+    title: '新闻资讯',
+    subtitle: '来自 BI99 的最新动态：促销、政策与新品到货。',
+    homeTitle: '新闻与动态',
+    viewAll: '查看全部资讯',
+    readMore: '阅读更多 →',
+    empty: '暂无资讯',
+    emptyDesc: '新动态即将发布，敬请期待！',
+    backToList: '← 全部资讯',
+    notFound: '未找到该资讯',
+    notFoundDesc: '该资讯可能已被删除或隐藏。',
+  },
 };

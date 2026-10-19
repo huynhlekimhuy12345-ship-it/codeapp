@@ -16,6 +16,7 @@ function request(path, { method = 'GET', body } = {}) {
 
 const EMPTY = {
   title: '', content: '', badge: '', cta_text: '', cta_link: '',
+  image_url: '', image_caption: '',
   show_on_banner: true, send_notification: true, is_active: true,
 };
 
@@ -48,6 +49,7 @@ export default function NewsTab() {
     setForm({
       title: a.title, content: a.content, badge: a.badge,
       cta_text: a.cta_text, cta_link: a.cta_link,
+      image_url: a.image_url || '', image_caption: a.image_caption || '',
       show_on_banner: a.show_on_banner, send_notification: a.send_notification,
       is_active: a.is_active,
     });
@@ -95,40 +97,47 @@ export default function NewsTab() {
       {loading ? <p>Đang tải...</p> : items.length === 0 ? (
         <div className="empty"><p>Chưa có thông báo nào. Bấm "Thêm thông báo" để đăng tin đầu tiên.</p></div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
-            <thead>
-              <tr><th>Tiêu đề</th><th>Banner</th><th>Chuông</th><th>Trạng thái</th><th>Ngày đăng</th><th></th></tr>
-            </thead>
-            <tbody>
-              {items.map((a) => (
-                <tr key={a.id}>
-                  <td>
-                    <strong>{a.title}</strong>
-                    {a.badge && <span className="nav-badge" style={{ marginLeft: 8 }}>{a.badge}</span>}
-                    <div style={{ color: 'var(--muted)', fontSize: '.85rem', marginTop: 4 }}>
-                      {a.content.length > 80 ? a.content.slice(0, 80) + '…' : a.content}
-                    </div>
-                  </td>
-                  <td>{a.show_on_banner ? '✅' : '—'}</td>
-                  <td>{a.send_notification ? '🔔' : '—'}</td>
-                  <td>
+        <div className="news-admin-list">
+          {items.map((a) => (
+            <div key={a.id} className="glass news-admin-card">
+              {a.image_url && (
+                <img src={a.image_url} alt="" className="news-admin-thumb"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              )}
+              <div className="news-admin-body">
+                <div className="news-admin-top">
+                  <span className={`status-chip${a.is_active ? '' : ' off'}`}>
+                    {a.is_active ? 'Đang hiển thị' : 'Đang ẩn'}
+                  </span>
+                  <div className="news-admin-actions">
                     <button
-                      className={`btn btn-small ${a.is_active ? 'btn-outline' : 'btn-primary'}`}
+                      className={`toggle-switch${a.is_active ? ' on' : ''}`}
                       onClick={() => toggle(a)}
+                      title={a.is_active ? 'Tắt hiển thị' : 'Bật hiển thị'}
+                      aria-label={a.is_active ? 'Tắt hiển thị' : 'Bật hiển thị'}
                     >
-                      {a.is_active ? 'Tắt' : 'Bật'}
+                      <span className="toggle-knob" />
                     </button>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(a.created_at).toLocaleDateString('vi-VN')}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <button className="btn btn-small btn-outline" onClick={() => openEdit(a)}>Sửa</button>{' '}
+                    <span className="toggle-label">{a.is_active ? 'Đang bật' : 'Đang tắt'}</span>
+                    <button className="btn btn-small btn-outline" onClick={() => openEdit(a)}>Sửa</button>
                     <button className="btn btn-small btn-outline" style={{ color: '#b3261e', borderColor: '#b3261e' }} onClick={() => setDeleting(a)}>Xóa</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                <h3>{a.title}</h3>
+                <p className="news-admin-excerpt">
+                  {a.content.length > 140 ? a.content.slice(0, 140) + '…' : a.content}
+                </p>
+                <div className="news-admin-chips">
+                  <span className="chip">{a.show_on_banner ? 'Đang lên banner' : 'Không lên banner'}</span>
+                  <span className="chip">{a.send_notification ? 'Có gửi thông báo' : 'Không gửi thông báo'}</span>
+                  <span className="chip">Ngày đăng: {new Date(a.created_at).toLocaleDateString('vi-VN')}</span>
+                </div>
+                <div className="news-admin-author">
+                  · Người đăng: {a.author_name || '—'}{a.author_role === 'sale' ? ' (Nhân viên Sale)' : a.author_role === 'admin' ? ' (Quản trị viên)' : ''}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -154,6 +163,15 @@ export default function NewsTab() {
             </div>
             <div className="field"><label>Link nút CTA (tùy chọn)</label>
               <input value={form.cta_link} onChange={(e) => set('cta_link', e.target.value)} placeholder="VD: /khuyen-mai" />
+            </div>
+            <div className="field"><label>Hình ảnh (link URL, tùy chọn)</label>
+              <input value={form.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://... (link ảnh minh họa)" />
+              {form.image_url && (
+                <img src={form.image_url} alt="Xem trước" style={{ marginTop: 8, maxWidth: '100%', maxHeight: 160, borderRadius: 10, objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              )}
+            </div>
+            <div className="field"><label>Chú thích hình ảnh (tùy chọn)</label>
+              <input value={form.image_caption} onChange={(e) => set('image_caption', e.target.value)} placeholder="VD: Xưởng da BI99 tại Hội An" />
             </div>
             <div className="field">
               <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

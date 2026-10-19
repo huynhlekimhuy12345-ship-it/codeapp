@@ -374,4 +374,16 @@ export default {
     empty: 'No notifications yet.',
     markRead: 'Mark all as read',
   },
+  news: {
+    title: 'News',
+    subtitle: 'Latest updates from BI99: promotions, policies and new arrivals.',
+    homeTitle: 'News & updates',
+    viewAll: 'View all news',
+    readMore: 'Read more →',
+    empty: 'No news yet',
+    emptyDesc: 'New updates are coming soon. Please check back later!',
+    backToList: '← All news',
+    notFound: 'News not found',
+    notFoundDesc: 'This post may have been removed or hidden.',
+  },
 };

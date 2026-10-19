@@ -11,11 +11,15 @@ function row(r) {
   if (!r) return null;
   return {
     id: r.id,
+    author_name: r.author_name || null,
+    author_role: r.author_role || null,
     title: r.title,
     content: r.content || '',
     badge: r.badge || '',
     cta_text: r.cta_text || '',
     cta_link: r.cta_link || '',
+    image_url: r.image_url || '',
+    image_caption: r.image_caption || '',
     show_on_banner: !!r.show_on_banner,
     send_notification: !!r.send_notification,
     is_active: !!r.is_active,
@@ -27,43 +31,45 @@ function row(r) {
 // GET /api/announcements/active — tin đang bật, mới nhất trước (public, không cần đăng nhập)
 router.get('/active', (req, res) => {
   const rows = db.prepare(
-    `SELECT * FROM announcements WHERE is_active = 1 ORDER BY id DESC LIMIT 20`
+    `SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.is_active = 1 ORDER BY a.id DESC LIMIT 20`
   ).all();
   res.json({ announcements: rows.map(row) });
 });
 
 // GET /api/announcements — toàn bộ tin (mới nhất trước), chỉ staff
 router.get('/', auth, staffOnly, (req, res) => {
-  const rows = db.prepare(`SELECT * FROM announcements ORDER BY id DESC`).all();
+  const rows = db.prepare(`SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by ORDER BY a.id DESC`).all();
   res.json({ announcements: rows.map(row) });
 });
 
 // POST /api/announcements — tạo tin mới, chỉ staff
 router.post('/', auth, staffOnly, (req, res) => {
-  const { title, content, badge, cta_text, cta_link, show_on_banner, send_notification, is_active } = req.body || {};
+  const { title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active } = req.body || {};
   if (!(title || '').trim()) return res.status(400).json({ error: 'Thiếu tiêu đề thông báo' });
   if (!(content || '').trim()) return res.status(400).json({ error: 'Thiếu nội dung thông báo' });
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const r = db.prepare(
-    `INSERT INTO announcements (title, content, badge, cta_text, cta_link, show_on_banner, send_notification, is_active, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO announcements (title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     title.trim(), content.trim(), (badge || '').trim(), (cta_text || '').trim(), (cta_link || '').trim(),
+    (image_url || '').trim(), (image_caption || '').trim(),
     show_on_banner === false ? 0 : 1, send_notification === false ? 0 : 1, is_active === false ? 0 : 1,
-    now, now
+    req.user ? req.user.id : null, now, now
   );
-  res.status(201).json({ announcement: row(db.prepare('SELECT * FROM announcements WHERE id = ?').get(r.lastInsertRowid)) });
+  res.status(201).json({ announcement: row(db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(r.lastInsertRowid)) });
 });
 
 // PUT /api/announcements/:id — sửa tin, chỉ staff
 router.put('/:id', auth, staffOnly, (req, res) => {
-  const cur = db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id);
+  const cur = db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
-  const { title, content, badge, cta_text, cta_link, show_on_banner, send_notification, is_active } = req.body || {};
+  const { title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active } = req.body || {};
   if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Tiêu đề không được để trống' });
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   db.prepare(
     `UPDATE announcements SET title = ?, content = ?, badge = ?, cta_text = ?, cta_link = ?,
+     image_url = ?, image_caption = ?,
      show_on_banner = ?, send_notification = ?, is_active = ?, updated_at = ? WHERE id = ?`
   ).run(
     title !== undefined ? String(title).trim() : cur.title,
@@ -71,22 +77,24 @@ router.put('/:id', auth, staffOnly, (req, res) => {
     badge !== undefined ? String(badge).trim() : cur.badge,
     cta_text !== undefined ? String(cta_text).trim() : cur.cta_text,
     cta_link !== undefined ? String(cta_link).trim() : cur.cta_link,
+    image_url !== undefined ? String(image_url).trim() : (cur.image_url || ''),
+    image_caption !== undefined ? String(image_caption).trim() : (cur.image_caption || ''),
     show_on_banner !== undefined ? (show_on_banner ? 1 : 0) : cur.show_on_banner,
     send_notification !== undefined ? (send_notification ? 1 : 0) : cur.send_notification,
     is_active !== undefined ? (is_active ? 1 : 0) : cur.is_active,
     now, req.params.id
   );
-  res.json({ announcement: row(db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id)) });
+  res.json({ announcement: row(db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
 });
 
 // PUT /api/announcements/:id/toggle — bật/tắt hiển thị, chỉ staff
 router.put('/:id/toggle', auth, staffOnly, (req, res) => {
-  const cur = db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id);
+  const cur = db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   db.prepare(`UPDATE announcements SET is_active = ?, updated_at = ? WHERE id = ?`)
     .run(cur.is_active ? 0 : 1, now, req.params.id);
-  res.json({ announcement: row(db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id)) });
+  res.json({ announcement: row(db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
 });
 
 // DELETE /api/announcements/:id — xóa tin, chỉ staff
