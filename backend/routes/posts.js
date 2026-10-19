@@ -1,4 +1,4 @@
-// CRUD bài viết Blog — port từ web artifact Leather House (server/src/actions.ts)
+// CRUD bài viết Blog — port từ web artifact BI99 (server/src/actions.ts)
 // Khách chỉ xem bài đã xuất bản; admin (token) xem được cả bản nháp qua ?all=1
 const express = require('express');
 const db = require('../db');

@@ -22,7 +22,7 @@ const LangContext = createContext({ lang: 'vi', setLang: () => {}, t: (k) => k }
 export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(() => {
     try {
-      const saved = localStorage.getItem('leatherhouse_lang');
+      const saved = localStorage.getItem('bi99_lang');
       return dicts[saved] ? saved : 'vi';
     } catch { return 'vi'; }
   });
@@ -30,7 +30,7 @@ export function LanguageProvider({ children }) {
   const setLang = (l) => {
     if (!dicts[l]) return;
     setLangState(l);
-    try { localStorage.setItem('leatherhouse_lang', l); } catch {}
+    try { localStorage.setItem('bi99_lang', l); } catch {}
     document.documentElement.lang = l;
   };
 

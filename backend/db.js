@@ -92,7 +92,7 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  -- Blog: bài viết chia sẻ về đồ da (port từ web artifact Leather House)
+  -- Blog: bài viết chia sẻ về đồ da (port từ web artifact BI99)
   CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,

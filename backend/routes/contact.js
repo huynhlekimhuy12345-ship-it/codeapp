@@ -1,4 +1,4 @@
-// Tin nhắn liên hệ — port từ web artifact Leather House (server/src/actions.ts)
+// Tin nhắn liên hệ — port từ web artifact BI99 (server/src/actions.ts)
 // Khách gửi công khai; chỉ admin xem / đánh dấu đã đọc / xóa
 const express = require('express');
 const db = require('../db');

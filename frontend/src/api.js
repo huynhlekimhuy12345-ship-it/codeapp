@@ -15,7 +15,7 @@ function getToken() {
 const dicts = { vi, en, zh, ko };
 function apiT(key) {
   let lang = 'vi';
-  try { lang = localStorage.getItem('leatherhouse_lang') || 'vi'; } catch {}
+  try { lang = localStorage.getItem('bi99_lang') || 'vi'; } catch {}
   const d = dicts[lang] || vi;
   const s = key.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : undefined), d);
   return s !== undefined ? s : vi.store.unknownError;
