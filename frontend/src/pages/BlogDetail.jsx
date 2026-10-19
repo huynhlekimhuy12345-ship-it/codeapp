@@ -4,6 +4,31 @@ import PageTitle from '../components/PageTitle';
 import { Link, useParams } from 'react-router-dom';
 import { api, fmtDay } from '../api';
 import { useLang } from '../i18n/LanguageContext';
+import { useTranslatedText } from '../i18n/TranslatedProduct';
+import { BlogCard } from './Blog';
+
+/** Nội dung bài viết — tiêu đề, trích đoạn, toàn văn tự dịch theo ngôn ngữ. */
+function TranslatedArticle({ post }) {
+  const { t } = useLang();
+  const title = useTranslatedText(post.title);
+  const excerpt = useTranslatedText(post.excerpt || '');
+  const content = useTranslatedText(post.content || '');
+  return (
+    <article className="glass blog-article">
+      <Link to="/blog" className="back-link">{t('blogDetail.allPosts')}</Link>
+      <h1>{title}</h1>
+      <p className="meta">📅 {t('blogDetail.publishedOn')} {fmtDay(post.created_at)} • BI99</p>
+      {post.cover_image_url && (
+        <img className="cover" src={post.cover_image_url} alt={title}
+          onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+      )}
+      {excerpt && <p className="lede">{excerpt}</p>}
+      <div className="body">
+        {content.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
+      </div>
+    </article>
+  );
+}
 
 export default function BlogDetail() {
   const { t } = useLang();
@@ -50,38 +75,13 @@ export default function BlogDetail() {
 
   return (
     <div className="container page">
-      <article className="glass blog-article">
-        <Link to="/blog" className="back-link">{t('blogDetail.allPosts')}</Link>
-        <h1>{post.title}</h1>
-        <p className="meta">📅 {t('blogDetail.publishedOn')} {fmtDay(post.created_at)} • BI99</p>
-        {post.cover_image_url && (
-          <img className="cover" src={post.cover_image_url} alt={post.title}
-            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        )}
-        {post.excerpt && <p className="lede">{post.excerpt}</p>}
-        <div className="body">
-          {post.content.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
-        </div>
-      </article>
+      {post && <TranslatedArticle post={post} />}
 
       {related.length > 0 && (
         <div className="section">
           <div className="section-head"><h2>{t('blogDetail.related')}</h2></div>
           <div className="product-grid">
-            {related.map((r) => (
-              <article key={r.id} className="product-card blog-card">
-                <Link to={`/blog/${r.slug}`} className="thumb" aria-label={t('blog.readPost', { title: r.title })}>
-                  {r.cover_image_url ? (
-                    <img src={r.cover_image_url} alt="" loading="lazy"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  ) : null}
-                </Link>
-                <div className="info">
-                  <span className="date">{fmtDay(r.created_at)}</span>
-                  <h3><Link to={`/blog/${r.slug}`}>{r.title}</Link></h3>
-                </div>
-              </article>
-            ))}
+            {related.map((r) => <BlogCard key={r.id} p={r} />)}
           </div>
         </div>
       )}
