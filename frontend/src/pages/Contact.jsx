@@ -3,6 +3,7 @@ import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { api } from '../api';
 import { useLang } from '../i18n/LanguageContext';
+import { countWords, detectLang, translateToVietnamese } from '../i18n/autoTranslate';
 
 const INFO = [
   ['📞', 'phone', '0901 234 567'],
@@ -20,20 +21,34 @@ export default function Contact() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const words = countWords(form.content);
+  const overLimit = words > 300;
+
   const submit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.content.trim()) {
       setErr(t('contact.needNameContent'));
       return;
     }
+    if (overLimit) {
+      setErr(t('contact.tooLong'));
+      return;
+    }
     setErr('');
     setSending(true);
     try {
+      // Khách viết ngôn ngữ khác → dịch kèm bản tiếng Việt cho admin
+      let contentVi = '';
+      if (detectLang(form.content) !== 'vi') {
+        contentVi = await translateToVietnamese(form.content.trim());
+        if (contentVi === form.content.trim()) contentVi = '';
+      }
       await api.sendContactMessage({
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
         content: form.content.trim(),
+        content_vi: contentVi,
       });
       setSent(true);
       setForm({ name: '', phone: '', email: '', content: '' });
