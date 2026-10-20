@@ -7,7 +7,7 @@ import { useLang } from '../i18n/LanguageContext';
 const INFO = [
   ['📞', 'phone', '0901 234 567'],
   ['✉️', 'email', 'lienhe@leatherhouse.vn'],
-  ['📍', 'address', '45 Trần Phú, Phường Minh An, TP. Hội An, Quảng Nam'],
+  ['📍', 'address', '2B Đường Phan Bội Châu, Hội An, Đà Nẵng'],
   ['🕗', 'hours', 'contact.hoursValue'],
 ];
 
@@ -105,7 +105,7 @@ export default function Contact() {
         <div className="glass" style={{ padding: 0, overflow: 'hidden' }}>
           <iframe
             title={t('contact.mapTitle')}
-            src="https://maps.google.com/maps?q=H%E1%BB%99i%20An%2C%20Qu%E1%BA%A3ng%20Nam&t=&z=14&ie=UTF8&iwloc=&output=embed"
+            src="https://maps.google.com/maps?q=2B%20%C4%90%C6%B0%E1%BB%9Dng%20Phan%20B%E1%BB%99i%20Ch%C3%A2u%2C%20H%E1%BB%99i%20An%2C%20%C4%90%C3%A0%20N%E1%BA%B5ng&t=&z=16&ie=UTF8&iwloc=&output=embed"
             className="map-frame"
             loading="lazy"
             allowFullScreen
