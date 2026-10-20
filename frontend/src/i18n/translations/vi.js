@@ -370,7 +370,7 @@ export default {
     heroTitleEm: 'da thật',
     heroSub2: 'Từng đường kim, vân da và sắc nâu cognac đều là ảnh chụp thật.',
     exploreTitle: 'Khám phá từng sản phẩm',
-    exploreSub: 'Tiếp tục cuộn — các sản phẩm trôi ngang qua, món ở giữa là món đang được chọn.',
+    exploreSub: 'Vuốt hoặc kéo ngang để xem — món ở giữa là món đang được chọn.',
     gallerySub: 'Toàn bộ sản phẩm đang trưng bày — bấm vào từng món để xem chi tiết.',
   },
   fix1: {

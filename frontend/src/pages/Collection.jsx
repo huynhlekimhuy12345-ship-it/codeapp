@@ -1,17 +1,13 @@
 // Trang Bộ sưu tập — phiên bản ẢNH THẬT (không còn 3D).
-// Cấu trúc cuộn 3 giai đoạn: MỞ ĐẦU (hero cặp da tách nền) → KHÁM PHÁ (panel ảnh trôi
-// ngang, trình chiếu ghim bằng GSAP ScrollTrigger) → BỘ SƯU TẬP (lưới gallery).
+// Cấu trúc 3 giai đoạn: MỞ ĐẦU (hero cặp da tách nền) → KHÁM PHÁ (panel ảnh tự
+// lướt ngang bằng tay: vuốt/kéo, bắt điểm giữa) → BỘ SƯU TẬP (lưới gallery).
 import { useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { api, fmtVND } from '../api';
 import { useLang } from '../i18n/LanguageContext';
 import { useProductName, useTranslatedText } from '../i18n/TranslatedProduct';
 import './Collection.css';
-
-gsap.registerPlugin(ScrollTrigger);
 
 /** Hạt bụi vàng bay nhẹ — canvas 2D, không chứa chữ. */
 function DustCanvas() {
@@ -150,7 +146,6 @@ export default function Collection() {
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(0);
   const [phase, setPhase] = useState(0);
-  const [mode, setMode] = useState('gsap'); // 'gsap' | 'fallback'
 
   const heroRef = useRef(null);
   const exploreRef = useRef(null);
@@ -159,12 +154,12 @@ export default function Collection() {
   const trackRef = useRef(null);
 
   // 1. Nạp sản phẩm trưng bày: ưu tiên danh sách admin chọn trong trang quản trị;
-  //    chưa chọn thì lấy 6 sản phẩm đầu tiên.
+  //    chưa chọn thì lấy 10 sản phẩm đầu tiên.
   useEffect(() => {
-    api.getProducts({ showcase: 1, limit: 6 })
+    api.getProducts({ showcase: 1, limit: 10 })
       .then((d) => {
         if (d.products && d.products.length > 0) { setProducts(d.products); return null; }
-        return api.getProducts({ limit: 6, sort: 'oldest' })
+        return api.getProducts({ limit: 10, sort: 'oldest' })
           .then((d2) => setProducts(d2.products || []));
       })
       .catch(() => setProducts([]))
@@ -191,82 +186,48 @@ export default function Collection() {
     return () => io.disconnect();
   }, [loading]);
 
-  // 3. GSAP: ghim mục Khám phá, scrub panel trôi ngang. Lỗi → chế độ fallback cuộn ngang tay.
+  // 3. Mục Khám phá tự lướt: khách vuốt/kéo ngang; panel gần tâm nhất to/rõ nhất
+  //    và thẻ thông tin bám theo panel đó. Vào trang, sản phẩm đầu nằm sẵn ở giữa.
   useEffect(() => {
-    if (products.length < 2) return undefined;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setMode('fallback');
-      return undefined;
-    }
-    let ctx = null;
-    try {
-      ctx = gsap.context(() => {
-        const track = trackRef.current;
-        const pin = pinRef.current;
-        const getDist = () => Math.max(0, track.scrollWidth - pin.clientWidth);
-        // Panel nào gần trung tâm màn hình nhất → to/rõ nhất VÀ thẻ thông tin hiện đúng panel đó
-        const updateActive = () => {
-          const panels = track.querySelectorAll('.cl-panel');
-          let best = 0;
-          let bestD = Infinity;
-          panels.forEach((el, i) => {
-            const r = el.getBoundingClientRect();
-            const d = Math.abs(r.left + r.width / 2 - window.innerWidth / 2);
-            const f = Math.max(0, 1 - (d / window.innerWidth) * 2.4);
-            gsap.set(el, { scale: 0.9 + f * 0.14, opacity: 0.55 + f * 0.45 });
-            if (d < bestD) { bestD = d; best = i; }
-          });
-          setActive((prev) => (prev === best ? prev : best));
-        };
-        gsap.to(track, {
-          x: () => -getDist(),
-          ease: 'none',
-          scrollTrigger: {
-            trigger: exploreRef.current,
-            start: 'top top',
-            end: () => `+=${getDist() * 1.8}`,
-            pin: true,
-            scrub: 1,
-            snap: {
-              snapTo: 1 / Math.max(1, products.length - 1),
-              duration: { min: 0.3, max: 0.7 },
-              delay: 0.05,
-              ease: 'power2.inOut',
-            },
-            invalidateOnRefresh: true,
-            onUpdate: updateActive,
-            onRefresh: () => requestAnimationFrame(updateActive),
-          },
-        });
-        requestAnimationFrame(updateActive);
-      });
-      setMode('gsap');
-    } catch {
-      setMode('fallback');
-    }
-    return () => { if (ctx) ctx.revert(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products.length]);
-
-  // 4. Fallback: cuộn ngang tay, panel gần trung tâm nhất → thẻ thông tin
-  useEffect(() => {
-    if (mode !== 'fallback' || !trackRef.current) return undefined;
     const track = trackRef.current;
-    const onScroll = () => {
-      const panels = track.querySelectorAll('.cl-panel');
+    if (!track || products.length === 0) return undefined;
+    let raf = 0;
+    const update = () => {
+      const tr = track.getBoundingClientRect();
+      const cx = tr.left + tr.width / 2;
       let best = 0;
       let bestD = Infinity;
-      panels.forEach((el, i) => {
+      track.querySelectorAll('.cl-panel').forEach((el, i) => {
         const r = el.getBoundingClientRect();
-        const d = Math.abs(r.left + r.width / 2 - window.innerWidth / 2);
+        const d = Math.abs(r.left + r.width / 2 - cx);
+        const f = Math.max(0, 1 - (d / tr.width) * 2.4);
+        el.style.transform = `scale(${0.9 + f * 0.14})`;
+        el.style.opacity = String(0.55 + f * 0.45);
         if (d < bestD) { bestD = d; best = i; }
       });
       setActive((prev) => (prev === best ? prev : best));
     };
+    const onScroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); };
     track.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => track.removeEventListener('scroll', onScroll);
-  }, [mode, products.length]);
+    update();
+    // Kéo bằng chuột (máy tính) để lướt ngang
+    let down = false;
+    let startX = 0;
+    let startL = 0;
+    const pd = (e) => { down = true; startX = e.clientX; startL = track.scrollLeft; track.classList.add('dragging'); };
+    const pm = (e) => { if (down) track.scrollLeft = startL - (e.clientX - startX); };
+    const pu = () => { down = false; track.classList.remove('dragging'); };
+    track.addEventListener('pointerdown', pd);
+    window.addEventListener('pointermove', pm);
+    window.addEventListener('pointerup', pu);
+    return () => {
+      cancelAnimationFrame(raf);
+      track.removeEventListener('scroll', onScroll);
+      track.removeEventListener('pointerdown', pd);
+      window.removeEventListener('pointermove', pm);
+      window.removeEventListener('pointerup', pu);
+    };
+  }, [products.length]);
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -298,7 +259,7 @@ export default function Collection() {
       </section>
 
       {/* GĐ2 — KHÁM PHÁ */}
-      <section ref={exploreRef} id="cl-explore" className={`cl-explore${mode === 'fallback' ? ' cl-fallback' : ''}`}>
+      <section ref={exploreRef} id="cl-explore" className="cl-explore">
         <div ref={pinRef} className="cl-explore-pin">
           <div className="cl-sec-head cl-explore-head">
             <span className="hero-kicker">{t('collection.phaseExplore')}</span>
@@ -309,7 +270,9 @@ export default function Collection() {
             <p className="cl-loading">{t('common.loading')}</p>
           ) : (
             <div ref={trackRef} className="cl-track">
+              <div className="cl-spacer" aria-hidden />
               {products.map((p) => <ExplorePanel key={p.id} p={p} />)}
+              <div className="cl-spacer" aria-hidden />
             </div>
           )}
           {!loading && products.length > 0 && <ExploreInfo p={products[active]} index={active} total={products.length} />}

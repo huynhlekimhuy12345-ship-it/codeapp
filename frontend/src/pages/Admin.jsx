@@ -32,7 +32,7 @@ function ConfirmDialog({ title, message, confirmLabel = 'Xác nhận', danger = 
 }
 
 /* ---------- Tab Sản phẩm ---------- */
-/** Chọn tối đa 6 sản phẩm trưng bày ở trang Bộ sưu tập (thứ tự = thứ tự hiển thị). */
+/** Chọn tối đa 10 sản phẩm trưng bày ở trang Bộ sưu tập (thứ tự = thứ tự hiển thị). */
 /** Chọn tối đa 6 sản phẩm trưng bày ở trang Bộ sưu tập: tích chọn nhiều sản phẩm rồi Lưu 1 lần. */
 function ShowcaseSection({ products }) {
   const [saved, setSaved] = useState([]);   // danh sách đã lưu trên server (theo thứ tự)
@@ -41,7 +41,7 @@ function ShowcaseSection({ products }) {
   const [msg, setMsg] = useState('');
 
   const loadShowcase = () => {
-    api.getProducts({ showcase: 1, limit: 6 })
+    api.getProducts({ showcase: 1, limit: 10 })
       .then((d) => {
         const items = d.products || [];
         setSaved(items);
@@ -58,7 +58,7 @@ function ShowcaseSection({ products }) {
     setMsg('');
     setDraft((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 6) return prev;
+      if (prev.length >= 10) return prev;
       return [...prev, id];
     });
   };
@@ -84,15 +84,15 @@ function ShowcaseSection({ products }) {
 
   return (
     <div className="card" style={{ marginBottom: 18 }}>
-      <h3 style={{ margin: '0 0 6px' }}>Sản phẩm trưng bày ở trang Bộ sưu tập ({draft.length}/6)</h3>
+      <h3 style={{ margin: '0 0 6px' }}>Sản phẩm trưng bày ở trang Bộ sưu tập ({draft.length}/10)</h3>
       <p style={{ color: 'var(--muted)', margin: '0 0 12px', fontSize: '0.9rem' }}>
-        Tích chọn các sản phẩm muốn trưng bày (tối đa 6), sắp xếp thứ tự bên dưới rồi bấm Lưu. Để trống = trang tự lấy 6 sản phẩm đầu tiên.
+        Tích chọn các sản phẩm muốn trưng bày (tối đa 10), sắp xếp thứ tự bên dưới rồi bấm Lưu. Để trống = trang tự lấy 10 sản phẩm đầu tiên.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 8, maxHeight: 264, overflowY: 'auto', paddingRight: 4 }}>
         {products.map((p) => {
           const checked = draft.includes(p.id);
-          const full = !checked && draft.length >= 6;
+          const full = !checked && draft.length >= 10;
           return (
             <label key={p.id}
               style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 10, cursor: full ? 'not-allowed' : 'pointer',

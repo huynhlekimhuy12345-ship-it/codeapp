@@ -127,10 +127,10 @@ router.post('/', auth, staffOnly, (req, res) => {
 });
 
 // PUT /api/products/:id — admin
-// PUT /api/products/showcase — staff đặt danh sách SP trưng bày ở trang Bộ sưu tập (tối đa 6)
+// PUT /api/products/showcase — staff đặt danh sách SP trưng bày ở trang Bộ sưu tập (tối đa 10)
 router.put('/showcase', auth, staffOnly, (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x) => parseInt(x, 10)).filter(Number.isFinite) : [];
-  if (ids.length > 6) return res.status(400).json({ error: 'Bộ sưu tập trưng bày tối đa 6 sản phẩm' });
+  if (ids.length > 10) return res.status(400).json({ error: 'Bộ sưu tập trưng bày tối đa 10 sản phẩm' });
   const tx = db.transaction(() => {
     db.prepare('UPDATE products SET showcase = 0, showcase_order = 0').run();
     const upd = db.prepare('UPDATE products SET showcase = 1, showcase_order = ? WHERE id = ?');

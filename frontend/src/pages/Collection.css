@@ -94,11 +94,16 @@
 .cl-track {
   display: flex; align-items: center;
   gap: clamp(28px, 4vw, 56px);
-  /* Đệm 2 đầu vừa đủ để panel ĐẦU và CUỐI cũng dừng đúng giữa màn hình */
-  padding: 0 calc(50% - min(19vw, 180px));
-  will-change: transform;
+  width: 100%;
+  overflow-x: auto; scroll-snap-type: x mandatory;
+  scrollbar-width: none; cursor: grab;
+  padding: 26px 0;
 }
-.cl-panel { flex-shrink: 0; width: min(38vw, 360px); }
+.cl-track::-webkit-scrollbar { display: none; }
+.cl-track.dragging { scroll-snap-type: none; cursor: grabbing; }
+/* Đệm 2 đầu: panel đầu và cuối cũng dừng đúng giữa khung */
+.cl-spacer { flex: none; width: calc(50% - min(19vw, 180px)); }
+.cl-panel { flex-shrink: 0; width: min(38vw, 360px); scroll-snap-align: center; will-change: transform, opacity; }
 .cl-panel-frame { margin: 0; }
 .cl-panel-frame > img:first-child {
   width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;
@@ -110,13 +115,6 @@
   width: 100%; height: 56px; object-fit: cover; object-position: top;
   border-radius: 0 0 18px 18px; margin-top: 4px;
 }
-
-/* Chế độ fallback: cuộn ngang bằng tay */
-.cl-explore.cl-fallback .cl-track {
-  overflow-x: auto; scroll-snap-type: x mandatory;
-  scrollbar-width: thin; transform: none !important; width: 100%;
-}
-.cl-explore.cl-fallback .cl-panel { scroll-snap-align: center; opacity: 1 !important; }
 
 /* Thẻ thông tin trung tâm */
 .cl-info {
@@ -174,7 +172,7 @@
   .cl-bag-static > img:first-child { width: min(84vw, 420px); }
   .cl-bag-reflect { height: 60px; }
   .cl-panel { width: 62vw; }
-  .cl-track { padding: 0 calc(50% - 31vw); }
+  .cl-spacer { width: calc(50% - 31vw); }
   .cl-info { bottom: 3vh; min-height: 200px; }
   .cl-explore-pin { height: 92vh; }
 }
