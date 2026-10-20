@@ -63,6 +63,10 @@ export const api = {
   // Đơn hàng
   createOrder: (o) => request('/api/orders', { method: 'POST', body: o, auth: true }),
   getOrders: (status) => request(`/api/orders${status ? '?status=' + status : ''}`, { auth: true }),
+  getNewOrderCount: () => request('/api/orders/new-count', { auth: true }),
+  markOrdersSeen: () => request('/api/orders/mark-seen', { method: 'POST', auth: true }),
+  getNotifications: () => request('/api/notifications', { auth: true }),
+  markNotificationsRead: () => request('/api/notifications/read', { method: 'POST', auth: true }),
   getOrder: (id) => request(`/api/orders/${id}`, { auth: true }),
   updateOrderStatus: (id, status, reason) =>
     request(`/api/orders/${id}/status`, { method: 'PUT', body: { status, reason }, auth: true }),

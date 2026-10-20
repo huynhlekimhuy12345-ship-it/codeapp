@@ -839,3 +839,28 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 .purchase-order-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
 .purchase-order-head strong { margin-left: auto; }
 .purchase-pay { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+
+/* --- Nhãn trạng thái đơn có màu riêng + menu chuyển trạng thái (tab Đơn hàng) --- */
+.status-chip.st-pending { background: rgba(232,181,106,.16); color: var(--amber-light); border-color: rgba(232,181,106,.35); }
+.status-chip.st-confirmed { background: rgba(96,165,250,.14); color: #93c5fd; border-color: rgba(96,165,250,.4); }
+.status-chip.st-shipping { background: rgba(192,132,252,.14); color: #d8b4fe; border-color: rgba(192,132,252,.4); }
+.status-chip.st-delivered { background: rgba(74,222,128,.13); color: #86efac; border-color: rgba(74,222,128,.4); }
+.status-chip.st-cancelled { background: rgba(248,113,113,.13); color: #fca5a5; border-color: rgba(248,113,113,.4); }
+.status-menu-wrap { position: relative; display: inline-block; }
+.status-menu-catcher { position: fixed; inset: 0; z-index: 40; }
+.status-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; min-width: 210px;
+  background: #2a1d11; border: 1px solid rgba(232,181,106,.4); border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.55); padding: 6px; display: flex; flex-direction: column;
+}
+.status-menu button {
+  background: none; border: none; color: var(--cream); text-align: left; cursor: pointer;
+  padding: 9px 12px; border-radius: 8px; font: inherit; font-size: .92rem;
+}
+.status-menu button:hover { background: rgba(232,181,106,.14); }
+.status-menu button.danger { color: #ff9a8a; }
+.status-menu button.danger:hover { background: rgba(212,58,38,.16); }
+select.select-dark {
+  background: rgba(12,8,5,.6); color: var(--cream); border: 1.5px solid rgba(232,181,106,.35);
+  border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer;
+}

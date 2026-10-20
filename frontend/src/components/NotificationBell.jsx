@@ -37,6 +37,26 @@ function BellItem({ a, onRead }) {
   );
 }
 
+function NotifItem({ n, onGo }) {
+  const title = useTranslatedText(n.title);
+  const content = useTranslatedText(n.content);
+  return (
+    <div className={`bell-item${n.is_read ? '' : ' unread'}`}>
+      {!n.is_read && <span className="bell-dot" aria-hidden="true" />}
+      <div className="bell-item-body">
+        <strong>📦 {title}</strong>
+        <p>{content}</p>
+        <div className="bell-item-foot">
+          <small>{new Date(n.created_at).toLocaleDateString('vi-VN')}</small>
+          {n.link && (
+            <Link to={n.link} className="link-more" onClick={onGo}>Xem đơn hàng →</Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NotificationBell() {
   const { t } = useLang();
   const { user } = useStore();
@@ -83,6 +103,33 @@ export default function NotificationBell() {
       .catch(() => setItems([]));
   }, []);
 
+  // Thông báo riêng (đơn hàng đổi trạng thái...) — nạp mới mỗi 15 giây
+  const [notifs, setNotifs] = useState([]);
+  const [notifUnread, setNotifUnread] = useState(0);
+  useEffect(() => {
+    if (!user) return undefined;
+    let stop = false;
+    const loadNotifs = () => {
+      api.getNotifications()
+        .then((d) => {
+          if (stop) return;
+          setNotifs(d.notifications || []);
+          setNotifUnread(d.unread || 0);
+        })
+        .catch(() => {});
+    };
+    loadNotifs();
+    const iv = setInterval(loadNotifs, 15000);
+    return () => { stop = true; clearInterval(iv); };
+  }, [user]);
+
+  const markNotifsRead = () => {
+    if (notifUnread <= 0) return;
+    api.markNotificationsRead().catch(() => {});
+    setNotifUnread(0);
+    setNotifs((ns) => ns.map((n) => ({ ...n, is_read: 1 })));
+  };
+
   useEffect(() => {
     const onClick = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
@@ -92,14 +139,18 @@ export default function NotificationBell() {
   }, []);
 
   const unread = items.filter((a) => a.id > seen);
+  const totalBadge = unread.length + (chatAccept ? 1 : 0) + notifUnread;
 
   const openPanel = () => {
     const next = !open;
     setOpen(next);
-    if (next && items.length > 0) {
-      const maxId = Math.max(...items.map((a) => a.id));
-      setSeen(maxId);
-      setSeenState(maxId);
+    if (next) {
+      if (items.length > 0) {
+        const maxId = Math.max(...items.map((a) => a.id));
+        setSeen(maxId);
+        setSeenState(maxId);
+      }
+      markNotifsRead();
     }
   };
 
@@ -109,21 +160,22 @@ export default function NotificationBell() {
       setSeen(maxId);
       setSeenState(maxId);
     }
+    markNotifsRead();
   };
 
   return (
     <div className="bell-wrap" ref={wrapRef}>
       <button className="bell-btn" onClick={openPanel} aria-label={t('bell.title')} title={t('bell.title')}>
         🔔
-        {(unread.length > 0 || chatAccept) && (
-          <span className="bell-badge">{(unread.length + (chatAccept ? 1 : 0)) > 9 ? '9+' : unread.length + (chatAccept ? 1 : 0)}</span>
+        {totalBadge > 0 && (
+          <span className="bell-badge">{totalBadge > 9 ? '9+' : totalBadge}</span>
         )}
       </button>
       {open && (
         <div className="bell-panel" role="menu">
           <div className="bell-head">
             <strong>{t('bell.title')}</strong>
-            {unread.length > 0 && (
+            {(unread.length > 0 || notifUnread > 0) && (
               <button className="link-more" onClick={markAll}>{t('bell.markRead')}</button>
             )}
           </div>
@@ -136,7 +188,10 @@ export default function NotificationBell() {
               </div>
             </div>
           )}
-          {items.length === 0 && !chatAccept ? (
+          {notifs.map((n) => (
+            <NotifItem key={'n' + n.id} n={n} onGo={() => setOpen(false)} />
+          ))}
+          {items.length === 0 && !chatAccept && notifs.length === 0 ? (
             <p className="bell-empty">{t('bell.empty')}</p>
           ) : (
             items.map((a) => (

@@ -326,6 +326,24 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- Thông báo riêng cho từng tài khoản (vd: khách được báo khi đơn đổi trạng thái)
+  CREATE TABLE IF NOT EXISTS user_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL DEFAULT 'order',
+    title TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    link TEXT NOT NULL DEFAULT '',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Mốc đơn hàng mà từng nhân viên đã xem (đếm số đơn mới cho ô đỏ ở thanh bên quản trị)
+  CREATE TABLE IF NOT EXISTS staff_order_seen (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    last_seen_order_id INTEGER NOT NULL DEFAULT 0
+  );
+
   CREATE TABLE IF NOT EXISTS vouchers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,

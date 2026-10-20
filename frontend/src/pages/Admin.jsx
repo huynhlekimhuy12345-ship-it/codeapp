@@ -353,6 +353,7 @@ function OrdersTab() {
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [deletingOrder, setDeletingOrder] = useState(null);
+  const [menuFor, setMenuFor] = useState(null);
 
   const [loadError, setLoadError] = useState('');
   const load = () => api.getOrders(filter || undefined).then((d) => { setOrders(d.orders); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách đơn hàng'));
@@ -395,7 +396,7 @@ function OrdersTab() {
       {loadError && <div className="alert alert-error">{loadError}</div>}
       <div className="toolbar">
         <h3>Quản lý đơn hàng ({orders.length})</h3>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8 }}>
+        <select className="select-dark" value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
           {Object.keys(ORDER_STATUS).map((s) => <option key={s} value={s}>{ORDER_STATUS[s]}</option>)}
         </select>
@@ -407,22 +408,32 @@ function OrdersTab() {
             <div className="order-head">
               <strong>Đơn #{o.id} — {o.customer_name} ({o.phone})</strong>
               <div className="row-actions">
-                {next.length > 0 ? (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const s = e.target.value;
-                      e.target.value = '';
-                      if (!s) return;
-                      if (s === 'cancelled') { setCancelTarget(o); setCancelReason(''); }
-                      else changeStatus(o.id, s);
-                    }}
-                  >
-                    <option value="">Chuyển trạng thái…</option>
-                    {next.map((s) => <option key={s} value={s}>→ {ORDER_STATUS[s]}</option>)}
-                  </select>
-                ) : (
-                  <span className="status-chip">{ORDER_STATUS[o.status]}</span>
+                <span className={`status-chip st-${o.status}`}>{ORDER_STATUS[o.status]}</span>
+                {next.length > 0 && (
+                  <div className="status-menu-wrap">
+                    <button type="button" className="btn btn-small btn-primary"
+                      onClick={() => setMenuFor(menuFor === o.id ? null : o.id)}>
+                      Chuyển trạng thái ▾
+                    </button>
+                    {menuFor === o.id && (
+                      <>
+                        <div className="status-menu-catcher" onClick={() => setMenuFor(null)} />
+                        <div className="status-menu">
+                          {next.map((s) => (
+                            <button key={s} type="button"
+                              className={s === 'cancelled' ? 'danger' : ''}
+                              onClick={() => {
+                                setMenuFor(null);
+                                if (s === 'cancelled') { setCancelTarget(o); setCancelReason(''); }
+                                else changeStatus(o.id, s);
+                              }}>
+                              → {ORDER_STATUS[s]}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
                 <button className="btn btn-small btn-danger" onClick={() => setDeletingOrder(o)}>Xóa</button>
               </div>
@@ -954,12 +965,27 @@ export default function Admin() {
   const [tab, setTab] = useState('products');
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [chatSummary, setChatSummary] = useState({ waiting: 0, internal_unread: 0, customer_unread: 0 });
+  const [newOrders, setNewOrders] = useState(0);
+  const [pendingPays, setPendingPays] = useState(0);
+  const refreshBadges = () => {
+    api.getNewOrderCount().then((d) => setNewOrders(d.count || 0)).catch(() => {});
+    api.getPayments().then((d) => setPendingPays((d.payments || []).filter((p) => p.status === 'pending').length)).catch(() => {});
+  };
   useEffect(() => {
     const loadSummary = () => api.chatStaffSummary().then(setChatSummary).catch(() => {});
     loadSummary();
-    const iv = setInterval(loadSummary, 20000);
+    refreshBadges();
+    const iv = setInterval(() => { loadSummary(); refreshBadges(); }, 20000);
     return () => clearInterval(iv);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Đổi tab: vào tab Đơn hàng thì đánh dấu đã xem (ô đỏ đơn mới về 0);
+  // số thanh toán chờ duyệt luôn nạp lại để duyệt xong là giảm ngay khi qua tab khác
+  useEffect(() => {
+    if (tab === 'orders') {
+      api.markOrdersSeen().then(() => setNewOrders(0)).catch(() => {});
+    }
+    api.getPayments().then((d) => setPendingPays((d.payments || []).filter((p) => p.status === 'pending').length)).catch(() => {});
+  }, [tab]);
   // Đổi tab quản trị → về đầu trang (đổi tab không đổi địa chỉ nên App không tự cuộn)
   useEffect(() => { window.scrollTo(0, 0); }, [tab]);
   // Số tin nhắn liên hệ chưa đọc → hiện ô đỏ ở mục Tin nhắn (nạp lại mỗi lần đổi tab)
@@ -997,6 +1023,8 @@ export default function Admin() {
                     messages: unreadMsgs,
                     customerChat: chatSummary.waiting + chatSummary.customer_unread,
                     internalChat: chatSummary.internal_unread,
+                    orders: newOrders,
+                    payments: pendingPays,
                   };
                   const n2 = counts[n.key] || 0;
                   return n2 > 0 ? <span className="nav-count">{n2 > 99 ? '99+' : n2}</span> : null;

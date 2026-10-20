@@ -41,6 +41,7 @@ app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩ
 app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
 app.use('/api/announcements', require('./routes/announcements')); // thông báo / tin tức
 app.use('/api/chat', require('./routes/chat')); // nhắn tin khách hàng + nội bộ
+app.use('/api/notifications', require('./routes/notifications')); // thông báo riêng từng tài khoản (chuông)
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

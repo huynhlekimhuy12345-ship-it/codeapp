@@ -280,6 +280,29 @@ router.get('/', auth, (req, res) => {
   res.json({ orders });
 });
 
+// GET /api/orders/new-count — nhân viên: số đơn mới kể từ lần cuối mở tab Đơn hàng
+// Lần đầu chưa có mốc thì lấy mốc = đơn mới nhất hiện tại (số đếm bắt đầu từ 0).
+router.get('/new-count', auth, staffOnly, (req, res) => {
+  const row = db.prepare('SELECT last_seen_order_id FROM staff_order_seen WHERE user_id = ?').get(req.user.id);
+  if (!row) {
+    const maxId = db.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM orders').get().m;
+    db.prepare('INSERT INTO staff_order_seen (user_id, last_seen_order_id) VALUES (?, ?)').run(req.user.id, maxId);
+    return res.json({ count: 0, watermark: maxId });
+  }
+  const count = db.prepare('SELECT COUNT(*) AS c FROM orders WHERE id > ?').get(row.last_seen_order_id).c;
+  res.json({ count, watermark: row.last_seen_order_id });
+});
+
+// POST /api/orders/mark-seen — nhân viên mở tab Đơn hàng: xóa số đếm đơn mới
+router.post('/mark-seen', auth, staffOnly, (req, res) => {
+  const maxId = db.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM orders').get().m;
+  db.prepare(
+    `INSERT INTO staff_order_seen (user_id, last_seen_order_id) VALUES (?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET last_seen_order_id = excluded.last_seen_order_id`
+  ).run(req.user.id, maxId);
+  res.json({ ok: true, watermark: maxId });
+});
+
 // GET /api/orders/:id — chủ đơn hoặc admin
 router.get('/:id', auth, (req, res) => {
   const order = getOrderWithItems(req.params.id);
@@ -317,6 +340,35 @@ router.put('/:id/status', auth, staffOnly, (req, res) => {
   }
   const order = getOrderWithItems(req.params.id);
   if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+
+  // Báo cho khách qua chuông thông báo khi đơn đổi trạng thái
+  if (order.user_id) {
+    const LABELS = {
+      pending: 'Chờ xác nhận',
+      confirmed: 'Đã xác nhận',
+      shipping: 'Đang giao hàng',
+      delivered: 'Đã giao thành công',
+      cancelled: 'Đã hủy',
+    };
+    const CONTENTS = {
+      pending: `Đơn hàng #${order.id} của bạn đang chờ xác nhận.`,
+      confirmed: `Đơn hàng #${order.id} của bạn đã được xác nhận, shop đang chuẩn bị hàng.`,
+      shipping: `Đơn hàng #${order.id} của bạn đang được giao đến bạn.`,
+      delivered: `Đơn hàng #${order.id} đã giao thành công. Cảm ơn bạn đã mua sắm tại BI99!`,
+      cancelled: `Đơn hàng #${order.id} của bạn đã bị hủy.${reason ? ' Lý do: ' + String(reason) : ''}`,
+    };
+    try {
+      db.prepare(
+        'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+      ).run(
+        order.user_id, 'order',
+        `Đơn hàng #${order.id} — ${LABELS[status] || status}`,
+        CONTENTS[status] || `Đơn hàng #${order.id} của bạn vừa đổi trạng thái.`,
+        '/don-hang'
+      );
+    } catch (e) { /* lỗi tạo thông báo không làm hỏng việc đổi trạng thái */ }
+  }
+
   res.json({ order });
 });
 
