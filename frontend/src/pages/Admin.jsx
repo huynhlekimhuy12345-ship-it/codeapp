@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
+import { detectLang, translateToVietnamese } from '../i18n/autoTranslate';
 import InventoryTab from './admin/InventoryTab';
 import PaymentsTab from './admin/PaymentsTab';
 import ShippingTab from './admin/ShippingTab';
@@ -577,6 +578,47 @@ function PostsTab() {
 }
 
 /* ---------- Tab Tin nhắn liên hệ ---------- */
+/** Nội dung tin nhắn cho admin: luôn hiện bản gốc, kèm bản dịch tiếng Việt nếu khách viết ngoại ngữ. */
+function MessageBody({ message }) {
+  const [liveVi, setLiveVi] = useState('');
+  const [translating, setTranslating] = useState(false);
+  const stored = (message.content_vi || '').trim();
+  const needLive = !stored && detectLang(message.content) !== 'vi';
+
+  useEffect(() => {
+    if (!needLive) { setLiveVi(''); setTranslating(false); return; }
+    let alive = true;
+    setTranslating(true);
+    translateToVietnamese(message.content).then((t) => {
+      if (!alive) return;
+      setTranslating(false);
+      if (t && t !== message.content) setLiveVi(t);
+    });
+    return () => { alive = false; };
+  }, [message.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const vi = stored || liveVi;
+  return (
+    <div>
+      <div style={{ color: 'var(--muted)', fontSize: '.82rem', marginBottom: 6, fontWeight: 700 }}>
+        {vi ? 'Nội dung gốc' : 'Nội dung'}
+      </div>
+      <div className="msg-content">{message.content}</div>
+      {vi && (
+        <>
+          <div style={{ color: 'var(--muted)', fontSize: '.82rem', marginBottom: 6, fontWeight: 700 }}>
+            Bản dịch tiếng Việt
+          </div>
+          <div className="msg-content">{vi}</div>
+        </>
+      )}
+      {translating && !vi && (
+        <small style={{ color: 'var(--muted)' }}>Đang dịch sang tiếng Việt…</small>
+      )}
+    </div>
+  );
+}
+
 function MessagesTab() {
   const [messages, setMessages] = useState([]);
   const [deleting, setDeleting] = useState(null);
@@ -654,7 +696,7 @@ function MessagesTab() {
               <button className="btn btn-small btn-outline" onClick={() => setViewing(null)}>✕</button>
             </div>
             <div style={{ color: 'var(--muted)', fontSize: '.86rem', marginBottom: 10 }}>📅 Gửi ngày {fmtDate(viewing.created_at)}</div>
-            <div className="msg-content">{viewing.content}</div>
+            <MessageBody message={viewing} />
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={markUnread}>Đánh dấu chưa đọc</button>
               <button className="btn btn-outline" style={{ color: '#b3261e', borderColor: '#b3261e' }} onClick={() => setDeleting(viewing)}>Xóa</button>

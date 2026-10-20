@@ -64,3 +64,56 @@ export async function translateText(text, lang) {
     return text;
   }
 }
+
+// Dấu hiệu tiếng Việt đặc trưng: đ, ă/â, ê, ô/ơ, ư và mọi dạng có dấu của chúng
+const VI_MARKS = /[đăâêôơưắằẳẵặấầẩẫậốồổỗộớờởỡợứừửữựếềểễệốồổỗộ]/i;
+// Tiếng Việt không dấu: nhận biết qua cụm từ thông dụng
+const VI_ASCII = /\b(xin chao|chao shop|chao ban|cam on|cho minh|toi muon|toi can|gia bao nhieu|gia the nao|san pham|tu van|lien he|dat hang|bao hanh|doi tra|dia chi|so dien thoai|shop oi|ban oi|co ban|con hang|khong a|duoc khong)\b/i;
+
+/** Đoán ngôn ngữ của đoạn text: 'vi' | 'zh' | 'ko' | 'ja' | 'en' (mặc định). */
+export function detectLang(text) {
+  const s = String(text || '');
+  if (!s) return 'vi';
+  if (/[\uac00-\ud7a3]/.test(s)) return 'ko';                    // Hangul
+  if (/[\u3040-\u30ff]/.test(s)) return 'ja';                    // Hiragana/Katakana
+  if (VI_MARKS.test(s)) return 'vi';
+  if (/[\u4e00-\u9fff]/.test(s)) return 'zh';                    // Chữ Hán
+  if (/^[\x00-\x7f\s]*$/.test(s) && VI_ASCII.test(s)) return 'vi'; // TV không dấu
+  return 'en';
+}
+
+async function translateChunkToVi(text, src) {
+  const cacheKey = `vi-from-${src}`;
+  const hit = getCached(text, cacheKey);
+  if (hit) return hit;
+  const pair = src === 'zh' ? 'zh-CN' : src;
+  const url = `${API}?q=${encodeURIComponent(text)}&langpair=${pair}|vi`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const out = data?.responseData?.translatedText;
+  if (out && !/MYMEMORY WARNING|QUERY LENGTH LIMIT|INVALID/i.test(out)) {
+    setCached(text, cacheKey, out);
+    return out;
+  }
+  throw new Error('translate-failed');
+}
+
+/** Dịch text bất kỳ sang tiếng Việt. Đã là tiếng Việt hoặc dịch thất bại → trả về text gốc. */
+export async function translateToVietnamese(text) {
+  if (!text) return '';
+  const src = detectLang(text);
+  if (src === 'vi') return text;
+  try {
+    const parts = chunk(text);
+    const out = await Promise.all(parts.map((p) => translateChunkToVi(p, src)));
+    return out.join(' ');
+  } catch {
+    return text;
+  }
+}
+
+/** Đếm số từ (dùng cho giới hạn nội dung tin nhắn). */
+export function countWords(text) {
+  const t = String(text || '').trim();
+  return t ? t.split(/\s+/).length : 0;
+}

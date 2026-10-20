@@ -23,13 +23,17 @@ function contactRateLimit(req, res, next) {
 
 // POST /api/contact — công khai: khách gửi tin nhắn từ trang Liên hệ
 router.post('/', contactRateLimit, (req, res) => {
-  const { name, phone, email, content } = req.body || {};
+  const { name, phone, email, content, content_vi } = req.body || {};
   if (!name || !String(name).trim() || !content || !String(content).trim())
     return res.status(400).json({ error: 'Vui lòng điền Họ tên và Nội dung tin nhắn' });
+  const wordCount = String(content).trim().split(/\s+/).length;
+  if (wordCount > 300)
+    return res.status(400).json({ error: 'Nội dung tin nhắn tối đa 300 từ' });
   const now = new Date().toISOString();
+  const translated = String(content_vi || '').trim().slice(0, 10000);
   const info = db.prepare(
-    'INSERT INTO contact_messages (name, phone, email, content, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(name.trim(), String(phone || '').trim(), String(email || '').trim(), content.trim(), now);
+    'INSERT INTO contact_messages (name, phone, email, content, content_vi, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(name.trim(), String(phone || '').trim(), String(email || '').trim(), content.trim(), translated, now);
   res.status(201).json({ id: info.lastInsertRowid });
 });
 

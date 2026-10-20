@@ -94,6 +94,13 @@ export default function Contact() {
                 <label htmlFor="contact-noi-dung">{t('contact.content')}</label>
                 <textarea id="contact-noi-dung" value={form.content} onChange={set('content')} rows={5} required
                   placeholder={t('contact.contentPlaceholder')} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                  <small style={{ color: 'var(--muted)' }}>{t('contact.anyLanguage')}</small>
+                  <small style={{ color: overLimit ? '#b3261e' : 'var(--muted)', fontWeight: overLimit ? 700 : 400 }}>
+                    {words}/300 {t('contact.words')}
+                  </small>
+                </div>
+                {overLimit && <small style={{ color: '#b3261e' }}>{t('contact.tooLong')}</small>}
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={sending}>
                 {sending ? t('reviews.sending') : t('contact.send')}
