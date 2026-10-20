@@ -371,7 +371,7 @@ export default {
     heroTitleEm: 'Collection',
     heroSub2: 'Every stitch, leather grain and cognac tone is a real photograph.',
     exploreTitle: 'Explore each piece',
-    exploreSub: 'Swipe or drag sideways — the piece in the center is the selected one.',
+    exploreSub: 'Keep scrolling — products glide by; the one in the center is the selected piece.',
     gallerySub: 'Every piece on display — tap one to see its details.',
   },
   fix1: {
