@@ -4,6 +4,7 @@ import { useStore } from './context/StoreContext';
 import { useLang } from './i18n/LanguageContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import CustomerChat from './components/CustomerChat';
 // Tải lười Three.js: tách thành chunk riêng, trang hiện ngay với nền gradient,
 // nền 3D mờ dần vào sau — không chặn lần vẽ đầu tiên.
 const Scene3D = lazy(() => import('./components/Scene3D'));
@@ -89,6 +90,7 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+      <CustomerChat />
     </>
   );
 }

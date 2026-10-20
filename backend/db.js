@@ -299,6 +299,33 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL DEFAULT 'customer',
+    customer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    title TEXT NOT NULL DEFAULT '',
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS conversation_participants (
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_read_id INTEGER NOT NULL DEFAULT 0,
+    joined_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (conversation_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS vouchers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,

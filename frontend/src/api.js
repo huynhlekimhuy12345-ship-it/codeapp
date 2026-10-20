@@ -90,6 +90,20 @@ export const api = {
 
   // Tin nhắn liên hệ
   sendContactMessage: (m) => request('/api/contact', { method: 'POST', body: m }),
+  // Nhắn tin (chat khách hàng + nội bộ)
+  chatMy: () => request('/api/chat/my', { auth: true }),
+  chatStart: (content) => request('/api/chat/start', { method: 'POST', body: { content }, auth: true }),
+  chatSendMy: (content) => request('/api/chat/my/messages', { method: 'POST', body: { content }, auth: true }),
+  chatCustomerList: () => request('/api/chat/customer-conversations', { auth: true }),
+  chatMessages: (id) => request(`/api/chat/${id}/messages`, { auth: true }),
+  chatSend: (id, content) => request(`/api/chat/${id}/messages`, { method: 'POST', body: { content }, auth: true }),
+  chatAccept: (id) => request(`/api/chat/${id}/accept`, { method: 'POST', auth: true }),
+  chatClose: (id) => request(`/api/chat/${id}/close`, { method: 'POST', auth: true }),
+  chatInternal: () => request('/api/chat/internal', { auth: true }),
+  chatDirect: (userId) => request('/api/chat/internal/direct', { method: 'POST', body: { user_id: userId }, auth: true }),
+  chatGroup: (title, memberIds) => request('/api/chat/internal/group', { method: 'POST', body: { title, member_ids: memberIds }, auth: true }),
+  chatAddMember: (id, userId) => request(`/api/chat/${id}/members`, { method: 'POST', body: { user_id: userId }, auth: true }),
+  chatStaffSummary: () => request('/api/chat/staff-summary', { auth: true }),
   getContactMessages: () => request('/api/contact', { auth: true }),
   markMessageRead: (id, isRead = true) =>
     request(`/api/contact/${id}/read`, { method: 'PUT', body: { is_read: isRead }, auth: true }),

@@ -10,6 +10,8 @@ import AftersalesTab from './admin/AftersalesTab';
 import VouchersTab from './admin/VouchersTab';
 import PromoEventsTab from './admin/PromoEventsTab';
 import NewsTab from './admin/NewsTab';
+import CustomerChatTab from './admin/CustomerChatTab';
+import InternalChatTab from './admin/InternalChatTab';
 import EventProductsSection from './admin/EventProductsSection';
 import ReviewsTab from './admin/ReviewsTab';
 import ReportsTab from './admin/ReportsTab';
@@ -585,6 +587,8 @@ const NAV = [
   { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
   { key: 'posts', icon: '📝', label: 'Bài viết' },
+  { key: 'customerChat', icon: '💬', label: 'Chat khách hàng' },
+  { key: 'internalChat', icon: '🏢', label: 'Tin nhắn nội bộ' },
   { key: 'messages', icon: '✉️', label: 'Tin nhắn' },
 ];
 
@@ -840,6 +844,13 @@ function MessagesTab({ onUnreadChange }) {
 export default function Admin() {
   const [tab, setTab] = useState('products');
   const [unreadMsgs, setUnreadMsgs] = useState(0);
+  const [chatSummary, setChatSummary] = useState({ waiting: 0, internal_unread: 0, customer_unread: 0 });
+  useEffect(() => {
+    const loadSummary = () => api.chatStaffSummary().then(setChatSummary).catch(() => {});
+    loadSummary();
+    const iv = setInterval(loadSummary, 20000);
+    return () => clearInterval(iv);
+  }, []);
   // Đổi tab quản trị → về đầu trang (đổi tab không đổi địa chỉ nên App không tự cuộn)
   useEffect(() => { window.scrollTo(0, 0); }, [tab]);
   // Số tin nhắn liên hệ chưa đọc → hiện ô đỏ ở mục Tin nhắn (nạp lại mỗi lần đổi tab)
@@ -872,9 +883,15 @@ export default function Admin() {
                 <span className="nav-icon">{n.icon}</span>
                 {!collapsed && <span className="nav-label">{n.label}</span>}
                 {!collapsed && n.badge && <span className="nav-badge">{n.badge}</span>}
-                {n.key === 'messages' && unreadMsgs > 0 && (
-                  <span className="nav-count">{unreadMsgs}</span>
-                )}
+                {(() => {
+                  const counts = {
+                    messages: unreadMsgs,
+                    customerChat: chatSummary.waiting + chatSummary.customer_unread,
+                    internalChat: chatSummary.internal_unread,
+                  };
+                  const n2 = counts[n.key] || 0;
+                  return n2 > 0 ? <span className="nav-count">{n2 > 99 ? '99+' : n2}</span> : null;
+                })()}
               </button>
             ))}
           </nav>
@@ -894,6 +911,8 @@ export default function Admin() {
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}
           {tab === 'posts' && <PostsTab />}
+          {tab === 'customerChat' && <CustomerChatTab />}
+          {tab === 'internalChat' && <InternalChatTab />}
           {tab === 'messages' && <MessagesTab onUnreadChange={setUnreadMsgs} />}
         </section>
       </div>

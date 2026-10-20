@@ -40,6 +40,7 @@ app.use('/api/promo-events', require('./routes/promo-events')); // sự kiện k
 app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩm
 app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
 app.use('/api/announcements', require('./routes/announcements')); // thông báo / tin tức
+app.use('/api/chat', require('./routes/chat')); // nhắn tin khách hàng + nội bộ
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
