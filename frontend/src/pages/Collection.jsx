@@ -161,7 +161,7 @@ export default function Collection() {
 
   // 1. Nạp 6 sản phẩm thật
   useEffect(() => {
-    api.getProducts({ limit: 6 })
+    api.getProducts({ limit: 6, sort: 'oldest' })
       .then((d) => setProducts(d.products || []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));

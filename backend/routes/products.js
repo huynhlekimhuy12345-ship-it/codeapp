@@ -71,6 +71,7 @@ router.get('/', (req, res) => {
     'price-asc': 'p.price ASC',
     'price-desc': 'p.price DESC',
     'newest': 'p.created_at DESC',
+    'oldest': 'p.id ASC',
     'name': 'p.name ASC',
   };
   const orderBy = 'ORDER BY ' + (sorts[sort] || 'p.id DESC');
