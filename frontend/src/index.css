@@ -488,6 +488,12 @@ h1, h2, h3, .logo, .hero-title {
 .cart-row:last-child { border-bottom: none; }
 .cart-row img { width: 70px; height: 70px; object-fit: cover; border-radius: 9px; }
 .cart-check { width: 19px; height: 19px; accent-color: #d97706; cursor: pointer; justify-self: center; }
+/* Hàng nút đôi (Thêm giỏ / Mua ngay): 2 nút luôn bằng nhau */
+.btn-pair { display: flex; gap: 8px; align-items: stretch; }
+.btn-pair .btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap; text-align: center;
+}
 .cart-select-bar {
   display: flex; align-items: center; gap: 10px; padding: 12px 20px;
   border-bottom: 1px solid rgba(232,181,106,.16); color: var(--cream); font-weight: 600;

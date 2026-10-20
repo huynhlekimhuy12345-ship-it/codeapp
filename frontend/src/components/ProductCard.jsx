@@ -35,10 +35,9 @@ export default function ProductCard({ product }) {
             {t('productCard.chooseVariant')}
           </Link>
         ) : (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="btn-pair">
             <button
               className="btn btn-outline btn-small"
-              style={{ flex: 1 }}
               disabled={product.stock <= 0}
               onClick={() => addToCart(product)}
             >
@@ -46,7 +45,6 @@ export default function ProductCard({ product }) {
             </button>
             <button
               className="btn btn-primary btn-small"
-              style={{ flex: 1 }}
               disabled={product.stock <= 0}
               onClick={() => { buyNowItem(product, 1); navigate(user ? '/thanh-toan' : '/dang-nhap'); }}
             >

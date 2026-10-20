@@ -235,10 +235,9 @@ export default function ProductDetail() {
             <span>{qty}</span>
             <button onClick={() => setQty((q) => Math.min(Math.max(maxStock, 1), q + 1))}>+</button>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div className="btn-pair">
             <button
               className="btn btn-outline"
-              style={{ flex: '1 1 180px' }}
               disabled={maxStock <= 0 || (hasVariants && !selectedVariant)}
               onClick={handleAddToCart}
             >
@@ -246,7 +245,6 @@ export default function ProductDetail() {
             </button>
             <button
               className="btn btn-primary"
-              style={{ flex: '1 1 180px' }}
               disabled={maxStock <= 0 || (hasVariants && !selectedVariant)}
               onClick={handleBuyNow}
             >
