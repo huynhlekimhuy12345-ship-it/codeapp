@@ -12,6 +12,7 @@ export default function CustomerChat() {
   const { user } = useStore();
   const { t } = useLang();
   const [open, setOpen] = useState(false);
+  const [showGreet, setShowGreet] = useState(false);
   const [conv, setConv] = useState(undefined); // undefined = đang tải, null = chưa có
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -37,6 +38,21 @@ export default function CustomerChat() {
     window.addEventListener('bi99:open-chat', fn);
     return () => window.removeEventListener('bi99:open-chat', fn);
   }, []);
+
+  // Lời chào tự động: hiện một lần mỗi phiên truy cập, sau khoảng 1,2 giây
+  useEffect(() => {
+    if (!isCustomer) return undefined;
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem('bi99_greet_dismissed') === '1'; } catch (e) { /* bỏ qua */ }
+    if (dismissed) return undefined;
+    const tm = setTimeout(() => setShowGreet(true), 1200);
+    return () => clearTimeout(tm);
+  }, [isCustomer]);
+
+  const dismissGreet = () => {
+    setShowGreet(false);
+    try { sessionStorage.setItem('bi99_greet_dismissed', '1'); } catch (e) { /* bỏ qua */ }
+  };
 
   // Mở panel khi đang active -> đánh dấu đã đọc
   useEffect(() => {
@@ -82,7 +98,19 @@ export default function CustomerChat() {
 
   return (
     <>
-      <button type="button" className="cchat-fab" onClick={() => setOpen((o) => !o)} aria-label={t('chat.title')}>
+      {showGreet && !open && (
+        <div className="cchat-greet glass" role="button" tabIndex={0}
+          onClick={() => { dismissGreet(); setOpen(true); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { dismissGreet(); setOpen(true); } }}>
+          <button type="button" className="cchat-greet-x" aria-label="Đóng"
+            onClick={(e) => { e.stopPropagation(); dismissGreet(); }}>✕</button>
+          <strong>{t('chat.greetTitle')}</strong>
+          <span>{t('chat.greetText')}</span>
+        </div>
+      )}
+
+      <button type="button" className={`cchat-fab${showGreet && !open ? ' cchat-fab-bounce' : ''}`}
+        onClick={() => { dismissGreet(); setOpen((o) => !o); }} aria-label={t('chat.title')}>
         💬
         {unread > 0 && <span className="cchat-fab-badge">{unread}</span>}
       </button>

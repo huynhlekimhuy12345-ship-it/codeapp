@@ -47,6 +47,29 @@
   background: rgba(232,181,106,.08); border: 1px dashed rgba(232,181,106,.35);
   border-radius: 10px; padding: 10px 12px;
 }
+/* Lời chào tự động hiện cạnh nút chat khi khách vừa vào trang */
+.cchat-greet {
+  position: fixed; right: 20px; bottom: 88px; z-index: 300;
+  width: 290px; max-width: calc(100vw - 32px);
+  padding: 14px 36px 14px 16px; border-radius: 16px 16px 4px 16px;
+  cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+  animation: cchat-greet-in .35s ease;
+}
+.cchat-greet strong { color: var(--cream); font-size: 0.95rem; line-height: 1.45; }
+.cchat-greet span { color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+.cchat-greet-x {
+  position: absolute; top: 6px; right: 8px; background: none; border: none;
+  color: var(--muted); font-size: 0.85rem; cursor: pointer; padding: 4px;
+}
+@keyframes cchat-greet-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cchat-fab-bounce { animation: cchat-bounce 1.6s ease-in-out infinite; }
+@keyframes cchat-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
 .cchat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(232,181,106,.22); }
 .cchat-input input {
   flex: 1; padding: 10px 13px; border-radius: 9px; font-family: inherit; font-size: 0.95rem;

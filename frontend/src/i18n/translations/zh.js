@@ -306,6 +306,8 @@ export default {
   chat: {
     title: '与 BI99 聊天',
     startTitle: '您需要什么帮助？',
+    greetTitle: '您好！👋 需要 BI99 为您提供咨询吗？',
+    greetText: '我们的销售团队正在线上，随时为您服务。',
     startHint: '发送请求 — 销售/管理员接受后，聊天窗口将打开以便双方交流。',
     startPlaceholder: '例如：帮我挑选一款男士皮钱包……',
     sendRequest: '发送请求',

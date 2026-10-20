@@ -306,6 +306,8 @@ export default {
   chat: {
     title: 'Chat với BI99',
     startTitle: 'Bạn cần hỗ trợ gì?',
+    greetTitle: 'Xin chào! 👋 Bạn có cần BI99 tư vấn gì không?',
+    greetText: 'Đội ngũ sale đang trực tuyến và sẵn sàng hỗ trợ bạn.',
     startHint: 'Gửi yêu cầu — Sale/Admin tiếp nhận rồi ô chat mới mở để hai bên trao đổi.',
     startPlaceholder: 'VD: Tư vấn giúp mình chọn ví da nam...',
     sendRequest: 'Gửi yêu cầu',

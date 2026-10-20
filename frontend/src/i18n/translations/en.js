@@ -306,6 +306,8 @@ export default {
   chat: {
     title: 'Chat with BI99',
     startTitle: 'How can we help?',
+    greetTitle: 'Hello! 👋 Do you need any advice from BI99?',
+    greetText: 'Our sales team is online and ready to help you.',
     startHint: 'Send a request — once a Sale/Admin accepts it, the chat opens for both sides.',
     startPlaceholder: 'E.g. Help me pick a men\'s leather wallet...',
     sendRequest: 'Send request',

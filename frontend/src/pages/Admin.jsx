@@ -517,8 +517,24 @@ function UsersTab() {
   const [roleTarget, setRoleTarget] = useState(null);
   const [newRole, setNewRole] = useState('customer');
   const [loadError, setLoadError] = useState('');
+  const [topCustomers, setTopCustomers] = useState([]);
+  const [detailFor, setDetailFor] = useState(null);
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const load = () => api.getUsers().then((d) => { setUsers(d.users); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
   useEffect(() => { load(); }, []);
+  useEffect(() => { api.getTopCustomers().then((d) => setTopCustomers(d.customers)).catch(() => {}); }, []);
+
+  const openPurchases = async (u) => {
+    setDetailFor(u);
+    setDetailData(null);
+    setDetailLoading(true);
+    try {
+      const d = await api.getUserPurchases(u.id);
+      setDetailData(d);
+    } catch (e) { /* detailData giữ null → modal hiện thông báo không tải được */ }
+    setDetailLoading(false);
+  };
 
   const openRoleChange = (u) => { setRoleTarget(u); setNewRole(u.role); };
   const doChangeRole = async () => {
@@ -532,6 +548,29 @@ function UsersTab() {
     <div>
       <h3 style={{ marginBottom: 14 }}>Quản lý người dùng ({users.length})</h3>
       {loadError && <div className="alert alert-error">{loadError}</div>}
+
+      {topCustomers.length > 0 && (
+        <div className="top-customers">
+          <h4 className="top-customers-title">🏆 Top khách hàng tiềm năng</h4>
+          <p className="top-customers-note">Xếp theo tổng tiền đã mua (chỉ tính đơn đã thanh toán). Bấm vào một khách để xem họ đã mua những gì.</p>
+          <div className="top-customers-list">
+            {topCustomers.map((c, i) => (
+              <button key={c.id} type="button" className="top-customer-card" onClick={() => openPurchases(c)}>
+                <span className={`top-rank rank-${i + 1}`}>{i + 1}</span>
+                <span className="top-customer-main">
+                  <span className="top-customer-name">{c.name}</span>
+                  <span className="top-customer-email">{c.email}</span>
+                </span>
+                <span className="top-customer-stats">
+                  <strong>{fmtVND(c.total_spent)}</strong>
+                  <span>{c.order_count} đơn • mua gần nhất {fmtDate(c.last_order_at)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <table className="data-table">
         <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
         <tbody>
@@ -542,11 +581,81 @@ function UsersTab() {
                 {roleLabel(u.role)}
               </span></td>
               <td>{fmtDate(u.created_at)}</td>
-              <td><button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)} disabled={user && u.id === user.id} title={user && u.id === user.id ? 'Không thể đổi vai trò của chính mình' : ''}>Đổi vai trò</button></td>
+              <td>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {u.role === 'customer' && (
+                    <button className="btn btn-small btn-outline" onClick={() => openPurchases(u)}>📦 Đã mua</button>
+                  )}
+                  <button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)} disabled={user && u.id === user.id} title={user && u.id === user.id ? 'Không thể đổi vai trò của chính mình' : ''}>Đổi vai trò</button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {detailFor && (
+        <div className="modal-overlay" onClick={() => setDetailFor(null)}>
+          <div className="modal purchase-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
+            <h3>🛍️ Lịch sử mua hàng</h3>
+            {detailLoading ? (
+              <p style={{ color: 'var(--muted)' }}>Đang tải…</p>
+            ) : detailData ? (
+              <>
+                <p style={{ marginBottom: 4 }}>
+                  <strong>{detailData.customer.name}</strong> • {detailData.customer.email}
+                  {detailData.customer.phone ? ` • ${detailData.customer.phone}` : ''}
+                </p>
+                <div className="purchase-summary">
+                  <span>🧾 {detailData.summary.order_count} đơn đã thanh toán</span>
+                  <span>💰 Tổng chi: <strong>{fmtVND(detailData.summary.total_spent)}</strong></span>
+                  {detailData.summary.last_order_at && <span>🕐 Mua gần nhất: {fmtDate(detailData.summary.last_order_at)}</span>}
+                </div>
+
+                {detailData.top_products.length > 0 && (
+                  <>
+                    <div className="purchase-subtitle">Sản phẩm hay mua</div>
+                    {detailData.top_products.map((p) => (
+                      <div key={p.product_name} className="purchase-row">
+                        <span>{p.product_name} × {p.total_qty}</span>
+                        <span>{fmtVND(p.total_amount)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                <div className="purchase-subtitle">Tất cả đơn hàng ({detailData.orders.length})</div>
+                <div className="purchase-orders">
+                  {detailData.orders.length === 0 && <p style={{ color: 'var(--muted)' }}>Khách chưa có đơn hàng nào.</p>}
+                  {detailData.orders.map((o) => (
+                    <div key={o.id} className="purchase-order">
+                      <div className="purchase-order-head">
+                        <span>Đơn #{o.id} • {fmtDate(o.created_at)}</span>
+                        <span className="status-chip">{ORDER_STATUS[o.status] || o.status}</span>
+                        <strong>{fmtVND(o.total)}</strong>
+                      </div>
+                      {o.items.map((i) => (
+                        <div key={i.id} className="purchase-row">
+                          <span>{i.product_name} × {i.quantity}</span>
+                          <span>{fmtVND(i.price * i.quantity)}</span>
+                        </div>
+                      ))}
+                      <div className="purchase-pay">
+                        {o.payment_status === 'verified' ? '✅ Đã thanh toán' : o.payment_status === 'refunded' ? '↩️ Đã hoàn tiền' : '⏳ Chưa xác nhận thanh toán'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p style={{ color: 'var(--muted)' }}>Không tải được dữ liệu của khách này.</p>
+            )}
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setDetailFor(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {roleTarget && (
         <div className="modal-overlay" onClick={() => setRoleTarget(null)}>

@@ -306,6 +306,8 @@ export default {
   chat: {
     title: 'BI99와 채팅',
     startTitle: '무엇을 도와드릴까요?',
+    greetTitle: '안녕하세요! 👋 BI99 상담이 필요하신가요?',
+    greetText: '세일즈 팀이 온라인 상태로, 언제든 도와드릴 준비가 되어 있습니다.',
     startHint: '요청을 보내세요 — 세일즈/관리자가 수락하면 양쪽이 대화할 수 있도록 채팅이 열립니다.',
     startPlaceholder: '예: 남성용 가죽 지갑 추천 부탁드려요...',
     sendRequest: '요청 보내기',

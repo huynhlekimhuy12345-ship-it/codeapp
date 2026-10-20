@@ -803,3 +803,39 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 .filters .price-filter { width: 110px; }
 .bell-item-foot { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-top: 5px; }
 .bell-item-foot .link-more { margin-top: 2px; }
+
+/* --- Top khách hàng tiềm năng (tab Người dùng) --- */
+.top-customers { margin-bottom: 24px; }
+.top-customers-title { margin: 0 0 4px; font-size: 1.05rem; color: var(--cream); }
+.top-customers-note { margin: 0 0 12px; color: var(--muted); font-size: .88rem; }
+.top-customers-list { display: flex; flex-direction: column; gap: 8px; }
+.top-customer-card {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px;
+  padding: 10px 14px; cursor: pointer; color: inherit; font: inherit;
+}
+.top-customer-card:hover { border-color: rgba(232, 181, 106, .65); }
+.top-rank {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; background: #3a2c1c; color: #e8c97a;
+}
+.top-rank.rank-1 { background: #d4af37; color: #241a10; }
+.top-rank.rank-2 { background: #c9c9c9; color: #241a10; }
+.top-rank.rank-3 { background: #cd7f32; color: #fff; }
+.top-customer-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.top-customer-name { font-weight: 600; }
+.top-customer-email { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.top-customer-stats { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.top-customer-stats span { color: var(--muted); font-size: .82rem; }
+
+/* --- Cửa sổ lịch sử mua hàng của khách --- */
+.purchase-modal { max-height: 86vh; }
+.purchase-summary { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 6px; font-size: .92rem; }
+.purchase-subtitle { font-weight: 700; margin: 16px 0 8px; color: var(--cream); }
+.purchase-row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: .92rem; }
+.purchase-orders { display: flex; flex-direction: column; gap: 12px; }
+.purchase-order { border: 1px solid var(--panel-border); border-radius: 10px; padding: 10px 12px; }
+.purchase-order-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.purchase-order-head strong { margin-left: auto; }
+.purchase-pay { color: var(--muted); font-size: .85rem; margin-top: 6px; }

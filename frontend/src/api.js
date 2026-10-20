@@ -72,6 +72,8 @@ export const api = {
   getUsers: () => request('/api/users', { auth: true }),
   updateUserRole: (id, role) =>
     request(`/api/users/${id}/role`, { method: 'PUT', body: { role }, auth: true }),
+  getTopCustomers: () => request('/api/users/top-customers', { auth: true }),
+  getUserPurchases: (id) => request(`/api/users/${id}/purchases`, { auth: true }),
 
   // Voucher (checkout preview, không trừ lượt)
   validateVoucher: (code, order_total) =>
