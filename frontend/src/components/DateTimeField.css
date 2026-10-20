@@ -56,7 +56,20 @@
 .dt-calendar .react-datepicker__time-container {
   border-left: 1px solid rgba(232, 181, 106, 0.25) !important;
 }
-.dt-calendar .react-datepicker__time-list-item { color: var(--cream) !important; }
+.dt-calendar .react-datepicker__time-container,
+.dt-calendar .react-datepicker__time,
+.dt-calendar .react-datepicker__time-box,
+.dt-calendar .react-datepicker__time-list {
+  background: #2b1d10 !important;
+}
+.dt-calendar .react-datepicker-time__header {
+  background: #3a2412 !important;
+  padding: 8px 0 !important;
+}
+.dt-calendar .react-datepicker__time-list-item {
+  color: var(--cream) !important;
+  padding: 6px 10px !important;
+}
 .dt-calendar select {
   background: #221910; color: var(--cream);
   border: 1px solid rgba(232, 181, 106, 0.3); border-radius: 6px; padding: 2px 4px;
