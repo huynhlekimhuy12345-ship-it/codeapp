@@ -836,6 +836,8 @@ function MessagesTab() {
 
 export default function Admin() {
   const [tab, setTab] = useState('products');
+  // Đổi tab quản trị → về đầu trang (đổi tab không đổi địa chỉ nên App không tự cuộn)
+  useEffect(() => { window.scrollTo(0, 0); }, [tab]);
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useStore();
   // Sale thấy toàn bộ tab trừ "Người dùng" (quản lý tài khoản chỉ dành cho Admin)
