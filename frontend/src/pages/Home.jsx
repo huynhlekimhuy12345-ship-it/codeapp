@@ -6,24 +6,62 @@ import ProductCard from '../components/ProductCard';
 import { useLang } from '../i18n/LanguageContext';
 import { useTranslatedText } from '../i18n/TranslatedProduct';
 
-/** Banner hero động: lấy tin mới nhất có show_on_banner từ admin. */
+/** Một slide banner: badge, tiêu đề, nội dung, nút CTA + ảnh kèm chú thích (đều tự dịch). */
+function HeroSlide({ ann }) {
+  const { t } = useLang();
+  const badge = useTranslatedText(ann.badge || '');
+  const title = useTranslatedText(ann.title || '');
+  const content = useTranslatedText(ann.content || '');
+  const cta = useTranslatedText(ann.cta_text || '');
+  const caption = useTranslatedText(ann.image_caption || '');
+  return (
+    <div className="hero-slide" key={ann.id}>
+      <div className="hero-slide-text">
+        {(badge || t('home.kicker')) && <span className="hero-kicker">{badge || t('home.kicker')}</span>}
+        <h1 className="hero-title">{title}</h1>
+        <p className="hero-sub">{content}</p>
+        <div className="hero-cta">
+          {cta && ann.cta_link ? (
+            <Link to={ann.cta_link} className="btn btn-primary">{cta}</Link>
+          ) : (
+            <Link to={`/tin-tuc/${ann.id}`} className="btn btn-primary">{t('news.readMore')}</Link>
+          )}
+          <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
+        </div>
+      </div>
+      {ann.image_url && (
+        <figure className="hero-slide-media">
+          <Link to={`/tin-tuc/${ann.id}`} aria-label={title}>
+            <img src={ann.image_url} alt={title}
+              onError={(e) => { e.currentTarget.closest('figure').style.display = 'none'; }} />
+          </Link>
+          {caption && <figcaption>{caption}</figcaption>}
+        </figure>
+      )}
+    </div>
+  );
+}
+
+/** Banner hero: trình chiếu xoay vòng mọi tin có show_on_banner (tự chuyển 5.5s, dừng khi rê chuột). */
 function HeroBanner() {
   const { t } = useLang();
-  const [ann, setAnn] = useState(null);
+  const [list, setList] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
   useEffect(() => {
     api.getActiveAnnouncements()
-      .then((d) => {
-        const list = (d.announcements || []).filter((a) => a.show_on_banner);
-        setAnn(list.length ? list[0] : null);
-      })
-      .catch(() => setAnn(null));
+      .then((d) => setList((d.announcements || []).filter((a) => a.show_on_banner)))
+      .catch(() => setList([]));
   }, []);
-  const badge = useTranslatedText(ann?.badge || '');
-  const title = useTranslatedText(ann?.title || '');
-  const content = useTranslatedText(ann?.content || '');
-  const cta = useTranslatedText(ann?.cta_text || '');
 
-  if (!ann) {
+  useEffect(() => {
+    if (list.length < 2 || paused) return undefined;
+    const timer = setInterval(() => setIdx((i) => (i + 1) % list.length), 5500);
+    return () => clearInterval(timer);
+  }, [list.length, paused]);
+
+  if (list.length === 0) {
     return (
       <>
         <span className="hero-kicker">{t('home.kicker')}</span>
@@ -36,20 +74,24 @@ function HeroBanner() {
       </>
     );
   }
+
+  const safeIdx = Math.min(idx, list.length - 1);
   return (
-    <>
-      {(badge || t('home.kicker')) && <span className="hero-kicker">{badge || t('home.kicker')}</span>}
-      <h1 className="hero-title">{title}</h1>
-      <p className="hero-sub">{content}</p>
-      <div className="hero-cta">
-        {cta && ann.cta_link ? (
-          <Link to={ann.cta_link} className="btn btn-primary">{cta}</Link>
-        ) : (
-          <Link to="/cua-hang" className="btn btn-primary">{t('home.shopNow')}</Link>
-        )}
-        <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
-      </div>
-    </>
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      <HeroSlide ann={list[safeIdx]} />
+      {list.length > 1 && (
+        <div className="hero-nav">
+          <button className="hero-arrow" onClick={() => setIdx((safeIdx - 1 + list.length) % list.length)} aria-label="Tin trước">‹</button>
+          <div className="hero-dots">
+            {list.map((a, i) => (
+              <button key={a.id} className={`hero-dot${i === safeIdx ? ' active' : ''}`}
+                onClick={() => setIdx(i)} aria-label={`Tin ${i + 1}`} />
+            ))}
+          </div>
+          <button className="hero-arrow" onClick={() => setIdx((safeIdx + 1) % list.length)} aria-label="Tin sau">›</button>
+        </div>
+      )}
+    </div>
   );
 }
 
