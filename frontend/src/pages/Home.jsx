@@ -7,6 +7,20 @@ import { useLang } from '../i18n/LanguageContext';
 import { useTranslatedText } from '../i18n/TranslatedProduct';
 
 /** Một slide banner: badge, tiêu đề, nội dung, nút CTA + ảnh kèm chú thích (đều tự dịch). */
+/** Ảnh nền banner phủ lớn phía sau chữ, phủ lớp màu tối của app cho hợp tông. */
+function HeroBg({ ann }) {
+  const captionT = useTranslatedText(ann?.image_caption || '');
+  if (!ann?.image_url) return null;
+  return (
+    <div className="hero-slide-bg" aria-hidden="true">
+      <img src={ann.image_url} alt=""
+        onError={(e) => { e.currentTarget.closest('.hero-slide-bg').style.display = 'none'; }} />
+      <div className="hero-slide-shade" />
+      {captionT && <div className="hero-slide-caption">{captionT}</div>}
+    </div>
+  );
+}
+
 function HeroSlide({ ann }) {
   const { t } = useLang();
   const badge = useTranslatedText(ann.badge || '');
@@ -16,6 +30,7 @@ function HeroSlide({ ann }) {
   const caption = useTranslatedText(ann.image_caption || '');
   return (
     <div className="hero-slide" key={ann.id}>
+      <HeroBg ann={ann} />
       <div className="hero-slide-text">
         {(badge || t('home.kicker')) && <span className="hero-kicker">{badge || t('home.kicker')}</span>}
         <h1 className="hero-title">{title}</h1>
@@ -29,15 +44,6 @@ function HeroSlide({ ann }) {
           <a href="#danh-muc-noi-bat" className="btn btn-outline">{t('home.viewCategories')}</a>
         </div>
       </div>
-      {ann.image_url && (
-        <figure className="hero-slide-media">
-          <Link to={`/tin-tuc/${ann.id}`} aria-label={title}>
-            <img src={ann.image_url} alt={title}
-              onError={(e) => { e.currentTarget.closest('figure').style.display = 'none'; }} />
-          </Link>
-          {caption && <figcaption>{caption}</figcaption>}
-        </figure>
-      )}
     </div>
   );
 }

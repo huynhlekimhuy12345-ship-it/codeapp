@@ -203,24 +203,44 @@ h1, h2, h3, .logo, .hero-title {
 .news-info h3 a:hover { color: var(--amber-light); }
 .news-info .excerpt { color: var(--text); opacity: 0.8; font-size: 0.92rem; line-height: 1.55; margin: 0; flex: 1; }
 .news-info .link-more { align-self: flex-start; }
-/* Banner hero trình chiếu (nhiều tin xoay vòng, có ảnh) */
+/* Banner hero trình chiếu: ảnh phủ lớn làm nền sau chữ, phủ màu tối của app */
 .hero-slide {
-  display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 36px; align-items: center;
+  position: relative; display: flex; align-items: center;
+  min-height: 62vh; padding: 56px 0;
   animation: heroSlideIn 0.55s ease both;
 }
 @keyframes heroSlideIn {
   from { opacity: 0; transform: translateX(28px); }
   to { opacity: 1; transform: translateX(0); }
 }
-.hero-slide-media { margin: 0; }
-.hero-slide-media img {
-  width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 18px;
-  border: 1px solid rgba(232, 181, 106, 0.35);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+.hero-slide-bg {
+  position: absolute; top: -13vh; bottom: -13vh;
+  left: 50%; transform: translateX(-50%); width: 100vw;
+  z-index: 0; overflow: hidden; pointer-events: none;
+  animation: heroBgIn 0.7s ease both;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
 }
-.hero-slide-media figcaption {
-  text-align: center; color: var(--muted); font-size: 0.86rem; font-style: italic; margin-top: 10px;
+@keyframes heroBgIn { from { opacity: 0; } to { opacity: 1; } }
+.hero-slide-bg img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  filter: saturate(0.95) contrast(1.03);
 }
+.hero-slide-shade {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to top, rgba(20, 14, 8, 0.88) 0%, rgba(20, 14, 8, 0) 42%),
+    linear-gradient(90deg, rgba(20, 14, 8, 0.95) 0%, rgba(20, 14, 8, 0.82) 40%, rgba(24, 17, 10, 0.45) 68%, rgba(24, 17, 10, 0.3) 100%),
+    linear-gradient(rgba(43, 29, 16, 0.16), rgba(43, 29, 16, 0.16));
+}
+.hero-slide-text { position: relative; z-index: 2; max-width: 660px; }
+.hero-slide-text .hero-title, .hero-slide-text .hero-sub { text-shadow: 0 2px 26px rgba(0, 0, 0, 0.5); }
+.hero-slide-caption {
+  position: absolute; right: max(24px, 4vw); bottom: 26px; z-index: 1;
+  color: rgba(245, 231, 207, 0.85); font-size: 0.88rem; font-style: italic;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
+}
+.hero-nav { position: relative; z-index: 2; }
 .hero-nav { display: flex; align-items: center; gap: 16px; margin-top: 26px; }
 .hero-arrow {
   width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
@@ -235,8 +255,13 @@ h1, h2, h3, .logo, .hero-title {
 }
 .hero-dot.active { background: var(--amber); width: 28px; border-radius: 6px; }
 @media (max-width: 860px) {
-  .hero-slide { grid-template-columns: 1fr; gap: 20px; }
-  .hero-slide-media img { aspect-ratio: 16/9; }
+  .hero-slide { min-height: 70vh; padding: 40px 0; }
+  .hero-slide-shade {
+    background:
+      linear-gradient(to top, rgba(20, 14, 8, 0.9) 0%, rgba(20, 14, 8, 0.25) 45%),
+      linear-gradient(rgba(20, 14, 8, 0.78), rgba(20, 14, 8, 0.62));
+  }
+  .hero-slide-caption { display: none; }
 }
 /* Chuông thông báo tin mới */
 .bell-wrap { position: relative; flex-shrink: 0; }
@@ -332,6 +357,7 @@ h1, h2, h3, .logo, .hero-title {
   min-height: 92vh;
   display: flex; align-items: center;
   position: relative;
+  overflow: hidden;
 }
 .hero-3d .container { width: 100%; }
 .hero-kicker {
