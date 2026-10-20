@@ -59,6 +59,11 @@ export default {
     customer: 'Customer',
     updated: 'Your review has been updated.',
     thanks: 'Thanks for your review!',
+    rate1: 'Terrible',
+    rate2: 'Bad',
+    rate3: 'Okay',
+    rate4: 'Good',
+    rate5: 'Excellent',
   },
   home: {
     kicker: 'Handcrafted leather workshop',

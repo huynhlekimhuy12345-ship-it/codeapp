@@ -59,6 +59,11 @@ export default {
     customer: '고객',
     updated: '리뷰가 수정되었습니다.',
     thanks: '리뷰를 남겨주셔서 감사합니다!',
+    rate1: '매우 나쁨',
+    rate2: '나쁨',
+    rate3: '보통',
+    rate4: '좋음',
+    rate5: '아주 좋음',
   },
   home: {
     kicker: '수제 가죽 공방',

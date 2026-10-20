@@ -59,6 +59,11 @@ export default {
     customer: '顾客',
     updated: '已更新您的评价。',
     thanks: '感谢您的评价！',
+    rate1: '很差',
+    rate2: '较差',
+    rate3: '一般',
+    rate4: '不错',
+    rate5: '非常好',
   },
   home: {
     kicker: '手工皮具工坊',

@@ -1,0 +1,119 @@
+/* —— Đánh giá sản phẩm (trang chi tiết) —— */
+.rv-wrap { margin-top: 3.2rem; }
+.rv-title {
+  font-size: 1.65rem; color: var(--cream); margin: 0 0 20px;
+  padding-bottom: 12px; border-bottom: 1px solid rgba(232, 181, 106, 0.22);
+}
+.rv-muted { color: var(--muted); }
+.rv-stars { color: #e8a33d; letter-spacing: 2px; white-space: nowrap; }
+
+.rv-grid {
+  display: grid; grid-template-columns: 300px 1fr; gap: 22px; align-items: start;
+}
+@media (max-width: 860px) { .rv-grid { grid-template-columns: 1fr; } }
+
+/* Thẻ tổng kết điểm */
+.rv-summary {
+  border-radius: 18px; padding: 24px 22px; text-align: center;
+  background: linear-gradient(165deg, rgba(84, 54, 24, 0.5), rgba(32, 21, 12, 0.72));
+  border: 1px solid rgba(232, 181, 106, 0.3);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  position: sticky; top: 96px;
+}
+@media (max-width: 860px) { .rv-summary { position: static; } }
+.rv-avg {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 3.2rem; font-weight: 800; color: var(--cream); line-height: 1;
+}
+.rv-count { color: var(--muted); font-size: 0.9rem; margin: 6px 0 18px; }
+.rv-bars { display: flex; flex-direction: column; gap: 7px; }
+.rv-bar-row { display: flex; align-items: center; gap: 9px; font-size: 0.83rem; }
+.rv-bar-star { color: #e8a33d; min-width: 26px; text-align: right; font-weight: 700; }
+.rv-bar {
+  flex: 1; height: 8px; border-radius: 5px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.09);
+}
+.rv-bar i {
+  display: block; height: 100%; border-radius: 5px;
+  background: linear-gradient(90deg, #c9852f, #f0b24c);
+  transition: width 0.5s ease;
+}
+.rv-bar-n { color: var(--muted); min-width: 18px; text-align: left; }
+
+/* Trạng thái chưa có đánh giá */
+.rv-empty {
+  border-radius: 18px; padding: 34px 24px; text-align: center;
+  border: 1.5px dashed rgba(232, 181, 106, 0.45);
+  background: rgba(232, 181, 106, 0.05);
+  color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.rv-empty p { margin: 0; line-height: 1.55; }
+.rv-empty-star {
+  font-size: 2rem; color: rgba(232, 181, 106, 0.65); line-height: 1;
+}
+
+/* Form viết đánh giá */
+.rv-form {
+  border-radius: 18px; padding: 24px 24px 26px;
+  background: linear-gradient(165deg, rgba(84, 54, 24, 0.42), rgba(32, 21, 12, 0.66));
+  border: 1px solid rgba(232, 181, 106, 0.28);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+}
+.rv-form h3 { margin: 0 0 14px; color: var(--cream); font-size: 1.18rem; }
+.rv-your-rating { color: var(--muted); font-size: 0.92rem; margin-bottom: 6px; }
+.rv-picker { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.rv-picker-stars { display: flex; gap: 2px; }
+.rv-star-btn {
+  background: none; border: none; cursor: pointer; padding: 2px;
+  font-size: 1.9rem; line-height: 1; color: rgba(255, 255, 255, 0.22);
+  transition: color 0.15s, transform 0.15s;
+}
+.rv-star-btn:hover { transform: scale(1.15); }
+.rv-star-btn.on { color: #f0b24c; text-shadow: 0 0 14px rgba(240, 178, 76, 0.45); }
+.rv-picker-label { color: var(--amber-light); font-weight: 700; font-size: 0.95rem; }
+.rv-textarea {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 104px;
+  border-radius: 12px; padding: 13px 15px;
+  background: rgba(16, 10, 5, 0.55); color: var(--cream);
+  border: 1px solid rgba(232, 181, 106, 0.25);
+  font: inherit; line-height: 1.55; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.rv-textarea::placeholder { color: rgba(232, 217, 189, 0.4); }
+.rv-textarea:focus {
+  border-color: rgba(240, 178, 76, 0.75);
+  box-shadow: 0 0 0 3px rgba(240, 178, 76, 0.16);
+}
+.rv-submit { margin-top: 14px; }
+.rv-error { color: #ff9d8a; margin: 10px 0 0; font-size: 0.92rem; }
+.rv-ok { color: #a7e8b0; margin: 10px 0 0; font-size: 0.92rem; }
+
+/* Hộp nhắc đăng nhập */
+.rv-login {
+  border-radius: 18px; padding: 22px 24px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: rgba(232, 181, 106, 0.06);
+  border: 1px solid rgba(232, 181, 106, 0.25);
+  color: var(--muted);
+}
+
+/* Danh sách đánh giá */
+.rv-list { margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
+.rv-card {
+  border-radius: 16px; padding: 18px 20px;
+  background: linear-gradient(165deg, rgba(64, 42, 20, 0.38), rgba(28, 19, 11, 0.6));
+  border: 1px solid rgba(232, 181, 106, 0.2);
+}
+.rv-card-head { display: flex; align-items: center; gap: 12px; }
+.rv-avatar {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 1.05rem; color: #2b1c0d;
+  background: linear-gradient(140deg, #f5cd8a, #c9852f);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.rv-card-meta { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.rv-card-meta strong { color: var(--cream); font-size: 0.98rem; }
+.rv-card-meta small { color: var(--muted); font-size: 0.8rem; }
+.rv-comment { margin: 12px 0 0; line-height: 1.65; color: var(--text); white-space: pre-wrap; }

@@ -59,6 +59,11 @@ export default {
     customer: 'Khách hàng',
     updated: 'Đã cập nhật đánh giá của bạn.',
     thanks: 'Cảm ơn bạn đã đánh giá!',
+    rate1: 'Rất tệ',
+    rate2: 'Tệ',
+    rate3: 'Bình thường',
+    rate4: 'Tốt',
+    rate5: 'Rất tốt',
   },
   home: {
     kicker: 'Xưởng đồ da thủ công',
