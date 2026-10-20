@@ -14,6 +14,17 @@ function request(path, { method = 'GET', body } = {}) {
     });
 }
 
+// Trang đích gợi ý cho nút CTA / banner: chọn nhanh hoặc tự nhập link
+const CTA_PAGES = [
+  { value: '', label: '— Tự nhập link bên dưới —' },
+  { value: '/khuyen-mai', label: 'Khuyến mãi (/khuyen-mai)' },
+  { value: '/cua-hang', label: 'Cửa hàng (/cua-hang)' },
+  { value: '/bo-suu-tap', label: 'Bộ sưu tập (/bo-suu-tap)' },
+  { value: '/tin-tuc', label: 'Tin tức (/tin-tuc)' },
+  { value: '/blog', label: 'Blog (/blog)' },
+  { value: '/lien-he', label: 'Liên hệ (/lien-he)' },
+];
+
 const EMPTY = {
   title: '', content: '', badge: '', cta_text: '', cta_link: '',
   image_url: '', image_caption: '',
@@ -131,6 +142,7 @@ export default function NewsTab() {
                   <span className="chip">{a.show_on_banner ? 'Đang lên banner' : 'Không lên banner'}</span>
                   <span className="chip">{a.send_notification ? 'Có gửi thông báo' : 'Không gửi thông báo'}</span>
                   <span className="chip">Ngày đăng: {new Date(a.created_at).toLocaleDateString('vi-VN')}</span>
+                  {a.cta_link && <span className="chip">→ {a.cta_link}</span>}
                 </div>
                 <div className="news-admin-author">
                   · Người đăng: {a.author_name || '—'}{a.author_role === 'sale' ? ' (Nhân viên Sale)' : a.author_role === 'admin' ? ' (Quản trị viên)' : ''}
@@ -161,8 +173,16 @@ export default function NewsTab() {
                 <input value={form.cta_text} onChange={(e) => set('cta_text', e.target.value)} placeholder="VD: Săn sale ngay" />
               </div>
             </div>
-            <div className="field"><label>Link nút CTA (tùy chọn)</label>
-              <input value={form.cta_link} onChange={(e) => set('cta_link', e.target.value)} placeholder="VD: /khuyen-mai" />
+            <div className="field"><label>Trang đích của nút (chọn để dẫn đến trang cần)</label>
+              <select value={CTA_PAGES.some((o) => o.value === form.cta_link) ? form.cta_link : ''}
+                onChange={(e) => set('cta_link', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', color: 'var(--cream)', border: '1px solid rgba(255,255,255,.12)' }}>
+                {CTA_PAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <input value={form.cta_link} onChange={(e) => set('cta_link', e.target.value)}
+                placeholder="Hoặc nhập link tùy ý, VD: /khuyen-mai, /san-pham/5, https://..."
+                style={{ marginTop: 8 }} />
+              {form.cta_link && <small style={{ color: 'var(--muted)' }}>Banner & trang chi tiết sẽ dẫn đến: <code>{form.cta_link}</code></small>}
             </div>
             <div className="field"><label>Hình ảnh (link URL, tùy chọn)</label>
               <input value={form.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://... (link ảnh minh họa)" />
