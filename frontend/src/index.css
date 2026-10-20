@@ -206,12 +206,12 @@ h1, h2, h3, .logo, .hero-title {
 /* Banner hero trình chiếu: ảnh phủ lớn làm nền sau chữ, phủ màu tối của app */
 .hero-slide {
   position: relative; display: flex; align-items: center;
-  min-height: 68vh; padding: 56px 48px;
+  min-height: 68vh; padding: 56px 48px; margin: 0 auto; width: 100%;
   animation: heroSlideIn 0.55s ease both;
 }
 @keyframes heroSlideIn {
-  from { opacity: 0; transform: translateX(28px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
 }
 .hero-slide-bg {
   position: absolute; inset: 0;

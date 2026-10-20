@@ -27,7 +27,7 @@ const CTA_PAGES = [
 
 const EMPTY = {
   title: '', content: '', badge: '', cta_text: '', cta_link: '',
-  image_url: '', image_caption: '',
+  image_url: '', image_caption: '', image_zoom: 1, image_pos_x: 50, image_pos_y: 50,
   show_on_banner: true, send_notification: true, is_active: true,
 };
 
@@ -61,6 +61,9 @@ export default function NewsTab() {
       title: a.title, content: a.content, badge: a.badge,
       cta_text: a.cta_text, cta_link: a.cta_link,
       image_url: a.image_url || '', image_caption: a.image_caption || '',
+      image_zoom: a.image_zoom != null ? Number(a.image_zoom) : 1,
+      image_pos_x: a.image_pos_x != null ? Number(a.image_pos_x) : 50,
+      image_pos_y: a.image_pos_y != null ? Number(a.image_pos_y) : 50,
       show_on_banner: a.show_on_banner, send_notification: a.send_notification,
       is_active: a.is_active,
     });
@@ -193,6 +196,37 @@ export default function NewsTab() {
             <div className="field"><label>Chú thích hình ảnh (tùy chọn)</label>
               <input value={form.image_caption} onChange={(e) => set('image_caption', e.target.value)} placeholder="VD: Xưởng da BI99 tại Hội An" />
             </div>
+            {form.image_url && (
+              <div className="field">
+                <label>Khung banner — chỉnh zoom & vị trí ảnh (xem trước trực tiếp)</label>
+                <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(232,181,106,.45)', aspectRatio: '16/7', background: '#1a120a' }}>
+                  <img src={form.image_url} alt="Xem trước banner"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                      objectPosition: `${form.image_pos_x}% ${form.image_pos_y}%`,
+                      transform: `scale(${form.image_zoom})`,
+                      transformOrigin: `${form.image_pos_x}% ${form.image_pos_y}%` }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+                    background: 'linear-gradient(90deg, rgba(20,14,8,.92) 0%, rgba(20,14,8,.75) 42%, rgba(24,17,10,.35) 72%, rgba(24,17,10,.25) 100%)' }} />
+                  <div style={{ position: 'absolute', left: 14, bottom: 10, color: '#f5e7cf', fontSize: 12, opacity: .85, pointerEvents: 'none' }}>← Phần chữ nằm ở đây</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10 }}>
+                  <label style={{ fontSize: 12.5 }}>Zoom: {Math.round(form.image_zoom * 100)}%
+                    <input type="range" min="1" max="2" step="0.05" value={form.image_zoom}
+                      onChange={(e) => set('image_zoom', parseFloat(e.target.value))} style={{ width: '100%' }} />
+                  </label>
+                  <label style={{ fontSize: 12.5 }}>Ngang: {form.image_pos_x}%
+                    <input type="range" min="0" max="100" step="1" value={form.image_pos_x}
+                      onChange={(e) => set('image_pos_x', parseInt(e.target.value, 10))} style={{ width: '100%' }} />
+                  </label>
+                  <label style={{ fontSize: 12.5 }}>Dọc: {form.image_pos_y}%
+                    <input type="range" min="0" max="100" step="1" value={form.image_pos_y}
+                      onChange={(e) => set('image_pos_y', parseInt(e.target.value, 10))} style={{ width: '100%' }} />
+                  </label>
+                </div>
+                <small style={{ color: 'var(--muted)' }}>Kéo Zoom để ảnh gần hơn; Ngang/Dọc để dời điểm nhìn (VD: ảnh túi bị lệch phải → giảm Ngang).</small>
+              </div>
+            )}
             <div className="field">
               <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input type="checkbox" checked={form.show_on_banner} onChange={(e) => set('show_on_banner', e.target.checked)} />

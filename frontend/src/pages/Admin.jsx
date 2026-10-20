@@ -32,6 +32,75 @@ function ConfirmDialog({ title, message, confirmLabel = 'Xác nhận', danger = 
 }
 
 /* ---------- Tab Sản phẩm ---------- */
+/** Chọn tối đa 6 sản phẩm trưng bày ở trang Bộ sưu tập (thứ tự = thứ tự hiển thị). */
+function ShowcaseSection({ products, onChanged }) {
+  const [list, setList] = useState([]);
+  const [pick, setPick] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const loadShowcase = () => {
+    api.getProducts({ showcase: 1, limit: 6 })
+      .then((d) => setList(d.products || []))
+      .catch(() => setList([]));
+  };
+  useEffect(() => { loadShowcase(); }, []);
+
+  const apply = async (ids) => {
+    setBusy(true); setMsg('');
+    try {
+      const d = await api.setShowcase(ids);
+      setList(d.products || []);
+      setMsg('Đã lưu danh sách trưng bày.');
+      if (onChanged) onChanged();
+    } catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+  const add = () => { if (pick) apply([...list.map((p) => p.id), parseInt(pick, 10)]); setPick(''); };
+  const remove = (id) => apply(list.filter((p) => p.id !== id).map((p) => p.id));
+  const move = (i, dir) => {
+    const ids = list.map((p) => p.id);
+    const j = i + dir;
+    if (j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    apply(ids);
+  };
+  const rest = products.filter((p) => !list.some((x) => x.id === p.id));
+
+  return (
+    <div className="card" style={{ marginBottom: 18 }}>
+      <h3 style={{ margin: '0 0 6px' }}>Sản phẩm trưng bày ở trang Bộ sưu tập ({list.length}/6)</h3>
+      <p style={{ color: 'var(--muted)', margin: '0 0 12px', fontSize: '0.9rem' }}>
+        Đây là các sản phẩm hiện ở mục Khám phá + Bộ sưu tập. Thêm sản phẩm mới ở bảng dưới rồi chọn đưa vào đây. Để trống = tự lấy 6 sản phẩm đầu tiên.
+      </p>
+      {list.length === 0 && <p style={{ color: 'var(--muted)' }}>Chưa chọn sản phẩm nào.</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {list.map((p, i) => (
+          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(232,181,106,.18)', borderRadius: 10, padding: '6px 10px' }}>
+            <b style={{ color: 'var(--amber-light)', minWidth: 22 }}>{i + 1}.</b>
+            <img src={p.image_url} alt="" style={{ width: 44, height: 34, objectFit: 'cover', borderRadius: 6 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <span style={{ flex: 1 }}>{p.name}</span>
+            <button className="btn btn-small btn-outline" disabled={busy || i === 0} onClick={() => move(i, -1)}>↑</button>
+            <button className="btn btn-small btn-outline" disabled={busy || i === list.length - 1} onClick={() => move(i, 1)}>↓</button>
+            <button className="btn btn-small btn-danger" disabled={busy} onClick={() => remove(p.id)}>Bỏ</button>
+          </div>
+        ))}
+      </div>
+      {list.length < 6 && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          <select value={pick} onChange={(e) => setPick(e.target.value)}
+            style={{ flex: '1 1 260px', padding: '9px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', color: 'var(--cream)', border: '1px solid rgba(255,255,255,.12)' }}>
+            <option value="">— Chọn sản phẩm thêm vào trưng bày —</option>
+            {rest.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <button className="btn btn-primary" disabled={busy || !pick} onClick={add}>Thêm vào Bộ sưu tập</button>
+        </div>
+      )}
+      {msg && <p style={{ color: 'var(--amber-light)', margin: '10px 0 0', fontSize: '0.88rem' }}>{msg}</p>}
+    </div>
+  );
+}
+
 function ProductsTab() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -88,6 +157,7 @@ function ProductsTab() {
   return (
     <div>
       {loadError && <div className="alert alert-error">{loadError}</div>}
+      <ShowcaseSection products={products} />
       <div className="toolbar">
         <h3>Quản lý sản phẩm ({products.length})</h3>
         <button className="btn btn-primary" onClick={openNew}>+ Thêm sản phẩm</button>

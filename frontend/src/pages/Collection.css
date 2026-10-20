@@ -49,14 +49,15 @@
 /* —— GĐ1: Hero —— */
 .cl-hero {
   position: relative; z-index: 1;
-  min-height: calc(100vh - 66px - 45px);
-  display: grid; grid-template-columns: 1fr 1.1fr; align-items: center;
-  gap: 24px; max-width: 1200px; margin: 0 auto;
-  padding: 40px 24px 60px;
+  display: flex; flex-direction: column; align-items: center;
+  max-width: 1200px; margin: 0 auto; text-align: center;
+  padding: 54px 24px 150px;
 }
-.cl-hero-copy .hero-title { text-align: left; }
-.cl-hero-copy .hero-sub { text-align: left; margin-left: 0; }
-.cl-hero-copy .hero-cta { justify-content: flex-start; }
+.cl-hero-copy { display: flex; flex-direction: column; align-items: center; }
+.cl-hero-copy .hero-title { text-align: center; }
+.cl-hero .hero-title em { font-style: italic; }
+.cl-hero-copy .hero-sub { text-align: center; margin-left: auto; margin-right: auto; margin-bottom: 6px; }
+.cl-hero-sub2 { margin-top: 0; }
 
 .cl-bag-stage { position: relative; display: grid; place-items: center; }
 .cl-bag-glow {
@@ -64,14 +65,10 @@
   background: radial-gradient(circle, rgba(240, 178, 76, 0.32) 0%, rgba(217, 119, 6, 0.12) 45%, transparent 70%);
   filter: blur(10px); pointer-events: none;
 }
-.cl-bag-tilt { transition: transform 0.25s ease-out; will-change: transform; }
-.cl-bag-float { animation: clFloat 6s ease-in-out infinite; }
-@keyframes clFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
-}
-.cl-bag-float > img:first-child {
-  width: min(44vw, 540px); max-width: 100%; height: auto; display: block;
+.cl-bag-stage { margin-top: 26px; }
+.cl-bag-static { position: relative; }
+.cl-bag-static > img:first-child {
+  width: min(78vw, 600px); max-width: 100%; height: auto; display: block;
   filter: drop-shadow(0 34px 34px rgba(0, 0, 0, 0.5));
 }
 
@@ -83,8 +80,9 @@
   opacity: 0.38; pointer-events: none;
 }
 .cl-bag-reflect {
-  width: min(44vw, 540px); max-width: 100%; height: 84px;
-  object-fit: cover; object-position: bottom; margin-top: 6px;
+  position: absolute; top: calc(100% + 6px); left: 0;
+  width: 100%; height: 84px;
+  object-fit: cover; object-position: bottom;
 }
 
 /* —— GĐ2: Khám phá —— */
@@ -96,16 +94,17 @@
 .cl-track {
   display: flex; align-items: center;
   gap: clamp(28px, 4vw, 56px);
-  padding: 0 max(6vw, 24px);
+  /* Đệm 2 đầu vừa đủ để panel ĐẦU và CUỐI cũng dừng đúng giữa màn hình */
+  padding: 0 calc(50% - min(19vw, 180px));
   will-change: transform;
 }
-.cl-panel { flex-shrink: 0; width: min(56vw, 470px); }
+.cl-panel { flex-shrink: 0; width: min(38vw, 360px); }
 .cl-panel-frame { margin: 0; }
 .cl-panel-frame > img:first-child {
   width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;
   border-radius: 18px;
-  border: 1px solid rgba(232, 181, 106, 0.32);
-  box-shadow: 0 26px 55px rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(232, 181, 106, 0.75);
+  box-shadow: 0 26px 55px rgba(0, 0, 0, 0.55), 0 0 24px rgba(232, 181, 106, 0.18);
 }
 .cl-panel-frame .cl-reflect {
   width: 100%; height: 56px; object-fit: cover; object-position: top;
@@ -163,12 +162,11 @@
 
 /* —— Responsive —— */
 @media (max-width: 860px) {
-  .cl-hero { grid-template-columns: 1fr; text-align: center; padding-top: 26px; }
-  .cl-hero-copy .hero-title, .cl-hero-copy .hero-sub { text-align: center; margin-left: auto; margin-right: auto; }
-  .cl-hero-copy .hero-cta { justify-content: center; }
-  .cl-bag-float > img:first-child { width: min(76vw, 420px); }
-  .cl-bag-reflect { width: min(76vw, 420px); height: 60px; }
-  .cl-panel { width: 74vw; }
+  .cl-hero { padding-top: 34px; }
+  .cl-bag-static > img:first-child { width: min(84vw, 420px); }
+  .cl-bag-reflect { height: 60px; }
+  .cl-panel { width: 62vw; }
+  .cl-track { padding: 0 calc(50% - 31vw); }
   .cl-info { bottom: 3vh; min-height: 200px; }
   .cl-explore-pin { height: 92vh; }
 }

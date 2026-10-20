@@ -50,12 +50,13 @@ const SELECT = `
 
 // GET /api/products?category=&search=&sort=&page=&limit= — công khai
 router.get('/', (req, res) => {
-  const { category, search, sort, min_price, max_price } = req.query;
+  const { category, search, sort, min_price, max_price, showcase } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
   const offset = (page - 1) * limit;
 
   const conds = [];
+  if (showcase === '1') conds.push('p.showcase = 1');
   const params = [];
   if (category) { conds.push('p.category_id = ?'); params.push(category); }
   if (search) {
@@ -74,7 +75,9 @@ router.get('/', (req, res) => {
     'oldest': 'p.id ASC',
     'name': 'p.name ASC',
   };
-  const orderBy = 'ORDER BY ' + (sorts[sort] || 'p.id DESC');
+  const orderBy = showcase === '1'
+    ? 'ORDER BY p.showcase_order ASC, p.id ASC'
+    : 'ORDER BY ' + (sorts[sort] || 'p.id DESC');
 
   const total = db.prepare(`SELECT COUNT(*) AS n FROM products p ${where}`).get(...params).n;
   const saleMap = liveSaleMap();
@@ -124,6 +127,20 @@ router.post('/', auth, staffOnly, (req, res) => {
 });
 
 // PUT /api/products/:id — admin
+// PUT /api/products/showcase — staff đặt danh sách SP trưng bày ở trang Bộ sưu tập (tối đa 6)
+router.put('/showcase', auth, staffOnly, (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x) => parseInt(x, 10)).filter(Number.isFinite) : [];
+  if (ids.length > 6) return res.status(400).json({ error: 'Bộ sưu tập trưng bày tối đa 6 sản phẩm' });
+  const tx = db.transaction(() => {
+    db.prepare('UPDATE products SET showcase = 0, showcase_order = 0').run();
+    const upd = db.prepare('UPDATE products SET showcase = 1, showcase_order = ? WHERE id = ?');
+    ids.forEach((id, i) => upd.run(i + 1, id));
+  });
+  tx();
+  const products = db.prepare(`${SELECT} WHERE p.showcase = 1 ORDER BY p.showcase_order ASC, p.id ASC`).all().map((x) => withSale(x, liveSaleMap()));
+  res.json({ products });
+});
+
 router.put('/:id', auth, staffOnly, (req, res) => {
   const { category_id, name, description, price, stock, image_url } = req.body || {};
   if (!String(name || '').trim())

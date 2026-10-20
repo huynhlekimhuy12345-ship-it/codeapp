@@ -157,12 +157,16 @@ export default function Collection() {
   const galleryRef = useRef(null);
   const pinRef = useRef(null);
   const trackRef = useRef(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  // 1. Nạp 6 sản phẩm thật
+  // 1. Nạp sản phẩm trưng bày: ưu tiên danh sách admin chọn trong trang quản trị;
+  //    chưa chọn thì lấy 6 sản phẩm đầu tiên.
   useEffect(() => {
-    api.getProducts({ limit: 6, sort: 'oldest' })
-      .then((d) => setProducts(d.products || []))
+    api.getProducts({ showcase: 1, limit: 6 })
+      .then((d) => {
+        if (d.products && d.products.length > 0) { setProducts(d.products); return null; }
+        return api.getProducts({ limit: 6, sort: 'oldest' })
+          .then((d2) => setProducts(d2.products || []));
+      })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
@@ -220,9 +224,15 @@ export default function Collection() {
           scrollTrigger: {
             trigger: exploreRef.current,
             start: 'top top',
-            end: () => `+=${getDist()}`,
+            end: () => `+=${getDist() * 1.8}`,
             pin: true,
             scrub: 1,
+            snap: {
+              snapTo: 1 / Math.max(1, products.length - 1),
+              duration: { min: 0.3, max: 0.7 },
+              delay: 0.05,
+              ease: 'power2.inOut',
+            },
             invalidateOnRefresh: true,
             onUpdate: updateActive,
             onRefresh: () => requestAnimationFrame(updateActive),
@@ -262,16 +272,6 @@ export default function Collection() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Nghiêng túi hero theo chuột
-  const onHeroMove = (e) => {
-    const r = heroRef.current?.getBoundingClientRect();
-    if (!r) return;
-    setTilt({
-      x: (e.clientX - r.left) / r.width - 0.5,
-      y: (e.clientY - r.top) / r.height - 0.5,
-    });
-  };
-
   return (
     <div className="cl-page">
       <PageTitle title={t('collection.heroTitle')} />
@@ -279,31 +279,20 @@ export default function Collection() {
       <PhaseBar phase={phase} onGo={scrollTo} />
 
       {/* GĐ1 — MỞ ĐẦU */}
-      <section ref={heroRef} id="cl-start" className="cl-hero" onMouseMove={onHeroMove} onMouseLeave={() => setTilt({ x: 0, y: 0 })}>
+      <section ref={heroRef} id="cl-start" className="cl-hero">
         <div className="cl-hero-copy">
-          <span className="hero-kicker">{t('collection.kicker')}</span>
-          <h1 className="hero-title">{t('collection.heroTitle')}</h1>
+          <span className="hero-kicker">{t('collection.heroKicker')}</span>
+          <h1 className="hero-title">{t('collection.heroTitleA')} <em>{t('collection.heroTitleEm')}</em></h1>
           <p className="hero-sub">{t('collection.heroSub')}</p>
-          <div className="hero-cta">
-            <button type="button" className="btn btn-primary" onClick={() => scrollTo('cl-explore')}>
-              {t('collection.exploreNow')}
-            </button>
-          </div>
+          <p className="hero-sub cl-hero-sub2">{t('collection.heroSub2')}</p>
         </div>
         <div className="cl-bag-stage">
           <div className="cl-bag-glow" aria-hidden />
-          <div
-            className="cl-bag-tilt"
-            style={{
-              transform: `perspective(900px) rotateY(${tilt.x * 12}deg) rotateX(${-tilt.y * 9}deg) translate3d(${tilt.x * 16}px, ${tilt.y * 12}px, 0)`,
-            }}
-          >
-            <div className="cl-bag-float">
-              <img src="/images/bag-hero-cut.png" alt={t('collection.heroTitle')} draggable={false}
-                onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-              <img src="/images/bag-hero-cut.png" alt="" aria-hidden className="cl-reflect cl-bag-reflect"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            </div>
+          <div className="cl-bag-static">
+            <img src="/images/bag-hero-cut.png" alt={t('collection.heroTitle')} draggable={false}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img src="/images/bag-hero-cut.png" alt="" aria-hidden className="cl-reflect cl-bag-reflect"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           </div>
         </div>
       </section>

@@ -355,6 +355,10 @@ export default {
     heroTitle: '真皮作品集',
     heroSub: '触摸真实皮质 — 没有3D模型，这都是 BI99 的真实产品',
     exploreNow: '立即探索',
+    heroKicker: 'BI99 · 会安手工皮具',
+    heroTitleA: '真皮',
+    heroTitleEm: '作品集',
+    heroSub2: '每一处针脚、皮纹与干邑色泽，都是真实拍摄的照片。',
   },
   fix1: {
     leatherWord: '皮革',

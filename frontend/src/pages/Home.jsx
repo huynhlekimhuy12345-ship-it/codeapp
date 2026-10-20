@@ -14,6 +14,11 @@ function HeroBg({ ann }) {
   return (
     <div className="hero-slide-bg" aria-hidden="true">
       <img src={ann.image_url} alt=""
+        style={{
+          objectPosition: `${ann.image_pos_x ?? 50}% ${ann.image_pos_y ?? 50}%`,
+          transform: `scale(${ann.image_zoom || 1})`,
+          transformOrigin: `${ann.image_pos_x ?? 50}% ${ann.image_pos_y ?? 50}%`,
+        }}
         onError={(e) => { e.currentTarget.closest('.hero-slide-bg').style.display = 'none'; }} />
       <div className="hero-slide-shade" />
       {captionT && <div className="hero-slide-caption">{captionT}</div>}

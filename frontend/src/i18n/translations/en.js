@@ -355,6 +355,10 @@ export default {
     heroTitle: 'The Real Leather Collection',
     heroSub: 'Feel the leather — no 3D models, these are BI99\'s real products',
     exploreNow: 'Explore now',
+    heroKicker: 'BI99 · Hoi An Handcrafted Leather',
+    heroTitleA: 'The Real Leather',
+    heroTitleEm: 'Collection',
+    heroSub2: 'Every stitch, leather grain and cognac tone is a real photograph.',
   },
   fix1: {
     leatherWord: 'Leather',

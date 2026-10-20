@@ -49,6 +49,7 @@ export const api = {
     return request(`/api/products${q ? '?' + q : ''}`);
   },
   getProduct: (id) => request(`/api/products/${id}`),
+  setShowcase: (ids) => request('/api/products/showcase', { method: 'PUT', body: { ids }, auth: true }),
   createProduct: (p) => request('/api/products', { method: 'POST', body: p, auth: true }),
   updateProduct: (id, p) => request(`/api/products/${id}`, { method: 'PUT', body: p, auth: true }),
   deleteProduct: (id) => request(`/api/products/${id}`, { method: 'DELETE', auth: true }),

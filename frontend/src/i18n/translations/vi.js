@@ -355,6 +355,10 @@ export default {
     heroTitle: 'Bộ sưu tập da thật',
     heroSub: 'Chạm vào chất da — không mô hình 3D, đây là sản phẩm thật của BI99',
     exploreNow: 'Khám phá ngay',
+    heroKicker: 'BI99 · Đồ da thủ công Hội An',
+    heroTitleA: 'Bộ sưu tập',
+    heroTitleEm: 'da thật',
+    heroSub2: 'Từng đường kim, vân da và sắc nâu cognac đều là ảnh chụp thật.',
   },
   fix1: {
     leatherWord: 'Da',

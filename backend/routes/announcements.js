@@ -7,6 +7,10 @@ const { auth, staffOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Chuẩn hoá thông số khung banner: zoom 1–2.5, vị trí 0–100 (%)
+const clampZoom = (v, fb) => { const n = parseFloat(v); return Number.isFinite(n) ? Math.min(2.5, Math.max(1, n)) : fb; };
+const clampPos = (v, fb) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : fb; };
+
 function row(r) {
   if (!r) return null;
   return {
@@ -20,6 +24,9 @@ function row(r) {
     cta_link: r.cta_link || '',
     image_url: r.image_url || '',
     image_caption: r.image_caption || '',
+    image_zoom: r.image_zoom != null ? Number(r.image_zoom) : 1,
+    image_pos_x: r.image_pos_x != null ? Number(r.image_pos_x) : 50,
+    image_pos_y: r.image_pos_y != null ? Number(r.image_pos_y) : 50,
     show_on_banner: !!r.show_on_banner,
     send_notification: !!r.send_notification,
     is_active: !!r.is_active,
@@ -44,16 +51,17 @@ router.get('/', auth, staffOnly, (req, res) => {
 
 // POST /api/announcements — tạo tin mới, chỉ staff
 router.post('/', auth, staffOnly, (req, res) => {
-  const { title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active } = req.body || {};
+  const { title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active } = req.body || {};
   if (!(title || '').trim()) return res.status(400).json({ error: 'Thiếu tiêu đề thông báo' });
   if (!(content || '').trim()) return res.status(400).json({ error: 'Thiếu nội dung thông báo' });
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const r = db.prepare(
-    `INSERT INTO announcements (title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO announcements (title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     title.trim(), content.trim(), (badge || '').trim(), (cta_text || '').trim(), (cta_link || '').trim(),
     (image_url || '').trim(), (image_caption || '').trim(),
+    clampZoom(image_zoom, 1), clampPos(image_pos_x, 50), clampPos(image_pos_y, 50),
     show_on_banner === false ? 0 : 1, send_notification === false ? 0 : 1, is_active === false ? 0 : 1,
     req.user ? req.user.id : null, now, now
   );
@@ -64,12 +72,12 @@ router.post('/', auth, staffOnly, (req, res) => {
 router.put('/:id', auth, staffOnly, (req, res) => {
   const cur = db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
   if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
-  const { title, content, badge, cta_text, cta_link, image_url, image_caption, show_on_banner, send_notification, is_active } = req.body || {};
+  const { title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active } = req.body || {};
   if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Tiêu đề không được để trống' });
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   db.prepare(
     `UPDATE announcements SET title = ?, content = ?, badge = ?, cta_text = ?, cta_link = ?,
-     image_url = ?, image_caption = ?,
+     image_url = ?, image_caption = ?, image_zoom = ?, image_pos_x = ?, image_pos_y = ?,
      show_on_banner = ?, send_notification = ?, is_active = ?, updated_at = ? WHERE id = ?`
   ).run(
     title !== undefined ? String(title).trim() : cur.title,
@@ -79,6 +87,9 @@ router.put('/:id', auth, staffOnly, (req, res) => {
     cta_link !== undefined ? String(cta_link).trim() : cur.cta_link,
     image_url !== undefined ? String(image_url).trim() : (cur.image_url || ''),
     image_caption !== undefined ? String(image_caption).trim() : (cur.image_caption || ''),
+    clampZoom(image_zoom, cur.image_zoom != null ? Number(cur.image_zoom) : 1),
+    clampPos(image_pos_x, cur.image_pos_x != null ? Number(cur.image_pos_x) : 50),
+    clampPos(image_pos_y, cur.image_pos_y != null ? Number(cur.image_pos_y) : 50),
     show_on_banner !== undefined ? (show_on_banner ? 1 : 0) : cur.show_on_banner,
     send_notification !== undefined ? (send_notification ? 1 : 0) : cur.send_notification,
     is_active !== undefined ? (is_active ? 1 : 0) : cur.is_active,

@@ -351,6 +351,9 @@ addColumnIfMissing('announcements', 'image_url', "image_url TEXT NOT NULL DEFAUL
 addColumnIfMissing('contact_messages', 'content_vi', "content_vi TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('announcements', 'created_by', "created_by INTEGER REFERENCES users(id) ON DELETE SET NULL");
 addColumnIfMissing('announcements', 'image_caption', "image_caption TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('announcements', 'image_zoom', 'image_zoom REAL NOT NULL DEFAULT 1');
+addColumnIfMissing('announcements', 'image_pos_x', 'image_pos_x INTEGER NOT NULL DEFAULT 50');
+addColumnIfMissing('announcements', 'image_pos_y', 'image_pos_y INTEGER NOT NULL DEFAULT 50');
 addColumnIfMissing('orders', 'shipping_fee', 'shipping_fee INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'discount_total', 'discount_total INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'shipping_method_id', 'shipping_method_id INTEGER REFERENCES shipping_methods(id) ON DELETE SET NULL');
@@ -364,6 +367,8 @@ addColumnIfMissing('users', 'phone', "phone TEXT NOT NULL DEFAULT ''");
 
 // --- Cột name_norm cho products (tìm kiếm không dấu) ---
 addColumnIfMissing('products', 'name_norm', "name_norm TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('products', 'showcase', 'showcase INTEGER NOT NULL DEFAULT 0');
+addColumnIfMissing('products', 'showcase_order', 'showcase_order INTEGER NOT NULL DEFAULT 0');
 (function backfillNorm() {
   const rows = db.prepare("SELECT id, name FROM products WHERE name_norm = '' OR name_norm IS NULL").all();
   if (!rows.length) return;

@@ -355,6 +355,10 @@ export default {
     heroTitle: '리얼 가죽 컬렉션',
     heroSub: '가죽의 질감을 느껴보세요 — 3D 모델이 아닌, BI99의 실제 제품입니다',
     exploreNow: '지금 탐험하기',
+    heroKicker: 'BI99 · 호이안 수제 가죽',
+    heroTitleA: '리얼 가죽',
+    heroTitleEm: '컬렉션',
+    heroSub2: '모든 스티치와 가죽 결, 코냑 색감은 실제 촬영 사진입니다.',
   },
   fix1: {
     leatherWord: '가죽',
