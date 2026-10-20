@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
@@ -275,6 +275,11 @@ function CategoriesTab() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const catFormRef = useRef(null);
+  // Bấm Sửa ở một hàng phía dưới → tự cuộn lên form ở đầu tab
+  useEffect(() => {
+    if (editingId) catFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [editingId]);
   const [deleting, setDeleting] = useState(null);
 
   const [loadError, setLoadError] = useState('');
@@ -302,7 +307,7 @@ function CategoriesTab() {
     <div>
       {loadError && <div className="alert alert-error">{loadError}</div>}
       <h3 style={{ marginBottom: 14 }}>Quản lý danh mục</h3>
-      <div className="filters" style={{ alignItems: 'end' }}>
+      <div className="filters" style={{ alignItems: 'end' }} ref={catFormRef}>
         <div className="field" style={{ margin: 0, flex: 1 }}><label>Tên *</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div className="field" style={{ margin: 0, flex: 2 }}><label>Mô tả</label><input value={description} onChange={(e) => setDescription(e.target.value)} /></div>
         <button className="btn btn-primary" onClick={save}>{editingId ? 'Cập nhật' : 'Thêm'}</button>

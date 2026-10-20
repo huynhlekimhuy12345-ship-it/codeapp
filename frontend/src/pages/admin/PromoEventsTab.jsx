@@ -174,16 +174,18 @@ export default function PromoEventsTab() {
 
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 620 }}>
             <h3>{editing ? 'Sửa sự kiện' : 'Thêm sự kiện mới'}</h3>
             {error && <div className="alert alert-error">{error}</div>}
-            <div className="field">
-              <label htmlFor="promoeventstab-ten-su-kien">Tên sự kiện *</label>
-              <input id="promoeventstab-ten-su-kien" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Sale 11.11" />
-            </div>
-            <div className="field">
-              <label htmlFor="promoeventstab-slug">Slug</label>
-              <input id="promoeventstab-slug" value={form.slug} onChange={(e) => set('slug', e.target.value)} placeholder="VD: sale-11-11 (để trống = tự tạo từ tên)" />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div className="field" style={{ flex: 1 }}>
+                <label htmlFor="promoeventstab-ten-su-kien">Tên sự kiện *</label>
+                <input id="promoeventstab-ten-su-kien" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Sale 11.11" />
+              </div>
+              <div className="field" style={{ flex: 1 }}>
+                <label htmlFor="promoeventstab-slug">Slug</label>
+                <input id="promoeventstab-slug" value={form.slug} onChange={(e) => set('slug', e.target.value)} placeholder="VD: sale-11-11 (để trống = tự tạo từ tên)" />
+              </div>
             </div>
             <div className="field">
               <label htmlFor="promoeventstab-tieu-e-banner">Tiêu đề banner</label>
@@ -208,9 +210,11 @@ export default function PromoEventsTab() {
               <input id="promoeventstab-voucher-lien-ket-cach-nhau-bang-dau-phay" value={form.voucher_codes} onChange={(e) => set('voucher_codes', e.target.value)} placeholder="VD: SALE1111, GIAM111K" />
               <small style={{ color: '#888' }}>Khi bật/tắt sự kiện, các voucher này sẽ được bật/tắt cùng lúc.</small>
             </div>
-            <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input aria-label="Ô nhập" type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
-              <label style={{ margin: 0 }}>Bật ngay sau khi lưu</label>
+            <div className="field">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 9, margin: 0, cursor: 'pointer' }}>
+                <input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
+                Bật ngay sau khi lưu
+              </label>
             </div>
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>Hủy</button>

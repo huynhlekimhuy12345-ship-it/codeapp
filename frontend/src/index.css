@@ -540,6 +540,10 @@ select option:checked { background-color: #b97a1e; color: #fff; }
   background: rgba(12, 8, 5, 0.6); color: var(--text);
 }
 .field input::placeholder, .field textarea::placeholder { color: var(--muted); }
+/* Ô tích chọn không bị kéo rộng 100% như ô nhập chữ (trước đây đẩy nhãn đi rất xa) */
+.field input[type="checkbox"], .field input[type="radio"] {
+  width: 19px; height: 19px; flex: none; accent-color: #d97706; cursor: pointer; padding: 0;
+}
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--amber); }
 .field select option { background: #221910; }
 .field input:disabled { opacity: 0.6; }
@@ -665,7 +669,7 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 .toolbar select option { background: #221910; }
 
 /* --- Modal --- */
-.modal-backdrop {
+.modal-overlay, .modal-backdrop {
   position: fixed; inset: 0; background: rgba(8, 5, 3, 0.7);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px;
