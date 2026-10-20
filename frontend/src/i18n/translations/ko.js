@@ -105,6 +105,7 @@ export default {
     maxPriceLabel: '최고가',
     loading: '상품을 불러오는 중...',
     empty: '조건에 맞는 상품이 없어요.',
+    back: '← 뒤로',
   },
   cart: {
     title: '장바구니',

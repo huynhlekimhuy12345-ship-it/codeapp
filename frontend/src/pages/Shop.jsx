@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import PageTitle from '../components/PageTitle';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import ProductCard from '../components/ProductCard';
 import { useLang } from '../i18n/LanguageContext';
@@ -17,6 +17,7 @@ function CategoryOption({ c }) {
 export default function Shop() {
   const { t } = useLang();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(1);
@@ -56,6 +57,15 @@ export default function Shop() {
   return (
     <div className="container page">
       <PageTitle title={t('shop.title')} />
+      {category && (
+        <button
+          className="btn btn-outline btn-small"
+          style={{ marginBottom: 12 }}
+          onClick={() => (window.history.length > 1 ? navigate(-1) : pickCategory(''))}
+        >
+          {t('shop.back')}
+        </button>
+      )}
       <h1 className="page-title">{t('shop.title')}</h1>
       <div className="filters">
         <input

@@ -105,6 +105,7 @@ export default {
     maxPriceLabel: 'Maximum price',
     loading: 'Loading products...',
     empty: 'No matching products found.',
+    back: '← Back',
   },
   cart: {
     title: 'Cart',

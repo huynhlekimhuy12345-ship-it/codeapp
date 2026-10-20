@@ -105,6 +105,7 @@ export default {
     maxPriceLabel: 'Giá cao nhất',
     loading: 'Đang tải sản phẩm...',
     empty: 'Không tìm thấy sản phẩm nào phù hợp.',
+    back: '← Quay lại',
   },
   cart: {
     title: 'Giỏ hàng',

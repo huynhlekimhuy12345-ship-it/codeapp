@@ -140,6 +140,13 @@ export default function ProductDetail() {
   return (
     <div className="container page">
       <PageTitle title={t('productDetail.title')} />
+      <button
+        className="btn btn-outline btn-small"
+        style={{ marginBottom: 14 }}
+        onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/cua-hang'))}
+      >
+        {t('shop.back')}
+      </button>
       <div className="detail">
         <div>
           <img src={mainImage} alt={name}

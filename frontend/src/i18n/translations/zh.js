@@ -105,6 +105,7 @@ export default {
     maxPriceLabel: '最高价格',
     loading: '正在加载产品...',
     empty: '未找到符合的产品。',
+    back: '← 返回',
   },
   cart: {
     title: '购物车',
