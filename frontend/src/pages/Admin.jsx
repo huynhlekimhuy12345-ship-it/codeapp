@@ -733,12 +733,15 @@ function MessageBody({ message }) {
   );
 }
 
-function MessagesTab() {
+function MessagesTab({ onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [deleting, setDeleting] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const load = () => api.getContactMessages().then((d) => { setMessages(d.messages); setLoadError(''); }).catch(() => setLoadError('Không tải được tin nhắn liên hệ'));
+  const load = () => api.getContactMessages().then((d) => {
+    setMessages(d.messages); setLoadError('');
+    onUnreadChange?.(d.messages.filter((m) => !m.is_read).length);
+  }).catch(() => setLoadError('Không tải được tin nhắn liên hệ'));
   useEffect(() => { load(); }, []);
 
   // Mở tin để đọc: tự đánh dấu đã đọc
@@ -836,8 +839,16 @@ function MessagesTab() {
 
 export default function Admin() {
   const [tab, setTab] = useState('products');
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
   // Đổi tab quản trị → về đầu trang (đổi tab không đổi địa chỉ nên App không tự cuộn)
   useEffect(() => { window.scrollTo(0, 0); }, [tab]);
+  // Số tin nhắn liên hệ chưa đọc → hiện ô đỏ ở mục Tin nhắn (nạp lại mỗi lần đổi tab)
+  useEffect(() => {
+    if (tab === 'messages') return; // tab Tin nhắn tự báo số qua onUnreadChange
+    api.getContactMessages()
+      .then((d) => setUnreadMsgs((d.messages || []).filter((m) => !m.is_read).length))
+      .catch(() => {});
+  }, [tab]);
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useStore();
   // Sale thấy toàn bộ tab trừ "Người dùng" (quản lý tài khoản chỉ dành cho Admin)
@@ -861,6 +872,9 @@ export default function Admin() {
                 <span className="nav-icon">{n.icon}</span>
                 {!collapsed && <span className="nav-label">{n.label}</span>}
                 {!collapsed && n.badge && <span className="nav-badge">{n.badge}</span>}
+                {n.key === 'messages' && unreadMsgs > 0 && (
+                  <span className="nav-count">{unreadMsgs}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -880,7 +894,7 @@ export default function Admin() {
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}
           {tab === 'posts' && <PostsTab />}
-          {tab === 'messages' && <MessagesTab />}
+          {tab === 'messages' && <MessagesTab onUnreadChange={setUnreadMsgs} />}
         </section>
       </div>
     </div>
