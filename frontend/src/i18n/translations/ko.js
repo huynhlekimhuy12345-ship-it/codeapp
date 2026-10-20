@@ -22,6 +22,7 @@ export default {
     loading: '불러오는 중...',
     skipLink: '주요 콘텐츠로 건너뛰기',
     defaultTitle: 'BI99 - 프리미엄 천연 가죽',
+    buyNow: '바로 구매',
   },
   store: {
     unknownError: '오류가 발생했습니다',
@@ -118,6 +119,9 @@ export default {
     decrease: '수량 줄이기',
     increase: '수량 늘리기',
     remove: '장바구니에서 삭제',
+    selectAll: '전체 선택',
+    selectedCount: '{count}개 상품 선택됨',
+    keepHint: '선택하지 않은 상품은 장바구니에 남습니다.',
   },
   productDetail: {
     title: '상품 상세',

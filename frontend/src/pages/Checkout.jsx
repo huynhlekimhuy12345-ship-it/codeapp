@@ -19,7 +19,17 @@ function ShipMethodName({ name }) {
 }
 
 export default function Checkout() {
-  const { cart, cartTotal, clearCart, user } = useStore();
+  const { user, selectedItems, selectedTotal, removePurchased } = useStore();
+  // Mua ngay: 1 món riêng lưu ở sessionStorage — thanh toán chỉ món đó, không động vào giỏ.
+  const [buyItem] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('buyNowItem') || 'null'); } catch { return null; }
+  });
+  const orderItems = buyItem ? [buyItem] : selectedItems;
+  const orderTotal = buyItem ? buyItem.price * buyItem.quantity : selectedTotal;
+  const finishPurchase = () => {
+    if (buyItem) { try { sessionStorage.removeItem('buyNowItem'); } catch { /* bỏ qua */ } }
+    else removePurchased(orderItems);
+  };
   const { t } = useLang();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -60,7 +70,7 @@ export default function Checkout() {
   // Tóm tắt đơn: tạm tính + ship - voucher = tổng (fee lấy theo method đã chọn, server tính lại)
   const shipFee = shipMethods.find((m) => m.id === shippingId)?.fee || 0;
   const discount = voucher?.valid ? voucher.discount : 0;
-  const grandTotal = Math.max(0, cartTotal + shipFee - discount);
+  const grandTotal = Math.max(0, orderTotal + shipFee - discount);
 
   const applyVoucher = async () => {
     const code = voucherCode.trim();
@@ -68,7 +78,7 @@ export default function Checkout() {
     setVoucherLoading(true);
     setVoucherMsg('');
     try {
-      const r = await api.validateVoucher(code, cartTotal);
+      const r = await api.validateVoucher(code, orderTotal);
       if (r.valid) {
         setVoucher({ valid: true, discount: r.discount });
         setVoucherMsg(t('checkout.voucherOk', { amount: fmtVND(r.discount) }));
@@ -87,7 +97,7 @@ export default function Checkout() {
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (cart.length === 0) return setError(t('checkout.emptyCart'));
+    if (orderItems.length === 0) return setError(t('checkout.emptyCart'));
     if (!shippingId) return setError(t('checkout.pickShipping'));
     setLoading(true);
     try {
@@ -96,7 +106,7 @@ export default function Checkout() {
         phone: form.phone,
         address: form.address,
         note: form.note,
-        items: cart.map((i) => ({
+        items: orderItems.map((i) => ({
           product_id: i.product_id,
           variant_id: i.variant_id || null,
           quantity: i.quantity,
@@ -109,7 +119,7 @@ export default function Checkout() {
         // Chuyển khoản: giữ màn hình hướng dẫn + ô nhập bằng chứng sau khi đặt đơn
         setPlacedOrder(order);
       } else {
-        clearCart();
+        finishPurchase();
         navigate('/don-hang', { state: { newOrderId: order.id } });
       }
     } catch (err) {
@@ -162,7 +172,7 @@ export default function Checkout() {
           <button
             className="btn btn-primary"
             style={{ width: '100%' }}
-            onClick={() => { clearCart(); navigate('/don-hang', { state: { newOrderId: placedOrder.id } }); }}
+            onClick={() => { finishPurchase(); navigate('/don-hang', { state: { newOrderId: placedOrder.id } }); }}
           >
             {t('checkout.myOrders')}
           </button>
@@ -255,13 +265,13 @@ export default function Checkout() {
 
         <div className="cart-summary" style={{ margin: 0, maxWidth: 'none' }}>
           <h3 style={{ marginBottom: 12 }}>{t('checkout.yourOrder')}</h3>
-          {cart.map((i) => (
+          {orderItems.map((i) => (
             <div className="row" key={cartKey(i)}>
               <span><PName product={i} /> × {i.quantity}</span>
               <span>{fmtVND(i.price * i.quantity)}</span>
             </div>
           ))}
-          <div className="row"><span>{t('cart.subtotal')}</span><span>{fmtVND(cartTotal)}</span></div>
+          <div className="row"><span>{t('cart.subtotal')}</span><span>{fmtVND(orderTotal)}</span></div>
           <div className="row"><span>{t('checkout.shipping')}</span><span>{fmtVND(shipFee)}</span></div>
           {discount > 0 && <div className="row"><span>{t('checkout.voucherDiscount')}</span><span>-{fmtVND(discount)}</span></div>}
           <div className="row total"><span>{t('cart.total')}</span><span>{fmtVND(grandTotal)}</span></div>

@@ -22,6 +22,7 @@ export default {
     loading: 'Đang tải...',
     skipLink: 'Bỏ qua tới nội dung chính',
     defaultTitle: 'BI99 - Đồ da thật cao cấp',
+    buyNow: 'Mua ngay',
   },
   store: {
     unknownError: 'Có lỗi xảy ra',
@@ -118,6 +119,9 @@ export default {
     decrease: 'Giảm số lượng',
     increase: 'Tăng số lượng',
     remove: 'Xóa khỏi giỏ',
+    selectAll: 'Chọn tất cả',
+    selectedCount: 'Đã chọn {count} sản phẩm',
+    keepHint: 'Món chưa tích chọn sẽ được giữ lại trong giỏ.',
   },
   productDetail: {
     title: 'Chi tiết sản phẩm',

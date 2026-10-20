@@ -12,7 +12,9 @@ export function StoreProvider({ children }) {
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('cart') || '[]');
+      const raw = JSON.parse(localStorage.getItem('cart') || '[]');
+      // Món cũ chưa có cờ selected → mặc định được chọn để thanh toán
+      return raw.map((i) => ({ ...i, selected: i.selected !== false }));
     } catch {
       return [];
     }
@@ -76,6 +78,7 @@ export function StoreProvider({ children }) {
         image_url: product.image_url,
         image: product.image,
         quantity: qty,
+        selected: true,
       }];
     });
   };
@@ -98,12 +101,46 @@ export function StoreProvider({ children }) {
 
   const clearCart = () => setCart([]);
 
+  // Bật/tắt chọn 1 dòng để thanh toán (món không chọn được giữ lại trong giỏ)
+  const toggleSelect = (product_id, variant_id = null, value) => {
+    const key = cartKey(product_id, variant_id);
+    setCart((prev) =>
+      prev.map((i) => (cartKey(i.product_id, i.variant_id) === key ? { ...i, selected: !!value } : i))
+    );
+  };
+  const setAllSelected = (value) =>
+    setCart((prev) => prev.map((i) => ({ ...i, selected: !!value })));
+
+  // Chỉ xóa đúng các món vừa đặt đơn (giữ lại món chưa chọn)
+  const removePurchased = (items) => {
+    const keys = new Set((items || []).map((i) => cartKey(i.product_id, i.variant_id)));
+    setCart((prev) => prev.filter((i) => !keys.has(cartKey(i.product_id, i.variant_id))));
+  };
+
+  // Mua ngay: lưu 1 món riêng (sessionStorage) để thanh toán ngay, không động vào giỏ
+  const buyNowItem = (product, qty = 1) => {
+    const item = {
+      product_id: product.product_id ?? product.id,
+      variant_id: product.variant_id || null,
+      variant_sku: product.variant_sku || '',
+      name: product.name,
+      price: product.price,
+      image_url: product.image_url,
+      image: product.image,
+      quantity: qty,
+    };
+    try { sessionStorage.setItem('buyNowItem', JSON.stringify(item)); } catch { /* bỏ qua */ }
+    return item;
+  };
+
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.quantity * i.price, 0);
+  const selectedItems = cart.filter((i) => i.selected !== false);
+  const selectedTotal = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
 
   return (
     <StoreContext.Provider
-      value={{ user, setUser, login, register, logout, cart, addToCart, updateQty, removeFromCart, clearCart, cartCount, cartTotal }}
+      value={{ user, setUser, login, register, logout, cart, addToCart, updateQty, removeFromCart, clearCart, cartCount, cartTotal, toggleSelect, setAllSelected, selectedItems, selectedTotal, removePurchased, buyNowItem }}
     >
       {children}
     </StoreContext.Provider>

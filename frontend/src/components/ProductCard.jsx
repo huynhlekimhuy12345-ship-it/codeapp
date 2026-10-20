@@ -1,11 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
 import { useProductName, useTranslatedText } from '../i18n/TranslatedProduct';
 
 export default function ProductCard({ product }) {
-  const { addToCart } = useStore();
+  const { addToCart, buyNowItem, user } = useStore();
+  const navigate = useNavigate();
   const { t } = useLang();
   const name = useProductName(product);
   const catName = useTranslatedText(product.category_name);
@@ -34,13 +35,24 @@ export default function ProductCard({ product }) {
             {t('productCard.chooseVariant')}
           </Link>
         ) : (
-          <button
-            className="btn btn-primary btn-small"
-            disabled={product.stock <= 0}
-            onClick={() => addToCart(product)}
-          >
-            {t('common.addToCart')}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-outline btn-small"
+              style={{ flex: 1 }}
+              disabled={product.stock <= 0}
+              onClick={() => addToCart(product)}
+            >
+              {t('common.addToCart')}
+            </button>
+            <button
+              className="btn btn-primary btn-small"
+              style={{ flex: 1 }}
+              disabled={product.stock <= 0}
+              onClick={() => { buyNowItem(product, 1); navigate(user ? '/thanh-toan' : '/dang-nhap'); }}
+            >
+              {t('common.buyNow')}
+            </button>
+          </div>
         )}
       </div>
     </div>

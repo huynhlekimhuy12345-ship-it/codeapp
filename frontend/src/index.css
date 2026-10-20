@@ -484,9 +484,15 @@ h1, h2, h3, .logo, .hero-title {
   border: 1px solid var(--panel-border);
   border-radius: 14px; overflow: hidden; box-shadow: var(--shadow);
 }
-.cart-row { display: grid; grid-template-columns: 80px 1fr 140px 120px 40px; gap: 12px; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(232,181,106,.1); }
+.cart-row { display: grid; grid-template-columns: 26px 80px 1fr 140px 120px 40px; gap: 12px; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(232,181,106,.1); }
 .cart-row:last-child { border-bottom: none; }
 .cart-row img { width: 70px; height: 70px; object-fit: cover; border-radius: 9px; }
+.cart-check { width: 19px; height: 19px; accent-color: #d97706; cursor: pointer; justify-self: center; }
+.cart-select-bar {
+  display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+  border-bottom: 1px solid rgba(232,181,106,.16); color: var(--cream); font-weight: 600;
+}
+.cart-row.not-selected { opacity: 0.55; }
 .cart-row .pname { font-weight: 600; color: var(--cream); }
 .cart-row .pprice { color: var(--muted); font-size: 0.9rem; }
 .cart-summary {
@@ -695,7 +701,7 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 @media (max-width: 768px) {
   .detail { grid-template-columns: 1fr; padding: 24px; gap: 28px; }
   .hero-3d { min-height: 86vh; }
-  .cart-row { grid-template-columns: 60px 1fr 40px; }
+  .cart-row { grid-template-columns: 22px 60px 1fr 40px; }
   .cart-row .hide-m { display: none; }
   .cart-row .qty-row { display: flex; grid-column: 1 / -1; margin-top: 6px !important; }
   .cart-row .line-total { grid-column: 1 / -1; text-align: right; }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageTitle from '../components/PageTitle';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api, fmtVND } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
@@ -18,7 +18,8 @@ export default function ProductDetail() {
   const [selColor, setSelColor] = useState('');
   const [selSize, setSelSize] = useState('');
   const [mainIdx, setMainIdx] = useState(0);
-  const { addToCart } = useStore();
+  const { addToCart, buyNowItem, user } = useStore();
+  const navigate = useNavigate();
   const name = useProductName(product);
   const desc = useProductDesc(product);
   const catName = useTranslatedText(product?.category_name);
@@ -100,11 +101,12 @@ export default function ProductDetail() {
   // SP có variant → gửi object mở rộng theo contract W1/W3:
   // { product_id, variant_id, variant_sku, name, price (đã gồm delta), image, quantity }
   // SP không variant → giữ nguyên hành vi cũ addToCart(product, qty).
-  const handleAddToCart = () => {
+  // Dựng dòng hàng theo biến thể đã chọn (dùng chung cho Thêm giỏ + Mua ngay)
+  const buildItem = () => {
     if (hasVariants) {
-      if (!selectedVariant || selectedVariant.stock <= 0) return;
+      if (!selectedVariant || selectedVariant.stock <= 0) return null;
       const parts = [selectedVariant.color, selectedVariant.size].filter(Boolean).join(' / ');
-      const item = {
+      return {
         id: product.id,
         product_id: product.id,
         variant_id: selectedVariant.id,
@@ -115,10 +117,21 @@ export default function ProductDetail() {
         image: mainImage,
         quantity: qty,
       };
-      addToCart(item, qty);
-    } else {
-      addToCart(product, qty);
     }
+    return { ...product, quantity: qty };
+  };
+
+  const handleAddToCart = () => {
+    const item = buildItem();
+    if (item) addToCart(item, qty);
+  };
+
+  // Mua ngay: đi thẳng tới thanh toán chỉ với món này, giỏ hàng giữ nguyên
+  const handleBuyNow = () => {
+    const item = buildItem();
+    if (!item) return;
+    buyNowItem(item, qty);
+    navigate(user ? '/thanh-toan' : '/dang-nhap');
   };
 
   if (product === null) return <div className="container page"><div className="empty">{t('common.loading')}</div></div>;
@@ -222,13 +235,24 @@ export default function ProductDetail() {
             <span>{qty}</span>
             <button onClick={() => setQty((q) => Math.min(Math.max(maxStock, 1), q + 1))}>+</button>
           </div>
-          <button
-            className="btn btn-primary"
-            disabled={maxStock <= 0 || (hasVariants && !selectedVariant)}
-            onClick={handleAddToCart}
-          >
-            {t('productDetail.addToCart')}
-          </button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-outline"
+              style={{ flex: '1 1 180px' }}
+              disabled={maxStock <= 0 || (hasVariants && !selectedVariant)}
+              onClick={handleAddToCart}
+            >
+              {t('productDetail.addToCart')}
+            </button>
+            <button
+              className="btn btn-primary"
+              style={{ flex: '1 1 180px' }}
+              disabled={maxStock <= 0 || (hasVariants && !selectedVariant)}
+              onClick={handleBuyNow}
+            >
+              {t('common.buyNow')}
+            </button>
+          </div>
         </div>
       </div>
 

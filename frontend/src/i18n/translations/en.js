@@ -22,6 +22,7 @@ export default {
     loading: 'Loading...',
     skipLink: 'Skip to main content',
     defaultTitle: 'BI99 - Premium Genuine Leather',
+    buyNow: 'Buy now',
   },
   store: {
     unknownError: 'Something went wrong',
@@ -118,6 +119,9 @@ export default {
     decrease: 'Decrease quantity',
     increase: 'Increase quantity',
     remove: 'Remove from cart',
+    selectAll: 'Select all',
+    selectedCount: '{count} item(s) selected',
+    keepHint: 'Unchecked items will stay in your cart.',
   },
   productDetail: {
     title: 'Product details',

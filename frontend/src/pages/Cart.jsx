@@ -6,11 +6,19 @@ import { useLang } from '../i18n/LanguageContext';
 import { useProductName, PName } from '../i18n/TranslatedProduct';
 
 function CartRow({ i }) {
-  const { updateQty, removeFromCart } = useStore();
+  const { updateQty, removeFromCart, toggleSelect } = useStore();
   const { t } = useLang();
   const name = useProductName(i);
+  const selected = i.selected !== false;
   return (
-    <div className="cart-row">
+    <div className={`cart-row${selected ? '' : ' not-selected'}`}>
+      <input
+        type="checkbox"
+        className="cart-check"
+        checked={selected}
+        onChange={(e) => toggleSelect(i.product_id, i.variant_id, e.target.checked)}
+        aria-label={t('cart.selectAll')}
+      />
       <img src={i.image_url} alt={name}
         onError={(e) => { e.target.src = `https://via.placeholder.com/100?text=${encodeURIComponent(t('fix1.leatherWord'))}`; }} />
       <div>
@@ -29,7 +37,7 @@ function CartRow({ i }) {
 }
 
 export default function Cart() {
-  const { cart, clearCart, cartTotal, user } = useStore();
+  const { cart, clearCart, cartTotal, user, selectedItems, selectedTotal, setAllSelected } = useStore();
   const { t } = useLang();
   const navigate = useNavigate();
 
@@ -50,18 +58,29 @@ export default function Cart() {
     <div className="container page">
       <h1 className="page-title">{t('cart.title')}</h1>
       <div className="cart-table">
+        <div className="cart-select-bar">
+          <input
+            type="checkbox"
+            className="cart-check"
+            checked={selectedItems.length === cart.length && cart.length > 0}
+            onChange={(e) => setAllSelected(e.target.checked)}
+          />
+          <span>{t('cart.selectAll')} · {t('cart.selectedCount', { count: selectedItems.reduce((s, i) => s + i.quantity, 0) })}</span>
+        </div>
         {cart.map((i) => (
           <CartRow key={`${i.product_id}|${i.variant_id || 0}`} i={i} />
         ))}
       </div>
+      <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: '10px 2px 0' }}>{t('cart.keepHint')}</p>
       <div className="cart-summary">
-        <div className="row"><span>{t('cart.subtotal')}</span><span>{fmtVND(cartTotal)}</span></div>
+        <div className="row"><span>{t('cart.subtotal')}</span><span>{fmtVND(selectedTotal)}</span></div>
         <div className="row"><span>{t('cart.shipping')}</span><span>{t('cart.shippingNote')}</span></div>
-        <div className="row total"><span>{t('cart.total')}</span><span>{fmtVND(cartTotal)}</span></div>
+        <div className="row total"><span>{t('cart.total')}</span><span>{fmtVND(selectedTotal)}</span></div>
         <div className="cart-actions">
           <button className="btn btn-outline" onClick={clearCart}>{t('cart.clear')}</button>
           <button
             className="btn btn-primary"
+            disabled={selectedItems.length === 0}
             onClick={() => navigate(user ? '/thanh-toan' : '/dang-nhap')}
           >
             {t('cart.checkout')}

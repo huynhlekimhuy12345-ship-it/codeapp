@@ -22,6 +22,7 @@ export default {
     loading: '加载中...',
     skipLink: '跳转到主要内容',
     defaultTitle: 'BI99 - 高端真皮制品',
+    buyNow: '立即购买',
   },
   store: {
     unknownError: '发生错误，请稍后重试',
@@ -118,6 +119,9 @@ export default {
     decrease: '减少数量',
     increase: '增加数量',
     remove: '从购物车删除',
+    selectAll: '全选',
+    selectedCount: '已选 {count} 件商品',
+    keepHint: '未勾选的商品将保留在购物车中。',
   },
   productDetail: {
     title: '产品详情',
