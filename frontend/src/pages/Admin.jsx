@@ -33,70 +33,109 @@ function ConfirmDialog({ title, message, confirmLabel = 'Xác nhận', danger = 
 
 /* ---------- Tab Sản phẩm ---------- */
 /** Chọn tối đa 6 sản phẩm trưng bày ở trang Bộ sưu tập (thứ tự = thứ tự hiển thị). */
-function ShowcaseSection({ products, onChanged }) {
-  const [list, setList] = useState([]);
-  const [pick, setPick] = useState('');
+/** Chọn tối đa 6 sản phẩm trưng bày ở trang Bộ sưu tập: tích chọn nhiều sản phẩm rồi Lưu 1 lần. */
+function ShowcaseSection({ products }) {
+  const [saved, setSaved] = useState([]);   // danh sách đã lưu trên server (theo thứ tự)
+  const [draft, setDraft] = useState([]);   // id đang chọn (chưa lưu)
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
   const loadShowcase = () => {
     api.getProducts({ showcase: 1, limit: 6 })
-      .then((d) => setList(d.products || []))
-      .catch(() => setList([]));
+      .then((d) => {
+        const items = d.products || [];
+        setSaved(items);
+        setDraft(items.map((x) => x.id));
+      })
+      .catch(() => { setSaved([]); setDraft([]); });
   };
   useEffect(() => { loadShowcase(); }, []);
 
-  const apply = async (ids) => {
+  const byId = (id) => products.find((x) => x.id === id) || saved.find((x) => x.id === id);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved.map((x) => x.id));
+
+  const toggle = (id) => {
+    setMsg('');
+    setDraft((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 6) return prev;
+      return [...prev, id];
+    });
+  };
+  const move = (i, dir) => {
+    setDraft((prev) => {
+      const ids = [...prev];
+      const j = i + dir;
+      if (j < 0 || j >= ids.length) return prev;
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+      return ids;
+    });
+  };
+  const save = async () => {
     setBusy(true); setMsg('');
     try {
-      const d = await api.setShowcase(ids);
-      setList(d.products || []);
+      const d = await api.setShowcase(draft);
+      setSaved(d.products || []);
+      setDraft((d.products || []).map((x) => x.id));
       setMsg('Đã lưu danh sách trưng bày.');
-      if (onChanged) onChanged();
     } catch (e) { alert(e.message); }
     setBusy(false);
   };
-  const add = () => { if (pick) apply([...list.map((p) => p.id), parseInt(pick, 10)]); setPick(''); };
-  const remove = (id) => apply(list.filter((p) => p.id !== id).map((p) => p.id));
-  const move = (i, dir) => {
-    const ids = list.map((p) => p.id);
-    const j = i + dir;
-    if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    apply(ids);
-  };
-  const rest = products.filter((p) => !list.some((x) => x.id === p.id));
 
   return (
     <div className="card" style={{ marginBottom: 18 }}>
-      <h3 style={{ margin: '0 0 6px' }}>Sản phẩm trưng bày ở trang Bộ sưu tập ({list.length}/6)</h3>
+      <h3 style={{ margin: '0 0 6px' }}>Sản phẩm trưng bày ở trang Bộ sưu tập ({draft.length}/6)</h3>
       <p style={{ color: 'var(--muted)', margin: '0 0 12px', fontSize: '0.9rem' }}>
-        Đây là các sản phẩm hiện ở mục Khám phá + Bộ sưu tập. Thêm sản phẩm mới ở bảng dưới rồi chọn đưa vào đây. Để trống = tự lấy 6 sản phẩm đầu tiên.
+        Tích chọn các sản phẩm muốn trưng bày (tối đa 6), sắp xếp thứ tự bên dưới rồi bấm Lưu. Để trống = trang tự lấy 6 sản phẩm đầu tiên.
       </p>
-      {list.length === 0 && <p style={{ color: 'var(--muted)' }}>Chưa chọn sản phẩm nào.</p>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {list.map((p, i) => (
-          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(232,181,106,.18)', borderRadius: 10, padding: '6px 10px' }}>
-            <b style={{ color: 'var(--amber-light)', minWidth: 22 }}>{i + 1}.</b>
-            <img src={p.image_url} alt="" style={{ width: 44, height: 34, objectFit: 'cover', borderRadius: 6 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <span style={{ flex: 1 }}>{p.name}</span>
-            <button className="btn btn-small btn-outline" disabled={busy || i === 0} onClick={() => move(i, -1)}>↑</button>
-            <button className="btn btn-small btn-outline" disabled={busy || i === list.length - 1} onClick={() => move(i, 1)}>↓</button>
-            <button className="btn btn-small btn-danger" disabled={busy} onClick={() => remove(p.id)}>Bỏ</button>
-          </div>
-        ))}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 8, maxHeight: 264, overflowY: 'auto', paddingRight: 4 }}>
+        {products.map((p) => {
+          const checked = draft.includes(p.id);
+          const full = !checked && draft.length >= 6;
+          return (
+            <label key={p.id}
+              style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 10, cursor: full ? 'not-allowed' : 'pointer',
+                background: checked ? 'rgba(232,181,106,.13)' : 'rgba(255,255,255,.03)',
+                border: `1px solid ${checked ? 'rgba(232,181,106,.55)' : 'rgba(255,255,255,.09)'}`,
+                opacity: full ? 0.45 : 1 }}>
+              <input type="checkbox" className="cart-check" checked={checked} disabled={full} onChange={() => toggle(p.id)} />
+              <img src={p.image_url} alt="" style={{ width: 42, height: 32, objectFit: 'cover', borderRadius: 6 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <span style={{ fontSize: '0.92rem', lineHeight: 1.3 }}>{p.name}</span>
+            </label>
+          );
+        })}
       </div>
-      {list.length < 6 && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <select value={pick} onChange={(e) => setPick(e.target.value)}
-            style={{ flex: '1 1 260px', padding: '9px 12px', borderRadius: 10, background: 'rgba(255,255,255,.05)', color: 'var(--cream)', border: '1px solid rgba(255,255,255,.12)' }}>
-            <option value="">— Chọn sản phẩm thêm vào trưng bày —</option>
-            {rest.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <button className="btn btn-primary" disabled={busy || !pick} onClick={add}>Thêm vào Bộ sưu tập</button>
+
+      {draft.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 8 }}>Thứ tự hiển thị (dùng ↑ ↓ để xếp):</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {draft.map((id, i) => {
+              const p = byId(id);
+              if (!p) return null;
+              return (
+                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(232,181,106,.18)', borderRadius: 10, padding: '6px 10px' }}>
+                  <b style={{ color: 'var(--amber-light)', minWidth: 22 }}>{i + 1}.</b>
+                  <img src={p.image_url} alt="" style={{ width: 44, height: 34, objectFit: 'cover', borderRadius: 6 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  <span style={{ flex: 1 }}>{p.name}</span>
+                  <button className="btn btn-small btn-outline" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
+                  <button className="btn btn-small btn-outline" disabled={i === draft.length - 1} onClick={() => move(i, 1)}>↓</button>
+                  <button className="btn btn-small btn-danger" onClick={() => toggle(id)}>Bỏ</button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
-      {msg && <p style={{ color: 'var(--amber-light)', margin: '10px 0 0', fontSize: '0.88rem' }}>{msg}</p>}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
+        <button className="btn btn-primary" disabled={busy || !dirty} onClick={save}>
+          {busy ? 'Đang lưu...' : 'Lưu danh sách trưng bày'}
+        </button>
+        {dirty && <span style={{ color: 'var(--amber-light)', fontSize: '0.88rem' }}>Có thay đổi chưa lưu</span>}
+        {msg && !dirty && <span style={{ color: 'var(--amber-light)', fontSize: '0.88rem' }}>{msg}</span>}
+      </div>
     </div>
   );
 }
