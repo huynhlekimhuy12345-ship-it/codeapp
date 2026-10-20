@@ -200,6 +200,20 @@ export default function Collection() {
         const track = trackRef.current;
         const pin = pinRef.current;
         const getDist = () => Math.max(0, track.scrollWidth - pin.clientWidth);
+        // Panel nào gần trung tâm màn hình nhất → to/rõ nhất VÀ thẻ thông tin hiện đúng panel đó
+        const updateActive = () => {
+          const panels = track.querySelectorAll('.cl-panel');
+          let best = 0;
+          let bestD = Infinity;
+          panels.forEach((el, i) => {
+            const r = el.getBoundingClientRect();
+            const d = Math.abs(r.left + r.width / 2 - window.innerWidth / 2);
+            const f = Math.max(0, 1 - (d / window.innerWidth) * 2.4);
+            gsap.set(el, { scale: 0.9 + f * 0.14, opacity: 0.55 + f * 0.45 });
+            if (d < bestD) { bestD = d; best = i; }
+          });
+          setActive((prev) => (prev === best ? prev : best));
+        };
         gsap.to(track, {
           x: () => -getDist(),
           ease: 'none',
@@ -210,21 +224,11 @@ export default function Collection() {
             pin: true,
             scrub: 1,
             invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              const n = products.length;
-              const i = Math.min(n - 1, Math.round(self.progress * (n - 1)));
-              setActive((prev) => (prev === i ? prev : i));
-              // Panel ở trung tâm to/rõ nhất
-              const panels = track.querySelectorAll('.cl-panel');
-              panels.forEach((el) => {
-                const r = el.getBoundingClientRect();
-                const d = Math.abs(r.left + r.width / 2 - window.innerWidth / 2) / window.innerWidth;
-                const f = Math.max(0, 1 - d * 2.4);
-                gsap.set(el, { scale: 0.9 + f * 0.14, opacity: 0.55 + f * 0.45 });
-              });
-            },
+            onUpdate: updateActive,
+            onRefresh: () => requestAnimationFrame(updateActive),
           },
         });
+        requestAnimationFrame(updateActive);
       });
       setMode('gsap');
     } catch {
