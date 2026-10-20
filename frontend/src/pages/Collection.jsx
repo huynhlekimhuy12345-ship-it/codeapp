@@ -300,8 +300,10 @@ export default function Collection() {
       {/* GĐ2 — KHÁM PHÁ */}
       <section ref={exploreRef} id="cl-explore" className={`cl-explore${mode === 'fallback' ? ' cl-fallback' : ''}`}>
         <div ref={pinRef} className="cl-explore-pin">
-          <div className="container" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 3 }}>
+          <div className="cl-sec-head cl-explore-head">
             <span className="hero-kicker">{t('collection.phaseExplore')}</span>
+            <h2>{t('collection.exploreTitle')}</h2>
+            <p>{t('collection.exploreSub')}</p>
           </div>
           {loading ? (
             <p className="cl-loading">{t('common.loading')}</p>
@@ -317,8 +319,11 @@ export default function Collection() {
       {/* GĐ3 — BỘ SƯU TẬP */}
       <section ref={galleryRef} id="cl-gallery" className="cl-gallery">
         <div className="container">
-          <span className="hero-kicker">{t('collection.kicker')}</span>
-          <h2 className="cl-gallery-title">{t('collection.phaseGallery')}</h2>
+          <div className="cl-sec-head">
+            <span className="hero-kicker">{t('collection.kicker')}</span>
+            <h2>{t('collection.phaseGallery')}</h2>
+            <p>{t('collection.gallerySub')}</p>
+          </div>
           {loading ? (
             <p className="cl-loading">{t('common.loading')}</p>
           ) : (

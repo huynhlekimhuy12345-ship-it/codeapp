@@ -51,7 +51,7 @@
   position: relative; z-index: 1;
   display: flex; flex-direction: column; align-items: center;
   max-width: 1200px; margin: 0 auto; text-align: center;
-  padding: 54px 24px 150px;
+  padding: 54px 24px 118px;
 }
 .cl-hero-copy { display: flex; flex-direction: column; align-items: center; }
 .cl-hero-copy .hero-title { text-align: center; }
@@ -133,12 +133,20 @@
 .cl-price { color: var(--amber-light); font-weight: 800; font-size: 1.28rem; margin: 4px 0 8px; }
 .cl-loading { text-align: center; color: var(--muted); width: 100%; }
 
+/* —— Tiêu đề mục dùng chung (GĐ2 + GĐ3): căn giữa, nhịp đều —— */
+.cl-sec-head { text-align: center; max-width: 760px; margin: 0 auto; }
+.cl-sec-head h2 {
+  font-size: clamp(1.9rem, 4vw, 2.7rem); color: var(--cream);
+  margin: 10px 0 8px; line-height: 1.2;
+}
+.cl-sec-head p { color: var(--muted); margin: 0; line-height: 1.6; }
+.cl-explore-head {
+  position: absolute; top: 4.5vh; left: 0; right: 0; z-index: 3; padding: 0 20px;
+}
+
 /* —— GĐ3: Gallery —— */
 .cl-gallery { position: relative; z-index: 1; padding: 72px 0 90px; }
-.cl-gallery-title {
-  font-size: clamp(1.7rem, 3.4vw, 2.4rem); color: var(--cream);
-  margin: 10px 0 28px; text-align: left;
-}
+.cl-gallery .cl-sec-head { margin-bottom: 32px; }
 .cl-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 22px;

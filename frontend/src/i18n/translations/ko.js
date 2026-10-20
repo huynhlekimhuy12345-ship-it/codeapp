@@ -368,6 +368,9 @@ export default {
     heroTitleA: '리얼 가죽',
     heroTitleEm: '컬렉션',
     heroSub2: '모든 스티치와 가죽 결, 코냑 색감은 실제 촬영 사진입니다.',
+    exploreTitle: '제품 하나하나 살펴보기',
+    exploreSub: '계속 스크롤하세요 — 제품이 가로로 지나가며, 가운데 있는 제품이 선택됩니다.',
+    gallerySub: '전시 중인 모든 제품 — 눌러서 상세 정보를 확인하세요.',
   },
   fix1: {
     leatherWord: '가죽',

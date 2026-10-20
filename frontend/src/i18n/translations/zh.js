@@ -368,6 +368,9 @@ export default {
     heroTitleA: '真皮',
     heroTitleEm: '作品集',
     heroSub2: '每一处针脚、皮纹与干邑色泽，都是真实拍摄的照片。',
+    exploreTitle: '逐件探索',
+    exploreSub: '继续滚动 — 产品横向滑过，中间的那件即为当前选中。',
+    gallerySub: '全部展品 — 点击任意一件查看详情。',
   },
   fix1: {
     leatherWord: '皮革',

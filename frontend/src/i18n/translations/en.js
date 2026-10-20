@@ -368,6 +368,9 @@ export default {
     heroTitleA: 'The Real Leather',
     heroTitleEm: 'Collection',
     heroSub2: 'Every stitch, leather grain and cognac tone is a real photograph.',
+    exploreTitle: 'Explore each piece',
+    exploreSub: 'Keep scrolling — products glide by; the one in the center is the selected piece.',
+    gallerySub: 'Every piece on display — tap one to see its details.',
   },
   fix1: {
     leatherWord: 'Leather',
