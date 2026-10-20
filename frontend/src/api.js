@@ -194,8 +194,11 @@ export const fmtVND = (n) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
 // Định dạng ngày giờ
-export const fmtDate = (s) =>
-  new Date(s.replace(' ', 'T') + 'Z').toLocaleString('vi-VN');
+export const fmtDate = (s) => {
+  if (!s) return '—';
+  const d = new Date(String(s).includes('T') ? s : String(s).replace(' ', 'T') + 'Z');
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('vi-VN');
+};
 
 // Định dạng ngày (dùng cho Blog): "Đăng ngày 07/10/2026"
 export const fmtDay = (s) => {

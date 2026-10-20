@@ -576,20 +576,32 @@ function PostsTab() {
   );
 }
 
-/* ---------- Tab Tin nhắn liên hệ — port từ web artifact ---------- */
+/* ---------- Tab Tin nhắn liên hệ ---------- */
 function MessagesTab() {
   const [messages, setMessages] = useState([]);
   const [deleting, setDeleting] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [loadError, setLoadError] = useState('');
   const load = () => api.getContactMessages().then((d) => { setMessages(d.messages); setLoadError(''); }).catch(() => setLoadError('Không tải được tin nhắn liên hệ'));
   useEffect(() => { load(); }, []);
 
-  const toggleRead = async (m) => {
-    try { await api.markMessageRead(m.id, !m.is_read); } catch (e) { alert(e.message); }
+  // Mở tin để đọc: tự đánh dấu đã đọc
+  const openMessage = async (m) => {
+    setViewing({ ...m, is_read: true });
+    if (!m.is_read) {
+      try { await api.markMessageRead(m.id, true); } catch (e) { /* bỏ qua, giữ UI */ }
+      load();
+    }
+  };
+  const markUnread = async () => {
+    if (!viewing) return;
+    try { await api.markMessageRead(viewing.id, false); } catch (e) { alert(e.message); }
+    setViewing(null);
     load();
   };
   const doDelete = async () => {
     try { await api.deleteContactMessage(deleting.id); } catch (e) { alert(e.message); }
+    if (viewing && viewing.id === deleting.id) setViewing(null);
     setDeleting(null);
     load();
   };
@@ -602,33 +614,54 @@ function MessagesTab() {
       <div className="toolbar">
         <h3>Tin nhắn liên hệ ({messages.length}{unread > 0 ? ` — ${unread} chưa đọc` : ''})</h3>
       </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="data-table">
-          <thead><tr><th>ID</th><th>Họ tên</th><th>Liên hệ</th><th>Nội dung</th><th>Trạng thái</th><th>Ngày gửi</th><th>Thao tác</th></tr></thead>
-          <tbody>
-            {messages.map((m) => (
-              <tr key={m.id} style={m.is_read ? undefined : { background: 'rgba(232,181,106,.06)' }}>
-                <td>{m.id}</td>
-                <td><strong>{m.name}</strong></td>
-                <td><small style={{ color: 'var(--muted)' }}>{[m.phone, m.email].filter(Boolean).join(' • ') || '—'}</small></td>
-                <td style={{ maxWidth: 320 }}>{m.content}</td>
-                <td><span className={`status ${m.is_read ? 'delivered' : 'pending'}`}>
-                  {m.is_read ? 'Đã đọc' : 'Chưa đọc'}
-                </span></td>
-                <td>{fmtDate(m.created_at)}</td>
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  <button className="btn btn-small btn-outline" onClick={() => toggleRead(m)}>
-                    {m.is_read ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
-                  </button>{' '}
-                  <button className="btn btn-small btn-danger" onClick={() => setDeleting(m)}>Xóa</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {messages.length === 0 && (
+      {messages.length === 0 ? (
         <div className="empty"><h3>Chưa có tin nhắn nào</h3><p>Tin nhắn khách gửi từ trang Liên hệ sẽ hiện ở đây.</p></div>
+      ) : (
+        <div className="news-admin-list">
+          {messages.map((m) => (
+            <div key={m.id} className="glass news-admin-card msg-row" onClick={() => openMessage(m)}>
+              <div className={`msg-avatar${m.is_read ? '' : ' unread'}`}>{(m.name || '?').trim().charAt(0).toUpperCase()}</div>
+              <div className="news-admin-body">
+                <div className="news-admin-top">
+                  <span className={m.is_read ? 'msg-name' : 'msg-name unread'}>{m.name}</span>
+                  <span className={`status-chip${m.is_read ? ' off' : ''}`}>{m.is_read ? 'Đã đọc' : 'Chưa đọc'}</span>
+                </div>
+                <div className="news-admin-author">{[m.phone, m.email].filter(Boolean).join(' • ') || '—'}</div>
+                <div className="news-admin-author">📅 {fmtDate(m.created_at)}</div>
+              </div>
+              <div className="news-admin-actions">
+                <button className="btn btn-small btn-outline" onClick={(e) => { e.stopPropagation(); openMessage(m); }}>Đọc tin</button>
+                <button className="btn btn-small btn-outline" style={{ color: '#b3261e', borderColor: '#b3261e' }} onClick={(e) => { e.stopPropagation(); setDeleting(m); }}>Xóa</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {viewing && (
+        <div className="modal-backdrop" onClick={() => setViewing(null)}>
+          <div className="modal msg-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="msg-modal-head">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="msg-avatar unread">{(viewing.name || '?').trim().charAt(0).toUpperCase()}</div>
+                <div>
+                  <h3 style={{ margin: 0 }}>{viewing.name}</h3>
+                  <div style={{ color: 'var(--muted)', fontSize: '.86rem' }}>
+                    {[viewing.phone, viewing.email].filter(Boolean).join(' • ') || '—'}
+                  </div>
+                </div>
+              </div>
+              <button className="btn btn-small btn-outline" onClick={() => setViewing(null)}>✕</button>
+            </div>
+            <div style={{ color: 'var(--muted)', fontSize: '.86rem', marginBottom: 10 }}>📅 Gửi ngày {fmtDate(viewing.created_at)}</div>
+            <div className="msg-content">{viewing.content}</div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={markUnread}>Đánh dấu chưa đọc</button>
+              <button className="btn btn-outline" style={{ color: '#b3261e', borderColor: '#b3261e' }} onClick={() => setDeleting(viewing)}>Xóa</button>
+              <button className="btn btn-primary" onClick={() => setViewing(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {deleting && (

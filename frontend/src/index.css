@@ -132,6 +132,24 @@ h1, h2, h3, .logo, .hero-title {
   font-size: 0.88rem; color: var(--muted); white-space: nowrap;
   max-width: 150px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;
 }
+/* Tab Tin nhắn liên hệ — danh sách thẻ + cửa sổ đọc tin */
+.msg-row { cursor: pointer; align-items: center; }
+.msg-row:hover { border-color: rgba(232, 181, 106, 0.45); }
+.msg-avatar {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; font-weight: 800; font-size: 1.2rem;
+  background: rgba(150, 150, 150, 0.18); color: var(--muted);
+}
+.msg-avatar.unread { background: var(--amber); color: #2a1c10; }
+.msg-name { font-size: 1.02rem; color: var(--cream); }
+.msg-name.unread { font-weight: 800; }
+.msg-modal { max-width: 560px; width: calc(100vw - 32px); }
+.msg-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.msg-content {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px; padding: 16px 18px; line-height: 1.65; white-space: pre-wrap;
+  word-break: break-word; max-height: 45vh; overflow-y: auto; margin-bottom: 16px;
+}
 /* Tab Tin tức admin — danh sách thẻ */
 .news-admin-list { display: flex; flex-direction: column; gap: 14px; }
 .news-admin-card { display: flex; gap: 16px; padding: 18px 20px; align-items: flex-start; }
