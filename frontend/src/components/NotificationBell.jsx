@@ -25,10 +25,12 @@ function BellItem({ a, onRead }) {
       <div className="bell-item-body">
         <strong>{title}</strong>
         <p>{content.length > 90 ? content.slice(0, 90) + '…' : content}</p>
-        <small>{new Date(a.created_at).toLocaleDateString('vi-VN')}</small>
-        {cta && a.cta_link && (
-          <Link to={a.cta_link} className="link-more" onClick={onRead}>{cta} →</Link>
-        )}
+        <div className="bell-item-foot">
+          <small>{new Date(a.created_at).toLocaleDateString('vi-VN')}</small>
+          {cta && a.cta_link && (
+            <Link to={a.cta_link} className="link-more" onClick={onRead}>{cta} →</Link>
+          )}
+        </div>
       </div>
     </div>
   );
