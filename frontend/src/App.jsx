@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useStore } from './context/StoreContext';
 import { useLang } from './i18n/LanguageContext';
@@ -44,6 +44,9 @@ function RequireStaff({ children }) {
 
 export default function App() {
   const location = useLocation();
+  // Chuyển trang là về đầu trang — kể cả cùng mẫu route (/san-pham/5 → /san-pham/8),
+  // nếu không người dùng tưởng bấm mà trang không thay đổi gì.
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
   const { t } = useLang();
   // Trang quản trị dùng nền 3D tối giản để tập trung thao tác
   const variant = location.pathname.startsWith('/admin') ? 'subtle' : 'hero';
