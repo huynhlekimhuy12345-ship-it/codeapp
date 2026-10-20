@@ -143,6 +143,8 @@ export default {
     phone: '电话号码 *',
     phoneInvalid: '电话号码无效',
     address: '收货地址 *',
+    addressValue: '2B Phan Boi Chau
+Hoi An, Da Nang',
     addressPlaceholder: '门牌号、街道、区/县、省/市',
     note: '备注',
     notePlaceholder: '给店铺的备注（可选）',
@@ -309,7 +311,8 @@ export default {
     email: '邮箱',
     address: '店铺地址',
     hours: '营业时间',
-    hoursValue: '周一至周六：8:00 – 21:00 • 周日：9:00 – 20:00',
+    hoursValue: '周一至周六：8:00 – 21:00
+周日：9:00 – 20:00',
     sendMessage: '发送留言',
     sentTitle: '留言发送成功！',
     sentDesc: '感谢您的联系，店铺将尽快回复。',

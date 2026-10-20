@@ -143,6 +143,8 @@ export default {
     phone: '전화번호 *',
     phoneInvalid: '전화번호가 올바르지 않아요',
     address: '배송 주소 *',
+    addressValue: '2B Phan Boi Chau
+Hoi An, Da Nang',
     addressPlaceholder: '번지, 도로명, 동/읍/면, 구/군, 시/도',
     note: '요청 사항',
     notePlaceholder: '상점에 남길 메시지 (선택 사항)',
@@ -309,7 +311,8 @@ export default {
     email: '이메일',
     address: '매장 주소',
     hours: '영업 시간',
-    hoursValue: '월–토: 8:00 – 21:00 • 일: 9:00 – 20:00',
+    hoursValue: '월–토: 8:00 – 21:00
+일: 9:00 – 20:00',
     sendMessage: '메시지 보내기',
     sentTitle: '메시지가 전송되었습니다!',
     sentDesc: '문의해 주셔서 감사합니다. 최대한 빨리 답변드릴게요.',

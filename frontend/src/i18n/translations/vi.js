@@ -143,6 +143,8 @@ export default {
     phone: 'Số điện thoại *',
     phoneInvalid: 'Số điện thoại không hợp lệ',
     address: 'Địa chỉ giao hàng *',
+    addressValue: '2B Đường Phan Bội Châu
+Hội An, Đà Nẵng',
     addressPlaceholder: 'Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố',
     note: 'Ghi chú',
     notePlaceholder: 'Ghi chú cho shop (tùy chọn)',
@@ -309,7 +311,8 @@ export default {
     email: 'Email',
     address: 'Địa chỉ cửa hàng',
     hours: 'Giờ mở cửa',
-    hoursValue: 'Thứ 2 – Thứ 7: 8:00 – 21:00 • Chủ nhật: 9:00 – 20:00',
+    hoursValue: 'Thứ 2 – Thứ 7: 8:00 – 21:00
+Chủ nhật: 9:00 – 20:00',
     sendMessage: 'Gửi tin nhắn',
     sentTitle: 'Đã gửi tin nhắn thành công!',
     sentDesc: 'Cảm ơn bạn đã liên hệ. Shop sẽ phản hồi sớm nhất có thể.',

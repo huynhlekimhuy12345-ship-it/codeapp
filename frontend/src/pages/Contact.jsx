@@ -8,7 +8,7 @@ import { countWords, detectLang, translateToVietnamese } from '../i18n/autoTrans
 const INFO = [
   ['📞', 'phone', '0901 234 567'],
   ['✉️', 'email', 'lienhe@leatherhouse.vn'],
-  ['📍', 'address', '2B Đường Phan Bội Châu, Hội An, Đà Nẵng'],
+  ['📍', 'address', 'contact.addressValue'],
   ['🕗', 'hours', 'contact.hoursValue'],
 ];
 
@@ -68,12 +68,12 @@ export default function Contact() {
         {t('contact.subtitle')}
       </p>
 
-      <div className="cat-grid" style={{ marginBottom: 26 }}>
+      <div className="contact-info-grid" style={{ marginBottom: 26 }}>
         {INFO.map(([icon, tk, s]) => (
-          <div key={t} className="cat-card" style={{ textAlign: 'left', padding: 18 }}>
+          <div key={tk} className="cat-card contact-info-card" style={{ textAlign: 'left', padding: 18 }}>
             <span style={{ fontSize: '1.6rem' }} aria-hidden>{icon}</span>
             <strong style={{ display: 'block', marginTop: 8, color: 'var(--cream)' }}>{t('contact.' + tk)}</strong>
-            <small style={{ fontSize: '0.9rem' }}>{tk === 'hours' ? t(s) : s}</small>
+            <small style={{ fontSize: '0.9rem' }}>{(tk === 'hours' || tk === 'address') ? t(s) : s}</small>
           </div>
         ))}
       </div>

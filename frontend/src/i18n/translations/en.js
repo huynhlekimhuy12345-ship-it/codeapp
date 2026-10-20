@@ -143,6 +143,8 @@ export default {
     phone: 'Phone number *',
     phoneInvalid: 'Invalid phone number',
     address: 'Delivery address *',
+    addressValue: '2B Phan Boi Chau
+Hoi An, Da Nang',
     addressPlaceholder: 'House number, street, ward, district, city',
     note: 'Note',
     notePlaceholder: 'Note for the shop (optional)',
@@ -309,7 +311,8 @@ export default {
     email: 'Email',
     address: 'Shop address',
     hours: 'Opening hours',
-    hoursValue: 'Mon – Sat: 8:00 – 21:00 • Sun: 9:00 – 20:00',
+    hoursValue: 'Mon – Sat: 8:00 – 21:00
+Sun: 9:00 – 20:00',
     sendMessage: 'Send a message',
     sentTitle: 'Message sent successfully!',
     sentDesc: 'Thank you for reaching out. The shop will reply as soon as possible.',
