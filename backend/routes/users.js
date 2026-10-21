@@ -40,7 +40,7 @@ router.get('/', auth, staffOnly, (req, res) => {
     GROUP BY u.id
     ORDER BY u.created_at DESC
   `).all();
-  const tier_counts = { vip: 0, loyal: 0, regular: 0, new: 0, potential: 0 };
+  const tier_counts = { diamond: 0, gold: 0, silver: 0, bronze: 0, potential: 0 };
   const users = rows.map((u) => {
     if (u.role !== 'customer') return { ...u, tier: null };
     const key = computeTier(u.order_count, u.total_spent);

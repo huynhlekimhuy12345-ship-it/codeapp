@@ -688,7 +688,9 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   background: rgba(12,8,5,.7); color: var(--text); font-family: inherit;
 }
 .data-table select option { background: #221910; }
-.row-actions { display: flex; gap: 8px; }
+.row-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+.row-actions .btn { flex: 0 0 auto; white-space: nowrap; }
+.row-actions .btn-small { height: 34px; display: inline-flex; align-items: center; justify-content: center; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
 .toolbar h3 { color: var(--cream); }
 .toolbar select {
@@ -897,10 +899,10 @@ select.select-dark {
   border: 1px solid var(--tier-color); color: var(--tier-color);
 }
 .tier-badge.tier-potential { --tier-color: #9a8f83; background: rgba(154,143,131,.14); }
-.tier-badge.tier-new { --tier-color: #6db3e8; background: rgba(109,179,232,.13); }
-.tier-badge.tier-regular { --tier-color: #7fc97f; background: rgba(127,201,127,.13); }
-.tier-badge.tier-loyal { --tier-color: #b48fe8; background: rgba(180,143,232,.14); }
-.tier-badge.tier-vip { --tier-color: #e8b56a; background: rgba(232,181,106,.18); }
+.tier-badge.tier-bronze { --tier-color: #d9905f; background: rgba(205,127,50,.16); }
+.tier-badge.tier-silver { --tier-color: #c7cedb; background: rgba(199,206,219,.14); }
+.tier-badge.tier-gold { --tier-color: #e8b56a; background: rgba(232,181,106,.18); }
+.tier-badge.tier-diamond { --tier-color: #7fd4e8; background: rgba(127,212,232,.15); }
 
 /* --- Panel thẻ discount theo hạng (tab Người dùng, admin) --- */
 .loyalty-panel {

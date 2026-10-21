@@ -23,6 +23,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
 import MyTier from './pages/MyTier';
+import TierGuide from './pages/TierGuide';
 import ProfilePage from './pages/ProfilePage';
 import Admin from './pages/Admin';
 import SalePage from './pages/SalePage';
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/khuyen-mai" element={<SalePage />} />
           <Route path="/cua-hang" element={<Shop />} />
           <Route path="/gioi-thieu" element={<About />} />
+          <Route path="/phan-hang" element={<TierGuide />} />
           <Route path="/blog" element={<Navigate to="/gioi-thieu#blog" replace />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
           <Route path="/tin-tuc" element={<NewsList />} />

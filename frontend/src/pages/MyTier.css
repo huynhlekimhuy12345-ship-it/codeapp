@@ -71,7 +71,49 @@
 .mytier-past-row code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-weight: 700; }
 .mytier-past-row .mytier-status { margin-left: auto; }
 
-/* --- Bảng quyền lợi + bảng xếp hạng --- */
+/* --- Cách thăng hạng: thang 5 hạng bấm được + khung đặc quyền --- */
+.mytier-ladder { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.mytier-step {
+  flex: 1 1 150px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+  background: var(--panel); border: 1.5px solid var(--panel-border); border-radius: 12px;
+  padding: 13px 15px; cursor: pointer; text-align: left; font: inherit; color: var(--cream);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.mytier-step:hover { transform: translateY(-1px); }
+.mytier-step.tier-border-potential { border-color: rgba(154,143,131,.55); }
+.mytier-step.tier-border-bronze { border-color: rgba(205,127,50,.6); }
+.mytier-step.tier-border-silver { border-color: rgba(199,206,219,.55); }
+.mytier-step.tier-border-gold { border-color: rgba(232,181,106,.65); }
+.mytier-step.tier-border-diamond { border-color: rgba(127,212,232,.6); }
+.mytier-ladder { margin-top: 16px; margin-bottom: 0; }
+a.mytier-step { text-decoration: none; }
+a.tier-badge { text-decoration: none; }
+.mytier-step.selected {
+  box-shadow: 0 0 0 2px var(--amber), 0 8px 22px rgba(0,0,0,.35);
+  background: rgba(232,181,106,.07);
+}
+.mytier-step-threshold { color: var(--muted); font-size: .84rem; line-height: 1.35; }
+.mytier-step-you {
+  padding: 1px 9px; border-radius: 999px; background: var(--amber); color: #231408;
+  font-size: .73rem; font-weight: 800;
+}
+.mytier-perk-panel {
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius);
+  padding: 18px 20px; box-shadow: var(--shadow);
+}
+.mytier-perk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.mytier-perk-head h3 { color: var(--cream); font-size: 1.08rem; }
+.mytier-status.tier-state-current { color: #231408; background: var(--amber); border-color: var(--amber); }
+.mytier-status.tier-state-achieved { color: #86efac; background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.4); }
+.mytier-status.tier-state-locked { color: var(--muted); background: rgba(150,150,150,.1); border-color: rgba(150,150,150,.35); }
+.mytier-perk-list { list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--cream); font-size: .96rem; }
+.mytier-gap {
+  margin-top: 12px; padding: 10px 14px; border-radius: 10px;
+  background: rgba(232,181,106,.1); border: 1px solid rgba(232,181,106,.35);
+  color: var(--amber-light); font-weight: 600;
+}
+
+/* --- Bảng xếp hạng --- */
 .mytier-benefit-current td { background: rgba(232,181,106,.1); }
 .mytier-board-me td { background: rgba(232,181,106,.13); font-weight: 600; }
 .mytier-you {

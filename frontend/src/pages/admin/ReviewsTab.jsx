@@ -64,9 +64,11 @@ export default function ReviewsTab() {
                           <td style={{ maxWidth: 320 }}>{r.comment}</td>
                           <td>{fmtDate(r.created_at)}</td>
                           <td>
-                            <button className="btn btn-sm btn-primary" onClick={() => decide(r.id, 1)}>Duyệt</button>{' '}
-                            <button className="btn btn-sm btn-outline" onClick={() => decide(r.id, 0)}>Từ chối</button>{' '}
-                            <button className="btn btn-sm btn-danger" onClick={() => remove(r.id)}>Xóa</button>
+                            <div className="row-actions">
+                              <button className="btn btn-sm btn-primary" onClick={() => decide(r.id, 1)}>Duyệt</button>
+                              <button className="btn btn-sm btn-outline" onClick={() => decide(r.id, 0)}>Từ chối</button>
+                              <button className="btn btn-sm btn-danger" onClick={() => remove(r.id)}>Xóa</button>
+                            </div>
                           </td>
                         </tr>
                       ))}

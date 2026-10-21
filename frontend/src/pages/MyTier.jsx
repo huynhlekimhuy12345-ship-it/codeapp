@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import { api, fmtVND, fmtDay } from '../api';
 import { useLang } from '../i18n/LanguageContext';
@@ -6,14 +7,15 @@ import './MyTier.css';
 
 const STATUS_KEY = { unused: 'statusUnused', used: 'statusUsed', expired: 'statusExpired' };
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
+const TIER_ORDER = ['potential', 'bronze', 'silver', 'gold', 'diamond'];
 
-// Mốc lên hạng hiển thị ở bảng quyền lợi (khớp mốc backend)
+// Mốc lên hạng (khớp mốc backend): Đồng từ 2 đơn, Bạc 5tr, Vàng 10tr, Kim cương 20tr
 const THRESHOLDS = {
   potential: (t) => t('tier.thresholdPotential'),
-  new: (t) => t('tier.thresholdNew', { count: 1 }),
-  regular: (t) => t('tier.thresholdRegular', { min: 2, max: 4 }),
-  loyal: (t) => t('tier.thresholdLoyal', { orders: 5, amount: fmtVND(10000000) }),
-  vip: (t) => t('tier.thresholdVip', { amount: fmtVND(20000000) }),
+  bronze: (t) => t('tier.thresholdBronze', { count: 2 }),
+  silver: (t) => t('tier.thresholdSilver', { amount: fmtVND(5000000) }),
+  gold: (t) => t('tier.thresholdGold', { amount: fmtVND(10000000) }),
+  diamond: (t) => t('tier.thresholdDiamond', { amount: fmtVND(20000000) }),
 };
 
 function ProgressBar({ pct, text, remain }) {
@@ -77,6 +79,8 @@ export default function MyTier() {
   }
 
   const { tier, stats, next, period } = data;
+  const sortedTiers = [...(data.tiers || [])]
+    .sort((a, b) => TIER_ORDER.indexOf(a.key) - TIER_ORDER.indexOf(b.key));
   const [year, month] = String(period || '').split('-');
   const thisMonthCards = (data.cards || []).filter((c) => c.period === period);
   const pastCards = (data.cards || []).filter((c) => c.period !== period);
@@ -91,9 +95,9 @@ export default function MyTier() {
       {/* --- Thẻ hero: hạng hiện tại + số liệu --- */}
       <div className="mytier-hero">
         <div className="mytier-hero-top">
-          <span className={`tier-badge mytier-hero-badge tier-${tier.key}`}>
-            {tier.key === 'vip' ? '👑 ' : ''}{tierName(tier.key)}
-          </span>
+          <Link to="/phan-hang" className={`tier-badge mytier-hero-badge tier-${tier.key}`}>
+            {tier.key === 'diamond' ? '💎 ' : ''}{tierName(tier.key)}
+          </Link>
           <span className="mytier-hero-benefit">
             {t('tier.cardsPerMonth', { count: tier.cards, percent: tier.percent })}
           </span>
@@ -135,7 +139,26 @@ export default function MyTier() {
               remain={t('tier.remainingSpent', { amount: fmtVND(next.need.spent) })}
             />
           )}
+      <div className="mytier-ladder">
+        {sortedTiers.map((tr) => (
+          <Link
+            key={tr.key}
+            to={`/phan-hang?tier=${tr.key}`}
+            className={`mytier-step tier-border-${tr.key}`}
+          >
+            <span className={`tier-badge tier-${tr.key}`}>
+              {tr.key === 'diamond' ? '💎 ' : ''}{tierName(tr.key)}
+            </span>
+            <span className="mytier-step-threshold">{THRESHOLDS[tr.key] ? THRESHOLDS[tr.key](t) : ''}</span>
+            {tr.key === tier.key && <span className="mytier-step-you">{t('tier.statusCurrent')}</span>}
+          </Link>
+        ))}
+      </div>
         </div>
+      </div>
+
+      <div style={{ margin: '14px 0 4px' }}>
+        <Link to="/phan-hang" className="btn btn-outline">🏆 {t('tier.viewPerks')} →</Link>
       </div>
 
       {/* --- Thẻ giảm giá tháng này --- */}
@@ -164,31 +187,6 @@ export default function MyTier() {
         </>
       )}
 
-      {/* --- Bảng quyền lợi 5 hạng --- */}
-      <h2 className="mytier-section-title">{t('tier.benefitsTitle')}</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="data-table mytier-benefits">
-          <thead>
-            <tr><th>{t('tier.colTier')}</th><th>{t('tier.colCards')}</th><th>{t('tier.colThreshold')}</th></tr>
-          </thead>
-          <tbody>
-            {[...(data.tiers || [])]
-              .sort((a, b) => ['potential', 'new', 'regular', 'loyal', 'vip'].indexOf(a.key) - ['potential', 'new', 'regular', 'loyal', 'vip'].indexOf(b.key))
-              .map((tr) => (
-              <tr key={tr.key} className={tr.key === tier.key ? 'mytier-benefit-current' : ''}>
-                <td>
-                  <span className={`tier-badge tier-${tr.key}`}>
-                    {tr.key === 'vip' ? '👑 ' : ''}{tierName(tr.key)}
-                  </span>
-                </td>
-                <td>{t('tier.cardsPerMonth', { count: tr.cards, percent: tr.percent })}</td>
-                <td>{THRESHOLDS[tr.key] ? THRESHOLDS[tr.key](t) : ''}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
       {/* --- Bảng xếp hạng --- */}
       <h2 className="mytier-section-title">{t('tier.leaderboardTitle')}</h2>
       {board && (
@@ -206,7 +204,7 @@ export default function MyTier() {
                       {r.name}
                       {r.is_me && <span className="mytier-you">{t('tier.you')}</span>}
                     </td>
-                    <td><span className={`tier-badge tier-${r.tier}`}>{r.tier === 'vip' ? '👑 ' : ''}{tierName(r.tier)}</span></td>
+                    <td><span className={`tier-badge tier-${r.tier}`}>{r.tier === 'diamond' ? '💎 ' : ''}{tierName(r.tier)}</span></td>
                     <td>{fmtVND(r.total_spent)}</td>
                   </tr>
                 ))}

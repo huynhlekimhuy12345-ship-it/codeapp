@@ -158,11 +158,13 @@ export default function PromoEventsTab() {
                             </span>
                           </td>
                           <td>
-                            <button className={`btn btn-small ${ev.is_active ? 'btn-outline' : 'btn-primary'}`} onClick={() => toggle(ev)}>
-                              {ev.is_active ? 'Tắt' : 'Bật'}
-                            </button>{' '}
-                            <button className="btn btn-small btn-outline" onClick={() => openEdit(ev)}>Sửa</button>{' '}
-                            <button className="btn btn-small btn-danger-outline" onClick={() => remove(ev)}>Xóa</button>
+                            <div className="row-actions">
+                              <button className={`btn btn-small ${ev.is_active ? 'btn-outline' : 'btn-primary'}`} onClick={() => toggle(ev)}>
+                                {ev.is_active ? 'Tắt' : 'Bật'}
+                              </button>
+                              <button className="btn btn-small btn-outline" onClick={() => openEdit(ev)}>Sửa</button>
+                              <button className="btn btn-small btn-danger-outline" onClick={() => remove(ev)}>Xóa</button>
+                            </div>
                           </td>
                         </tr>
                       ))}

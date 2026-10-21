@@ -1,0 +1,145 @@
+/* --- Trang Phân hạng: phong cách thẻ thành viên kim loại --- */
+.guide-intro { color: var(--muted); margin-bottom: 22px; max-width: 720px; }
+
+.guide-mine {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 16px;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius);
+  padding: 16px 20px; box-shadow: var(--shadow); margin-bottom: 8px;
+}
+.guide-mine-badge { font-size: 1.05rem; padding: 7px 20px; border-width: 2px; }
+.guide-mine-mid { display: flex; flex-direction: column; gap: 7px; min-width: 240px; flex: 1; }
+.guide-mine-stats { color: var(--cream); font-weight: 600; }
+.guide-mine-progress { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.guide-mine-track {
+  width: 170px; height: 8px; border-radius: 999px; overflow: hidden;
+  background: rgba(154,143,131,.25); flex: 0 0 auto;
+}
+.guide-mine-fill {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+}
+.guide-mine-next { color: var(--amber-light); font-size: .88rem; }
+.guide-mine-link { margin-left: auto; }
+
+.guide-section-title { margin: 30px 0 14px; color: var(--cream); font-size: 1.3rem; }
+
+/* --- Sân khấu bậc thang 5 thẻ kim loại --- */
+.metal-stage {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+  align-items: end; perspective: 1200px;
+  padding: 8px 2px 4px;
+}
+.metal-step { margin-bottom: calc(var(--step) * 16px); }
+
+.metal-card {
+  --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
+  position: relative; display: flex; flex-direction: column; justify-content: space-between;
+  width: 100%; aspect-ratio: 1.586; padding: 13px 14px; overflow: hidden;
+  border-radius: 14px; border: 1px solid rgba(255,255,255,.25);
+  font-family: inherit; text-align: left; cursor: pointer; color: #2a1c10;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform .25s ease, box-shadow .25s ease;
+  box-shadow: 0 10px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.12);
+}
+/* Vân kim loại xước mờ + ánh sáng hắt từ góc trên trái, cho bề mặt ra chất thẻ thật */
+.metal-card::before {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(130% 95% at 12% 0%, rgba(255,255,255,.38), transparent 55%),
+    repeating-linear-gradient(100deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px);
+}
+.metal-card:hover { box-shadow: 0 18px 34px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.6); }
+.metal-card.selected { box-shadow: 0 0 0 2.5px var(--amber), 0 18px 34px rgba(0,0,0,.55); }
+.metal-shine {
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: radial-gradient(420px circle at var(--mx) var(--my), rgba(255,255,255,.38), transparent 45%);
+  opacity: 0; transition: opacity .25s ease;
+}
+.metal-card:hover .metal-shine { opacity: 1; }
+
+.metal-potential { background: linear-gradient(125deg, #7a7062, #3a342d 42%, #63584c 68%, #2b251f); color: #e8ded2; border-color: rgba(255,255,255,.16); }
+.metal-bronze { background: linear-gradient(125deg, #ffdca3, #eda254 28%, #a85f27 55%, #f4bc74 80%, #8a4d1e); }
+.metal-silver { background: linear-gradient(125deg, #ffffff, #d9e0ea 28%, #96a4b7 52%, #f2f6fb 78%, #aebacb); }
+.metal-gold { background: linear-gradient(125deg, #fff3b0, #f6cb5f 30%, #c8892a 55%, #ffe28c 80%, #a86f1c); }
+.metal-diamond {
+  background: linear-gradient(120deg, #eafcff, #aee6ff 24%, #d3c2ff 48%, #9fe3ff 70%, #fdf0ff);
+}
+/* Vệt sáng óng ánh quét chậm qua mặt thẻ (Kim cương quét nhanh và sáng hơn) */
+.metal-card::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.30) 47%, rgba(255,255,255,.07) 55%, transparent 70%);
+  background-size: 260% 100%; animation: metal-sheen 7s ease-in-out infinite;
+}
+.metal-step:nth-child(2) .metal-card::after { animation-delay: .7s; }
+.metal-step:nth-child(3) .metal-card::after { animation-delay: 1.4s; }
+.metal-step:nth-child(4) .metal-card::after { animation-delay: 2.1s; }
+.metal-step:nth-child(5) .metal-card::after { animation-delay: 2.8s; }
+.metal-diamond::after {
+  background: linear-gradient(115deg, transparent 28%, rgba(255,255,255,.55) 46%, rgba(255,255,255,.12) 55%, transparent 72%);
+  background-size: 260% 100%; animation-duration: 3.8s;
+}
+@keyframes metal-sheen {
+  0%, 100% { background-position: 130% 0; }
+  50% { background-position: -30% 0; }
+}
+
+.metal-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; position: relative; z-index: 3; }
+.metal-brand { font-weight: 800; letter-spacing: .14em; font-size: .92rem; opacity: .9; }
+.metal-status {
+  padding: 2px 9px; border-radius: 999px; font-size: .66rem; font-weight: 700;
+  background: rgba(20,12,6,.72); color: #f5e8d5; white-space: nowrap;
+}
+.metal-status.st-current { background: #231408; color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.metal-status.st-achieved { background: rgba(22,68,32,.8); color: #b7f4c7; }
+.metal-mid { display: flex; align-items: center; gap: 10px; position: relative; z-index: 3; }
+.metal-name {
+  font-size: 1.16rem; font-weight: 800; letter-spacing: .02em;
+  text-shadow: 0 1px 0 rgba(255,255,255,.45), 0 -1px 1px rgba(60,35,5,.35);
+}
+.metal-potential .metal-name { text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.metal-bottom { display: flex; position: relative; z-index: 3; }
+.metal-holder {
+  font-size: .8rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255,255,255,.4), 0 -1px 1px rgba(60,35,5,.3); opacity: .92;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.metal-potential .metal-holder { text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+
+/* --- Khung đặc quyền của hạng đang chọn --- */
+.metal-detail {
+  margin-top: 20px;
+  background: var(--panel); border: 1.5px solid rgba(232,181,106,.4); border-radius: var(--radius);
+  padding: 20px 22px; box-shadow: var(--shadow);
+}
+.metal-detail-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.metal-detail-head h3 { color: var(--cream); font-size: 1.12rem; }
+.guide-status {
+  margin-left: auto; padding: 2px 11px; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; border: 1px solid;
+}
+.guide-status.st-current { color: #231408; background: var(--amber); border-color: var(--amber); }
+.guide-status.st-achieved { color: #86efac; background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.4); }
+.guide-status.st-locked { color: var(--muted); background: rgba(150,150,150,.1); border-color: rgba(150,150,150,.35); }
+.guide-perks { list-style: none; display: flex; flex-direction: column; gap: 7px; color: var(--cream); font-size: .96rem; }
+.guide-gap {
+  margin-top: 12px; padding: 10px 14px; border-radius: 10px;
+  background: rgba(232,181,106,.1); border: 1px solid rgba(232,181,106,.35);
+  color: var(--amber-light); font-weight: 600;
+}
+
+.guide-current-row td { background: rgba(232,181,106,.1); }
+
+.guide-guest-cta {
+  margin-top: 30px; text-align: center;
+  background: rgba(232,181,106,.05); border: 1.5px dashed rgba(232,181,106,.45);
+  border-radius: var(--radius); padding: 24px 20px;
+}
+.guide-guest-cta p { color: var(--cream); font-weight: 600; margin-bottom: 14px; }
+.guide-guest-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* --- Điện thoại: thẻ xếp dọc, hết bậc thang --- */
+@media (max-width: 900px) {
+  .metal-stage { grid-template-columns: 1fr; gap: 12px; }
+  .metal-step { margin-bottom: 0; }
+  .metal-card { max-width: 430px; }
+}

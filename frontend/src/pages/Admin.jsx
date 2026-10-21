@@ -586,10 +586,10 @@ function OrdersTab() {
 // Cấu hình thẻ discount theo hạng (cố định, khớp backend)
 const TIER_CONFIG = [
   { key: 'potential', name: 'Tiềm năng', cards: 1, percent: 10 },
-  { key: 'new', name: 'Mới', cards: 1, percent: 10 },
-  { key: 'regular', name: 'Thường xuyên', cards: 2, percent: 10 },
-  { key: 'loyal', name: 'Trung thành', cards: 2, percent: 15 },
-  { key: 'vip', name: 'VIP', cards: 3, percent: 15 },
+  { key: 'bronze', name: 'Đồng', cards: 1, percent: 10 },
+  { key: 'silver', name: 'Bạc', cards: 2, percent: 10 },
+  { key: 'gold', name: 'Vàng', cards: 2, percent: 15 },
+  { key: 'diamond', name: 'Kim cương', cards: 3, percent: 15 },
 ];
 const CARD_STATUS_VI = { unused: 'Chưa dùng', used: 'Đã dùng', expired: 'Hết hạn' };
 
@@ -597,7 +597,7 @@ function TierBadge({ tier }) {
   if (!tier) return '—';
   return (
     <span className={`tier-badge tier-${tier.key}`}>
-      {tier.key === 'vip' ? '👑 ' : ''}{tier.name}
+      {tier.key === 'diamond' ? '💎 ' : ''}{tier.name}
     </span>
   );
 }
@@ -981,9 +981,11 @@ function PostsTab() {
                   {p.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
                 </span></td>
                 <td>{fmtDate(p.created_at)}</td>
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  <button className="btn btn-small btn-outline" onClick={() => openEdit(p)}>Sửa</button>{' '}
-                  <button className="btn btn-small btn-danger" onClick={() => setDeleting(p)}>Xóa</button>
+                <td>
+                  <div className="row-actions">
+                    <button className="btn btn-small btn-outline" onClick={() => openEdit(p)}>Sửa</button>
+                    <button className="btn btn-small btn-danger" onClick={() => setDeleting(p)}>Xóa</button>
+                  </div>
                 </td>
               </tr>
             ))}

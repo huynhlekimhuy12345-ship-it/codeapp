@@ -14,26 +14,29 @@ const PASSWORD = 'demo123';
 
 // Mỗi khách: các số trong orders là TỔNG TIỀN từng đơn (đã gồm ship 30.000đ/đơn).
 // Hàng được ghép tự động từ sản phẩm thật trong kho để khớp đúng tổng.
+// Hạng (mốc 2026-10-21): Tiềm năng = chưa mua · Đồng = từ 2 đơn · Bạc = chi ≥5tr
+//   · Vàng = chi ≥10tr · Kim cương = chi ≥20tr. Mỗi hạng 3 khách.
 const CUSTOMERS = [
   // --- Tiềm năng: chưa mua đơn nào ---
   { name: 'Trần Thu Hằng', email: 'hang.tt@demo.vn', phone: '0912001001', orders: [] },
   { name: 'Phạm Đức Anh', email: 'anh.pd@demo.vn', phone: '0912001002', orders: [] },
   { name: 'Vũ Ngọc Linh', email: 'linh.vn@demo.vn', phone: '0912001003', orders: [] },
-  // --- Mới: đúng 1 đơn ---
-  { name: 'Lê Hoàng Nam', email: 'nam.lh@demo.vn', phone: '0912001004', orders: [920000] },
-  { name: 'Đặng Thu Thảo', email: 'thao.dt@demo.vn', phone: '0912001005', orders: [1480000] },
-  { name: 'Bùi Văn Hùng', email: 'hung.bv@demo.vn', phone: '0912001006', orders: [2420000] },
-  // --- Thường xuyên: 2–4 đơn, tổng dưới 10 triệu ---
+  // (3 khách từng ở nhóm 1 đơn được phân bổ lại vào Vàng/Bạc/Kim cương bên dưới)
+  // --- Đồng: từ 2 đơn, tổng chi dưới 5 triệu ---
   { name: 'Ngô Thanh Tùng', email: 'tung.nt@demo.vn', phone: '0912001007', orders: [1920000, 2480000] },
   { name: 'Đỗ Hải Yến', email: 'yen.dh@demo.vn', phone: '0912001008', orders: [1020000, 1620000, 2220000] },
-  { name: 'Hồ Quang Huy', email: 'huy.hq@demo.vn', phone: '0912001009', orders: [780000, 1280000, 1920000, 3020000] },
-  // --- Trung thành: ≥5 đơn hoặc tổng ≥10 triệu ---
-  { name: 'Chu Văn Đức', email: 'duc.cv@demo.vn', phone: '0912001010', orders: [3930000, 3530000, 3930000] }, // 3 đơn, 11.39tr -> hạng theo tiền
-  { name: 'Dương Thị Mai', email: 'mai.dt@demo.vn', phone: '0912001011', orders: [1480000, 1680000, 1780000, 1880000, 1980000] }, // 5 đơn, 8.8tr -> hạng theo số đơn
-  { name: 'Trịnh Công Sơn', email: 'son.tc@demo.vn', phone: '0912001012', orders: [1980000, 2180000, 2380000, 2480000, 2580000, 2680000] }, // 6 đơn, 14.28tr
-  // --- VIP: tổng ≥20 triệu ---
+  { name: 'Hồ Quang Huy', email: 'huy.hq@demo.vn', phone: '0912001009', orders: [780000, 980000, 1180000, 1480000] },
+  // --- Bạc: tổng chi 5–10 triệu ---
+  { name: 'Đặng Thu Thảo', email: 'thao.dt@demo.vn', phone: '0912001005', orders: [2980000, 3480000] }, // 6.46tr
+  { name: 'Trịnh Công Sơn', email: 'son.tc@demo.vn', phone: '0912001012', orders: [1980000, 2480000, 2980000] }, // 7.44tr
+  { name: 'Dương Thị Mai', email: 'mai.dt@demo.vn', phone: '0912001011', orders: [1480000, 1680000, 1780000, 1880000, 1980000] }, // 8.8tr
+  // --- Vàng: tổng chi 10–20 triệu ---
+  { name: 'Chu Văn Đức', email: 'duc.cv@demo.vn', phone: '0912001010', orders: [3930000, 3530000, 3930000] }, // 11.39tr
+  { name: 'Lê Hoàng Nam', email: 'nam.lh@demo.vn', phone: '0912001004', orders: [3980000, 4480000, 4980000] }, // 13.44tr
+  { name: 'Võ Thị Kim Ngân', email: 'ngan.vtk@demo.vn', phone: '0912001014', orders: [2980000, 3480000, 3980000, 4480000] }, // 14.92tr
+  // --- Kim cương: tổng chi ≥20 triệu ---
   { name: 'Nguyễn Quốc Huy', email: 'huy.nq@demo.vn', phone: '0912001013', orders: [2980000, 3280000, 3480000, 3680000, 3980000, 4280000] }, // 21.68tr
-  { name: 'Võ Thị Kim Ngân', email: 'ngan.vtk@demo.vn', phone: '0912001014', orders: [2980000, 3180000, 3280000, 3380000, 3480000, 3580000, 3680000, 3980000] }, // 27.54tr
+  { name: 'Bùi Văn Hùng', email: 'hung.bv@demo.vn', phone: '0912001006', orders: [6980000, 7480000, 7980000] }, // 22.44tr
   { name: 'Hoàng Gia Bảo', email: 'bao.hg@demo.vn', phone: '0912001015', orders: [2680000, 2880000, 2980000, 3080000, 3180000, 3280000, 3280000, 3380000, 3480000, 3580000, 3680000] }, // 35.48tr
 ];
 

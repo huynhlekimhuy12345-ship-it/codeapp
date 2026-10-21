@@ -186,8 +186,10 @@ export default function EventProductsSection() {
                       <td style={{ fontWeight: 700, color: '#b33' }}>{fmtVND(it.sale_price)}</td>
                       <td><span className="badge">-{it.discount_percent}%</span></td>
                       <td>
-                        <button className="btn btn-small btn-outline" onClick={() => openEdit(it)}>Đổi giá</button>{' '}
-                        <button className="btn btn-small btn-danger-outline" onClick={() => removeProduct(it)}>Gỡ</button>
+                        <div className="row-actions">
+                          <button className="btn btn-small btn-outline" onClick={() => openEdit(it)}>Đổi giá</button>
+                          <button className="btn btn-small btn-danger-outline" onClick={() => removeProduct(it)}>Gỡ</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
