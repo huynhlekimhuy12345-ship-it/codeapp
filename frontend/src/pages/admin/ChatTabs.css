@@ -46,6 +46,17 @@
 }
 .chat-msg.mine .chat-bubble { background: linear-gradient(160deg, #f0b45a, #d97706); color: #231408; font-weight: 550; border: none; }
 .chat-time { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+.chat-translate-btn {
+  align-self: flex-start; background: none; border: none; cursor: pointer;
+  padding: 3px 0 0; color: #e8b56a; font-size: 0.78rem; font-weight: 600;
+}
+.chat-translate-btn:hover { text-decoration: underline; }
+.chat-translated {
+  font-size: 0.85rem; font-style: italic; color: #d9b98a;
+  margin-top: 4px; padding: 5px 9px;
+  background: rgba(232,181,106,.08); border-left: 2px solid rgba(232,181,106,.5);
+  border-radius: 6px;
+}
 .chat-composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(232,181,106,.18); }
 .chat-composer input {
   flex: 1; padding: 10px 13px; border-radius: 9px; font-family: inherit; font-size: 0.95rem;
