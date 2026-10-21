@@ -49,10 +49,9 @@ function SectionHead({ icon, title, count, filter, setFilter, options, right }) 
           color: '#e8b56a', borderRadius: 20, padding: '2px 10px',
         }}>{count}</span>
       </h3>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         {right}
-        <select value={filter} onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: '9px 14px', borderRadius: 10 }}>
+        <select className="select-dark" value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
           {options.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
@@ -186,6 +185,13 @@ function WarrantiesSection() {
   const [extendId, setExtendId] = useState(null);
   const [extendMonths, setExtendMonths] = useState('12');
 
+  // Ô nhập trên hàng công cụ: cao 40px, nền tối + viền vàng hổ phách theo tông web
+  const toolInput = {
+    height: 40, padding: '0 12px', borderRadius: 10, boxSizing: 'border-box',
+    background: 'rgba(12,8,5,.6)', border: '1.5px solid rgba(232,181,106,.35)',
+    color: 'var(--cream)', font: 'inherit', fontSize: '.95rem',
+  };
+
   const load = () =>
     req(`/api/warranties${filter ? '?status=' + filter : ''}`)
       .then((d) => setList(d.warranties || []))
@@ -215,14 +221,15 @@ function WarrantiesSection() {
         filter={filter} setFilter={setFilter}
         options={[['active', 'Đang hiệu lực'], ['expired', 'Hết hạn'], ['void', 'Đã hủy']]}
         right={(
-          <span className="inline-form">
+          <span className="inline-form" style={{ display: 'inline-flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input value={orderId} onChange={(e) => setOrderId(e.target.value)}
-              placeholder="Mã đơn hàng" type="number"
-              style={{ width: 130, padding: '9px 12px', borderRadius: 10 }} aria-label="Mã đơn hàng" />
+              placeholder="Mã đơn" type="number"
+              style={{ ...toolInput, width: 130 }} aria-label="Mã đơn hàng" />
             <input value={months} onChange={(e) => setMonths(e.target.value)}
-              placeholder="Tháng" type="number" min="1" max="120"
-              style={{ width: 90, padding: '9px 12px', borderRadius: 10 }} aria-label="Số tháng bảo hành" />
-            <button className="btn btn-small btn-primary" onClick={create}>+ Tạo bảo hành</button>
+              placeholder="Số tháng" type="number" min="1" max="120"
+              style={{ ...toolInput, width: 100 }} aria-label="Số tháng bảo hành" />
+            <button className="btn btn-small btn-primary" onClick={create}
+              style={{ height: 40, display: 'inline-flex', alignItems: 'center' }}>+ Tạo bảo hành</button>
           </span>
         )} />
       <div style={{ display: 'grid', gap: 12 }}>

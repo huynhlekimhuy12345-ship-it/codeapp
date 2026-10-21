@@ -56,6 +56,7 @@ export const api = {
 
   // Danh mục
   getCategories: () => request('/api/categories'),
+  getCategoryProducts: (id) => request(`/api/categories/${id}/products`, { auth: true }),
   createCategory: (c) => request('/api/categories', { method: 'POST', body: c, auth: true }),
   updateCategory: (id, c) => request(`/api/categories/${id}`, { method: 'PUT', body: c, auth: true }),
   deleteCategory: (id) => request(`/api/categories/${id}`, { method: 'DELETE', auth: true }),

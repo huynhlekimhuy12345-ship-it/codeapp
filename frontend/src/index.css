@@ -866,3 +866,16 @@ select.select-dark {
   background: rgba(12,8,5,.6); color: var(--cream); border: 1.5px solid rgba(232,181,106,.35);
   border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer;
 }
+
+/* --- Sản phẩm bên trong từng danh mục (tab Danh mục) --- */
+.cat-products-row td { background: rgba(232,181,106,.05); }
+.cat-products { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+.cat-product { display: flex; align-items: center; gap: 12px; }
+.cat-product img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; }
+.cat-product-noimg {
+  width: 40px; height: 40px; border-radius: 8px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(232,181,106,.12); font-size: 1.1rem;
+}
+.cat-product-name { flex: 1 1 auto; min-width: 0; }
+.cat-product-meta { color: var(--muted); font-size: .88rem; flex: 0 0 auto; }

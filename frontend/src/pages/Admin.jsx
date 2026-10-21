@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
@@ -283,9 +283,17 @@ function CategoriesTab() {
     if (editingId) catFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [editingId]);
   const [deleting, setDeleting] = useState(null);
+  const [uncatCount, setUncatCount] = useState(0);
+  const [expandedId, setExpandedId] = useState(null); // danh mục đang mở xem sản phẩm ('none' = chưa phân loại)
+  const [catProducts, setCatProducts] = useState({}); // { [id]: [sản phẩm] } — nạp khi bấm mở
 
   const [loadError, setLoadError] = useState('');
-  const load = () => api.getCategories().then((d) => { setCategories(d.categories); setLoadError(''); }).catch(() => setLoadError('Không tải được danh mục'));
+  const load = () => api.getCategories().then((d) => {
+    setCategories(d.categories);
+    setUncatCount(d.uncategorized_count || 0);
+    setCatProducts({});
+    setLoadError('');
+  }).catch(() => setLoadError('Không tải được danh mục'));
   useEffect(() => { load(); }, []);
 
   const reset = () => { setName(''); setDescription(''); setEditingId(null); };
@@ -305,6 +313,41 @@ function CategoriesTab() {
     load();
   };
 
+  const toggleExpand = async (id) => {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    if (!catProducts[id]) {
+      try {
+        const d = await api.getCategoryProducts(id);
+        setCatProducts((m) => ({ ...m, [id]: d.products }));
+      } catch (e) { setCatProducts((m) => ({ ...m, [id]: [] })); }
+    }
+  };
+
+  const renderProductsRow = (id) => (
+    <tr className="cat-products-row">
+      <td colSpan={5}>
+        {!catProducts[id] ? (
+          <span style={{ color: 'var(--muted)' }}>Đang tải…</span>
+        ) : catProducts[id].length === 0 ? (
+          <span style={{ color: 'var(--muted)' }}>Chưa có sản phẩm nào.</span>
+        ) : (
+          <div className="cat-products">
+            {catProducts[id].map((p) => (
+              <div key={p.id} className="cat-product">
+                {p.image_url
+                  ? <img src={p.image_url} alt="" />
+                  : <span className="cat-product-noimg">👜</span>}
+                <span className="cat-product-name">{p.name}</span>
+                <span className="cat-product-meta">{fmtVND(p.price)} • Tồn kho: {p.stock}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+
   return (
     <div>
       {loadError && <div className="alert alert-error">{loadError}</div>}
@@ -316,17 +359,35 @@ function CategoriesTab() {
         {editingId && <button className="btn btn-outline" onClick={reset}>Hủy</button>}
       </div>
       <table className="data-table">
-        <thead><tr><th>ID</th><th>Tên</th><th>Mô tả</th><th>Thao tác</th></tr></thead>
+        <thead><tr><th>ID</th><th>Tên</th><th>Mô tả</th><th>Số sản phẩm</th><th>Thao tác</th></tr></thead>
         <tbody>
           {categories.map((c) => (
-            <tr key={c.id}>
-              <td>{c.id}</td><td>{c.name}</td><td>{c.description}</td>
-              <td><div className="row-actions">
-                <button className="btn btn-small btn-outline" onClick={() => edit(c)}>Sửa</button>
-                <button className="btn btn-small btn-danger" onClick={() => setDeleting(c)}>Xóa</button>
-              </div></td>
-            </tr>
+            <Fragment key={c.id}>
+              <tr>
+                <td>{c.id}</td><td>{c.name}</td><td>{c.description}</td>
+                <td><strong>{c.product_count ?? 0}</strong></td>
+                <td><div className="row-actions">
+                  <button className="btn btn-small btn-outline" onClick={() => toggleExpand(c.id)}>{expandedId === c.id ? 'Ẩn sản phẩm ▴' : 'Xem sản phẩm ▾'}</button>
+                  <button className="btn btn-small btn-outline" onClick={() => edit(c)}>Sửa</button>
+                  <button className="btn btn-small btn-danger" onClick={() => setDeleting(c)}>Xóa</button>
+                </div></td>
+              </tr>
+              {expandedId === c.id && renderProductsRow(c.id)}
+            </Fragment>
           ))}
+          {uncatCount > 0 && (
+            <Fragment key="none">
+              <tr>
+                <td>—</td><td><em>Chưa phân loại</em></td>
+                <td style={{ color: 'var(--muted)' }}>Sản phẩm chưa được xếp vào danh mục nào</td>
+                <td><strong>{uncatCount}</strong></td>
+                <td><div className="row-actions">
+                  <button className="btn btn-small btn-outline" onClick={() => toggleExpand('none')}>{expandedId === 'none' ? 'Ẩn sản phẩm ▴' : 'Xem sản phẩm ▾'}</button>
+                </div></td>
+              </tr>
+              {expandedId === 'none' && renderProductsRow('none')}
+            </Fragment>
+          )}
         </tbody>
       </table>
 
