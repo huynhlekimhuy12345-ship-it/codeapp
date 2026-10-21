@@ -127,7 +127,7 @@ export default function Contact() {
         <div className="glass" style={{ padding: 0, overflow: 'hidden' }}>
           <iframe
             title={t('contact.mapTitle')}
-            src="https://maps.google.com/maps?q=2B%20%C4%90%C6%B0%E1%BB%9Dng%20Phan%20B%E1%BB%99i%20Ch%C3%A2u%2C%20H%E1%BB%99i%20An%2C%20%C4%90%C3%A0%20N%E1%BA%B5ng&t=&z=16&ie=UTF8&iwloc=&output=embed"
+            src="https://maps.google.com/maps?q=BI%2099%20Leather%20Shoes%20and%20Handbags%2C%202B%20Phan%20B%E1%BB%99i%20Ch%C3%A2u%2C%20H%E1%BB%99i%20An&t=&z=16&ie=UTF8&iwloc=&output=embed"
             className="map-frame"
             loading="lazy"
             allowFullScreen

@@ -48,6 +48,46 @@ export default function ReportsTab() {
   const [revenue, setRevenue] = useState([]);
   const [revenueLoading, setRevenueLoading] = useState(false);
 
+  // Chọn nhanh theo tháng/năm (yêu cầu 2026-10-16): đặt tự động Từ/Đến
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const monthBounds = (y, m) => { // m: 1–12; new Date(y, m, 0) = ngày cuối của tháng m
+    const last = new Date(y, m, 0).getDate();
+    return [`${y}-${pad2(m)}-01`, `${y}-${pad2(m)}-${pad2(last)}`];
+  };
+  const now0 = new Date();
+  const [quickMonth, setQuickMonth] = useState(now0.getMonth() + 1);
+  const [quickYear, setQuickYear] = useState(now0.getFullYear());
+  const yearOptions = useMemo(() => {
+    const y = new Date().getFullYear();
+    return [y, y - 1, y - 2, y - 3, y - 4];
+  }, []);
+
+  const applyQuickMonth = (y, m) => {
+    const [f, t] = monthBounds(y, m);
+    setQuickMonth(m);
+    setQuickYear(y);
+    setFrom(f);
+    setTo(t);
+    setGroup('day');
+  };
+  const quickThisMonth = () => {
+    const n = new Date();
+    applyQuickMonth(n.getFullYear(), n.getMonth() + 1);
+  };
+  const quickLastMonth = () => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    applyQuickMonth(d.getFullYear(), d.getMonth() + 1);
+  };
+  const quickThisYear = () => {
+    const y = new Date().getFullYear();
+    setQuickYear(y);
+    setFrom(`${y}-01-01`);
+    setTo(`${y}-12-31`);
+    setGroup('month');
+  };
+
   const loadOverview = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -121,6 +161,30 @@ export default function ReportsTab() {
 
       {/* Biểu đồ doanh thu */}
       <h3 style={{ color: 'var(--cream)', marginBottom: 12 }}>Doanh thu theo thời gian</h3>
+      {/* Chọn nhanh theo tháng/năm */}
+      <div className="quick-range">
+        <span className="qr-label">Xem nhanh:</span>
+        <button type="button" className="qr-btn" onClick={quickThisMonth}>Tháng này</button>
+        <button type="button" className="qr-btn" onClick={quickLastMonth}>Tháng trước</button>
+        <button type="button" className="qr-btn" onClick={quickThisYear}>Năm nay</button>
+        <span className="qr-sep">|</span>
+        <label>
+          Tháng&nbsp;
+          <select className="select-dark" value={quickMonth} onChange={(e) => applyQuickMonth(quickYear, Number(e.target.value))}>
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Năm&nbsp;
+          <select className="select-dark" value={quickYear} onChange={(e) => applyQuickMonth(Number(e.target.value), quickMonth)}>
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </label>
+      </div>
       <div className="filters">
         <label>
           Từ&nbsp;

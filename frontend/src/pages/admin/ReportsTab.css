@@ -69,6 +69,45 @@
   color: var(--muted);
   margin: -14px 0 24px;
 }
+
+/* Chọn nhanh theo tháng/năm */
+.quick-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.quick-range .qr-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.quick-range .qr-sep {
+  color: var(--panel-border);
+}
+.quick-range .qr-btn {
+  background: rgba(232, 181, 106, 0.08);
+  color: var(--amber-light);
+  border: 1px solid rgba(232, 181, 106, 0.35);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.quick-range .qr-btn:hover {
+  background: rgba(232, 181, 106, 0.18);
+}
+.quick-range label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+.quick-range select.select-dark option {
+  background: #221910;
+}
 .report-empty {
   color: var(--muted);
   padding: 18px;
