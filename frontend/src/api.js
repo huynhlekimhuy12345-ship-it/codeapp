@@ -80,6 +80,17 @@ export const api = {
   getTopCustomers: () => request('/api/users/top-customers', { auth: true }),
   getUserPurchases: (id) => request(`/api/users/${id}/purchases`, { auth: true }),
 
+  // Hạng khách hàng & thẻ discount theo tháng
+  getMyTier: () => request('/api/loyalty/me', { auth: true }),
+  getLeaderboard: () => request('/api/loyalty/leaderboard', { auth: true }),
+  loyaltyStats: (period) =>
+    request(`/api/loyalty/admin/stats${period ? '?period=' + encodeURIComponent(period) : ''}`, { auth: true }),
+  issueCards: (period) =>
+    request('/api/loyalty/admin/issue', { method: 'POST', body: period ? { period } : {}, auth: true }),
+  resetCards: (period) =>
+    request('/api/loyalty/admin/reset', { method: 'POST', body: period ? { period } : {}, auth: true }),
+  getUserCards: (userId) => request(`/api/loyalty/admin/user-cards/${userId}`, { auth: true }),
+
   // Voucher (checkout preview, không trừ lượt)
   validateVoucher: (code, order_total) =>
     request('/api/vouchers/validate', { method: 'POST', body: { code, order_total }, auth: true }),

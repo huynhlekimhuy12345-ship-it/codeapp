@@ -11,7 +11,6 @@ const Scene3D = lazy(() => import('./components/Scene3D'));
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import About from './pages/About';
-import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
 import NewsList from './pages/NewsList';
 import NewsDetail from './pages/NewsDetail';
@@ -23,6 +22,7 @@ import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
+import MyTier from './pages/MyTier';
 import ProfilePage from './pages/ProfilePage';
 import Admin from './pages/Admin';
 import SalePage from './pages/SalePage';
@@ -72,7 +72,7 @@ export default function App() {
           <Route path="/khuyen-mai" element={<SalePage />} />
           <Route path="/cua-hang" element={<Shop />} />
           <Route path="/gioi-thieu" element={<About />} />
-          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog" element={<Navigate to="/gioi-thieu#blog" replace />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
           <Route path="/tin-tuc" element={<NewsList />} />
           <Route path="/tin-tuc/:id" element={<NewsDetail />} />
@@ -84,6 +84,7 @@ export default function App() {
           <Route path="/dang-ky" element={<Register />} />
           <Route path="/thanh-toan" element={<RequireAuth><Checkout /></RequireAuth>} />
           <Route path="/don-hang" element={<RequireAuth><MyOrders /></RequireAuth>} />
+          <Route path="/hang-cua-toi" element={<RequireAuth><MyTier /></RequireAuth>} />
           <Route path="/ho-so" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/admin" element={<RequireStaff><Admin /></RequireStaff>} />
           <Route path="*" element={<NotFound />} />

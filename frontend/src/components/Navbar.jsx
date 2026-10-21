@@ -65,9 +65,9 @@ export default function Navbar() {
           <NavLink to="/cua-hang">{t('nav.products')}</NavLink>
           <NavLink to="/khuyen-mai">{t('nav.sale')}</NavLink>
           <NavLink to="/bo-suu-tap">{t('nav.collection')}</NavLink>
-          <NavLink to="/blog">{t('nav.blog')}</NavLink>
           <NavLink to="/lien-he">{t('nav.contact')}</NavLink>
           {user && <NavLink to="/don-hang">{t('nav.orders')}</NavLink>}
+          {user?.role === 'customer' && <NavLink to="/hang-cua-toi">🏆 {t('nav.myTier')}</NavLink>}
           {['admin', 'sale'].includes(user?.role) && <NavLink to="/admin">{t('nav.admin')}</NavLink>}
         </div>
         <div className="nav-right">

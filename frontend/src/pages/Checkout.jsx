@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useNavigate } from 'react-router-dom';
-import { api, fmtVND } from '../api';
+import { api, fmtVND, fmtDay } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
 import { useTranslatedText, PName } from '../i18n/TranslatedProduct';
@@ -46,6 +46,9 @@ export default function Checkout() {
   const [voucher, setVoucher] = useState(null); // { valid, discount }
   const [voucherMsg, setVoucherMsg] = useState('');
   const [voucherLoading, setVoucherLoading] = useState(false);
+  // Thẻ discount theo hạng của khách (chọn thay vì nhập mã; loại trừ lẫn nhau với voucher)
+  const [myCards, setMyCards] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
   // Thanh toán
   const [paymentMethod, setPaymentMethod] = useState('cod');
   // Đặt đơn xong (chế độ xem sau khi đặt — hiển thị hướng dẫn chuyển khoản nếu bank)
@@ -55,6 +58,15 @@ export default function Checkout() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Nạp thẻ discount dùng được của khách (chưa dùng, thuộc kỳ hiện tại)
+  useEffect(() => {
+    api.getMyTier()
+      .then((d) => {
+        setMyCards((d.cards || []).filter((c) => c.status === 'unused' && c.period === d.period));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.getShippingMethods()
@@ -67,10 +79,21 @@ export default function Checkout() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Tóm tắt đơn: tạm tính + ship - voucher = tổng (fee lấy theo method đã chọn, server tính lại)
+  // Tóm tắt đơn: tạm tính + ship - giảm giá = tổng (fee lấy theo method đã chọn, server tính lại)
   const shipFee = shipMethods.find((m) => m.id === shippingId)?.fee || 0;
-  const discount = voucher?.valid ? voucher.discount : 0;
+  // Thẻ hạng: giảm % trên 1 đơn vị giá cao nhất trong đơn
+  const maxUnitPrice = orderItems.reduce((m, i) => Math.max(m, i.price || 0), 0);
+  const cardDiscount = selectedCard ? Math.floor((maxUnitPrice * selectedCard.percent) / 100) : 0;
+  const discount = voucher?.valid ? voucher.discount : cardDiscount;
   const grandTotal = Math.max(0, orderTotal + shipFee - discount);
+
+  // Chọn/bỏ chọn thẻ: chọn thẻ thì xóa trạng thái voucher (chỉ dùng 1 loại ưu đãi)
+  const pickCard = (c) => {
+    if (selectedCard?.id === c.id) { setSelectedCard(null); return; }
+    setSelectedCard(c);
+    setVoucher(null);
+    setVoucherMsg('');
+  };
 
   const applyVoucher = async () => {
     const code = voucherCode.trim();
@@ -81,6 +104,7 @@ export default function Checkout() {
       const r = await api.validateVoucher(code, orderTotal);
       if (r.valid) {
         setVoucher({ valid: true, discount: r.discount });
+        setSelectedCard(null); // áp voucher thành công thì bỏ chọn thẻ
         setVoucherMsg(t('checkout.voucherOk', { amount: fmtVND(r.discount) }));
       } else {
         setVoucher(null);
@@ -113,6 +137,7 @@ export default function Checkout() {
         })),
         shipping_method_id: shippingId,
         voucher_code: voucher?.valid ? voucherCode.trim() : undefined,
+        discount_card_code: selectedCard ? selectedCard.code : undefined,
         payment_method: paymentMethod,
       });
       if (paymentMethod === 'bank') {
@@ -224,19 +249,61 @@ export default function Checkout() {
           ))}
 
           <h2 style={{ marginTop: 24 }}>{t('checkout.voucher')}</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input aria-label={t('fix1.radioOption')}
+          <div className="voucher-row">
+            <span className="voucher-icon" aria-hidden="true">🎟️</span>
+            <input aria-label={t('checkout.voucher')}
               value={voucherCode}
               onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucher(null); setVoucherMsg(''); }}
               placeholder={t('checkout.voucherPlaceholder')}
-              style={{ flex: 1 }}
+              disabled={!!selectedCard}
             />
-            <button type="button" className="btn btn-secondary" onClick={applyVoucher} disabled={voucherLoading || !voucherCode.trim()}>
+            <button type="button" className="btn btn-primary" onClick={applyVoucher} disabled={voucherLoading || !voucherCode.trim() || !!selectedCard}>
               {voucherLoading ? '...' : t('checkout.apply')}
             </button>
           </div>
           {voucherMsg && (
             <div className={voucher?.valid ? 'form-success' : 'form-error'} style={{ marginTop: 8 }}>{voucherMsg}</div>
+          )}
+
+          {myCards.length > 0 && (
+            <div className="checkout-cards">
+              <div className="checkout-cards-title">🎟️ {t('tier.myCards')}</div>
+              <div
+                className={`checkout-card-option${!selectedCard ? ' selected' : ''}`}
+                role="radio"
+                aria-checked={!selectedCard}
+                tabIndex={0}
+                onClick={() => setSelectedCard(null)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCard(null); } }}
+              >
+                <span>{t('tier.noCard')}</span>
+                {!selectedCard && <span className="checkout-card-check">✓</span>}
+              </div>
+              {myCards.map((c) => (
+                <div
+                  key={c.id}
+                  className={`checkout-card-option${selectedCard?.id === c.id ? ' selected' : ''}`}
+                  role="radio"
+                  aria-checked={selectedCard?.id === c.id}
+                  tabIndex={0}
+                  onClick={() => pickCard(c)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(c); } }}
+                >
+                  <span aria-hidden="true">🎟️</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="card-code">{c.code}</span>
+                    {' • '}{t(`tier.name.${c.tier}`)}
+                    {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
+                    <span className="muted"> • {t('tier.appliesToPriciest')}</span>
+                  </span>
+                  <span className="card-off">−{c.percent}%</span>
+                  {selectedCard?.id === c.id && <span className="checkout-card-check">✓</span>}
+                </div>
+              ))}
+              {selectedCard && (
+                <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>{t('tier.oneDiscountOnly')}</p>
+              )}
+            </div>
           )}
 
           <h2 style={{ marginTop: 24 }}>{t('checkout.payMethod')}</h2>
@@ -273,7 +340,12 @@ export default function Checkout() {
           ))}
           <div className="row"><span>{t('cart.subtotal')}</span><span>{fmtVND(orderTotal)}</span></div>
           <div className="row"><span>{t('checkout.shipping')}</span><span>{fmtVND(shipFee)}</span></div>
-          {discount > 0 && <div className="row"><span>{t('checkout.voucherDiscount')}</span><span>-{fmtVND(discount)}</span></div>}
+          {discount > 0 && (
+            <div className="row">
+              <span>{voucher?.valid ? t('checkout.voucherDiscount') : t('tier.cardDiscount')}</span>
+              <span>-{fmtVND(discount)}</span>
+            </div>
+          )}
           <div className="row total"><span>{t('cart.total')}</span><span>{fmtVND(grandTotal)}</span></div>
         </div>
       </div>

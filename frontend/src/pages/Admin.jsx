@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useStore } from '../context/StoreContext';
-import { api, fmtVND, fmtDate, ORDER_STATUS, nextStatuses } from '../api';
+import { api, fmtVND, fmtDate, fmtDay, ORDER_STATUS, nextStatuses } from '../api';
 import { detectLang, translateToVietnamese } from '../i18n/autoTranslate';
 import InventoryTab from './admin/InventoryTab';
 import PaymentsTab from './admin/PaymentsTab';
@@ -583,29 +583,89 @@ function OrdersTab() {
 }
 
 /* ---------- Tab Người dùng ---------- */
+// Cấu hình thẻ discount theo hạng (cố định, khớp backend)
+const TIER_CONFIG = [
+  { key: 'potential', name: 'Tiềm năng', cards: 1, percent: 10 },
+  { key: 'new', name: 'Mới', cards: 1, percent: 10 },
+  { key: 'regular', name: 'Thường xuyên', cards: 2, percent: 10 },
+  { key: 'loyal', name: 'Trung thành', cards: 2, percent: 15 },
+  { key: 'vip', name: 'VIP', cards: 3, percent: 15 },
+];
+const CARD_STATUS_VI = { unused: 'Chưa dùng', used: 'Đã dùng', expired: 'Hết hạn' };
+
+function TierBadge({ tier }) {
+  if (!tier) return '—';
+  return (
+    <span className={`tier-badge tier-${tier.key}`}>
+      {tier.key === 'vip' ? '👑 ' : ''}{tier.name}
+    </span>
+  );
+}
+
 function UsersTab() {
   const { user } = useStore();
+  const isAdmin = user?.role === 'admin';
   const [users, setUsers] = useState([]);
+  const [tierCounts, setTierCounts] = useState(null);
+  const [tierFilter, setTierFilter] = useState('all');
   const [roleTarget, setRoleTarget] = useState(null);
   const [newRole, setNewRole] = useState('customer');
   const [loadError, setLoadError] = useState('');
   const [topCustomers, setTopCustomers] = useState([]);
   const [detailFor, setDetailFor] = useState(null);
   const [detailData, setDetailData] = useState(null);
+  const [detailCards, setDetailCards] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
-  const load = () => api.getUsers().then((d) => { setUsers(d.users); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
-  useEffect(() => { load(); }, []);
+  // Thẻ discount theo hạng (panel quản lý phát hành/đặt lại)
+  const [loyalty, setLoyalty] = useState(null);
+  const [loyaltyMsg, setLoyaltyMsg] = useState('');
+  const [loyaltyBusy, setLoyaltyBusy] = useState(false);
+  const [resetCardsOpen, setResetCardsOpen] = useState(false);
+  const load = () => api.getUsers().then((d) => { setUsers(d.users); setTierCounts(d.tier_counts || null); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
+  const loadLoyalty = () => api.loyaltyStats().then(setLoyalty).catch(() => {});
+  useEffect(() => { load(); loadLoyalty(); }, []);
   useEffect(() => { api.getTopCustomers().then((d) => setTopCustomers(d.customers)).catch(() => {}); }, []);
 
   const openPurchases = async (u) => {
     setDetailFor(u);
     setDetailData(null);
+    setDetailCards([]);
     setDetailLoading(true);
     try {
       const d = await api.getUserPurchases(u.id);
       setDetailData(d);
     } catch (e) { /* detailData giữ null → modal hiện thông báo không tải được */ }
+    try {
+      const cd = await api.getUserCards(u.id);
+      setDetailCards(cd.cards || []);
+    } catch (e) { /* không có thẻ thì bỏ qua */ }
     setDetailLoading(false);
+  };
+
+  const tierOfUser = (id) => users.find((x) => x.id === id)?.tier || null;
+  const shownUsers = tierFilter === 'all' ? users : users.filter((u) => u.tier?.key === tierFilter);
+  const customerTotal = users.filter((u) => u.role === 'customer').length;
+
+  const periodLabel = loyalty?.period ? `${loyalty.period.slice(5)}/${loyalty.period.slice(0, 4)}` : '';
+  const issuedTotal = loyalty ? ['unused', 'used', 'expired'].reduce((s, k) => s + (loyalty.by_status?.[k] || 0), 0) : 0;
+  const doIssueCards = async () => {
+    setLoyaltyBusy(true); setLoyaltyMsg('');
+    try {
+      const r = await api.issueCards(loyalty?.period);
+      setLoyaltyMsg(`Đã phát hành ${r.issued_cards} thẻ cho ${r.customers} khách hàng.`);
+      loadLoyalty();
+    } catch (e) { alert(e.message); }
+    setLoyaltyBusy(false);
+  };
+  const doResetCards = async () => {
+    setResetCardsOpen(false);
+    setLoyaltyBusy(true); setLoyaltyMsg('');
+    try {
+      const r = await api.resetCards(loyalty?.period);
+      setLoyaltyMsg(`Đã đặt lại: xóa ${r.removed_cards} thẻ cũ, phát hành ${r.issued_cards} thẻ mới.`);
+      loadLoyalty();
+    } catch (e) { alert(e.message); }
+    setLoyaltyBusy(false);
   };
 
   const openRoleChange = (u) => { setRoleTarget(u); setNewRole(u.role); };
@@ -621,6 +681,63 @@ function UsersTab() {
       <h3 style={{ marginBottom: 14 }}>Quản lý người dùng ({users.length})</h3>
       {loadError && <div className="alert alert-error">{loadError}</div>}
 
+      <div className="loyalty-panel">
+        <h4>🎟️ Thẻ discount theo hạng{loyalty?.period ? ` — tháng ${periodLabel}` : ''}</h4>
+        {loyalty ? (
+          <>
+            <div className="loyalty-stat-grid">
+              <span>Đã phát hành: <strong>{issuedTotal}</strong></span>
+              <span>Đã dùng: <strong>{loyalty.by_status?.used || 0}</strong></span>
+              <span>Chưa dùng: <strong>{loyalty.by_status?.unused || 0}</strong></span>
+              <span>Hết hạn: <strong>{loyalty.by_status?.expired || 0}</strong></span>
+            </div>
+            <div className="loyalty-actions">
+              <button className="btn btn-primary" onClick={doIssueCards} disabled={loyaltyBusy}>
+                {loyaltyBusy ? 'Đang xử lý…' : 'Phát hành thẻ tháng này'}
+              </button>
+              <button className="btn btn-danger" onClick={() => setResetCardsOpen(true)} disabled={loyaltyBusy}>
+                Đặt lại thẻ tháng này
+              </button>
+              {loyaltyMsg && <span className="loyalty-msg">{loyaltyMsg}</span>}
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table loyalty-config">
+                <thead><tr><th>Hạng</th><th>Số thẻ / tháng</th><th>Mức giảm</th></tr></thead>
+                <tbody>
+                  {TIER_CONFIG.map((tc) => (
+                    <tr key={tc.key}>
+                      <td><TierBadge tier={{ key: tc.key, name: tc.name }} /></td>
+                      <td>{tc.cards} thẻ</td>
+                      <td>{tc.percent}% / 1 sản phẩm</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p style={{ color: 'var(--muted)' }}>Đang tải thống kê thẻ…</p>
+        )}
+      </div>
+
+      {tierCounts && (
+        <div className="tier-chips">
+          <button type="button" className={`tier-chip${tierFilter === 'all' ? ' active' : ''}`} onClick={() => setTierFilter('all')}>
+            Tất cả ({customerTotal} khách)
+          </button>
+          {TIER_CONFIG.map((tc) => (
+            <button
+              key={tc.key}
+              type="button"
+              className={`tier-chip${tierFilter === tc.key ? ' active' : ''}`}
+              onClick={() => setTierFilter(tierFilter === tc.key ? 'all' : tc.key)}
+            >
+              {tc.key === 'vip' ? '👑 ' : ''}{tc.name} ({tierCounts[tc.key] || 0})
+            </button>
+          ))}
+        </div>
+      )}
+
       {topCustomers.length > 0 && (
         <div className="top-customers">
           <h4 className="top-customers-title">🏆 Top khách hàng tiềm năng</h4>
@@ -630,7 +747,10 @@ function UsersTab() {
               <button key={c.id} type="button" className="top-customer-card" onClick={() => openPurchases(c)}>
                 <span className={`top-rank rank-${i + 1}`}>{i + 1}</span>
                 <span className="top-customer-main">
-                  <span className="top-customer-name">{c.name}</span>
+                  <span className="top-customer-name">
+                    {c.name}{' '}
+                    {(() => { const tc = c.tier || tierOfUser(c.id); return tc ? <TierBadge tier={tc} /> : null; })()}
+                  </span>
                   <span className="top-customer-email">{c.email}</span>
                 </span>
                 <span className="top-customer-stats">
@@ -643,28 +763,38 @@ function UsersTab() {
         </div>
       )}
 
+      <div style={{ overflowX: 'auto' }}>
       <table className="data-table">
-        <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+        <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Hạng</th><th>Số đơn</th><th>Tổng chi</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
         <tbody>
-          {users.map((u) => (
+          {shownUsers.map((u) => (
             <tr key={u.id}>
               <td>{u.id}</td><td>{u.name}</td><td>{u.email}</td>
               <td><span className={`status ${u.role === 'customer' ? 'pending' : 'confirmed'}`}>
                 {roleLabel(u.role)}
               </span></td>
+              <td>{u.role === 'customer' ? <TierBadge tier={u.tier} /> : '—'}</td>
+              <td>{u.role === 'customer' ? (u.order_count ?? 0) : '—'}</td>
+              <td>{u.role === 'customer' ? fmtVND(u.total_spent) : '—'}</td>
               <td>{fmtDate(u.created_at)}</td>
               <td>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {u.role === 'customer' && (
                     <button className="btn btn-small btn-outline" onClick={() => openPurchases(u)}>📦 Đã mua</button>
                   )}
-                  <button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)} disabled={user && u.id === user.id} title={user && u.id === user.id ? 'Không thể đổi vai trò của chính mình' : ''}>Đổi vai trò</button>
+                  {isAdmin && (
+                    <button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)} disabled={user && u.id === user.id} title={user && u.id === user.id ? 'Không thể đổi vai trò của chính mình' : ''}>Đổi vai trò</button>
+                  )}
                 </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
+      {tierFilter !== 'all' && shownUsers.length === 0 && (
+        <p style={{ color: 'var(--muted)' }}>Chưa có khách nào ở hạng này.</p>
+      )}
 
       {detailFor && (
         <div className="modal-overlay" onClick={() => setDetailFor(null)}>
@@ -677,12 +807,25 @@ function UsersTab() {
                 <p style={{ marginBottom: 4 }}>
                   <strong>{detailData.customer.name}</strong> • {detailData.customer.email}
                   {detailData.customer.phone ? ` • ${detailData.customer.phone}` : ''}
+                  {detailData.tier && <> • <TierBadge tier={detailData.tier} /></>}
                 </p>
                 <div className="purchase-summary">
                   <span>🧾 {detailData.summary.order_count} đơn đã thanh toán</span>
                   <span>💰 Tổng chi: <strong>{fmtVND(detailData.summary.total_spent)}</strong></span>
                   {detailData.summary.last_order_at && <span>🕐 Mua gần nhất: {fmtDate(detailData.summary.last_order_at)}</span>}
                 </div>
+
+                {detailCards.length > 0 && (
+                  <>
+                    <div className="purchase-subtitle">🎟️ Thẻ discount ({detailCards.length})</div>
+                    {detailCards.map((c) => (
+                      <div key={c.id} className="purchase-row">
+                        <span><code>{c.code}</code> • giảm {c.percent}% • Kỳ {c.period}</span>
+                        <span>{CARD_STATUS_VI[c.status] || c.status} • HSD {fmtDay(c.expires_at)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
 
                 {detailData.top_products.length > 0 && (
                   <>
@@ -727,6 +870,17 @@ function UsersTab() {
             </div>
           </div>
         </div>
+      )}
+
+      {resetCardsOpen && (
+        <ConfirmDialog
+          title="Đặt lại thẻ tháng này"
+          message="Toàn bộ thẻ CHƯA DÙNG của tháng này sẽ bị xóa và phát hành lại từ đầu theo hạng hiện tại của từng khách. Thẻ đã dùng được giữ nguyên lịch sử. Bạn có chắc muốn đặt lại?"
+          confirmLabel="Đặt lại thẻ"
+          danger
+          onCancel={() => setResetCardsOpen(false)}
+          onConfirm={doResetCards}
+        />
       )}
 
       {roleTarget && (
@@ -1058,8 +1212,9 @@ export default function Admin() {
   }, [tab]);
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useStore();
-  // Sale thấy toàn bộ tab trừ "Người dùng" (quản lý tài khoản chỉ dành cho Admin)
-  const visibleNav = user?.role === 'sale' ? NAV.filter((n) => n.key !== 'users') : NAV;
+  // Sale thấy toàn bộ tab, kể cả "Người dùng" (xem hạng + thẻ của khách);
+  // thao tác đổi vai trò tài khoản vẫn chỉ Admin (UsersTab tự ẩn nút với sale)
+  const visibleNav = NAV;
   return (
     <div className="container page">
       <h1 className="page-title">Bảng quản trị</h1>

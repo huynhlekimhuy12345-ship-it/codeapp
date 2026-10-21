@@ -357,6 +357,22 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- Thẻ discount theo hạng khách hàng (phát hành theo tháng, mỗi thẻ dùng cho 1 sản phẩm)
+  CREATE TABLE IF NOT EXISTS discount_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code TEXT NOT NULL UNIQUE,
+    percent INTEGER NOT NULL DEFAULT 0,
+    tier TEXT NOT NULL DEFAULT '',
+    period TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'unused' CHECK(status IN ('unused','used','expired')),
+    issued_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT,
+    used_order_id INTEGER,
+    used_product_id INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   -- Đánh giá sản phẩm (admin kiểm duyệt qua is_approved)
   CREATE TABLE IF NOT EXISTS reviews (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

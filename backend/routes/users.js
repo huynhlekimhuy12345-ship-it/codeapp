@@ -1,7 +1,8 @@
-// Quản trị người dùng (admin)
+// Quản trị người dùng (admin + sale xem; đổi vai trò/xóa chỉ admin)
 const express = require('express');
 const db = require('../db');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, adminOnly, staffOnly } = require('../middleware/auth');
+const { computeTier, TIER_MAP } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -28,12 +29,25 @@ router.put('/me', auth, (req, res) => {
   res.json({ user });
 });
 
-// GET /api/users — admin xem danh sách
-router.get('/', auth, adminOnly, (req, res) => {
-  const users = db.prepare(
-    'SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC'
-  ).all();
-  res.json({ users });
+// GET /api/users — admin/sale xem danh sách, kèm số đơn/tổng chi và hạng của từng khách
+router.get('/', auth, staffOnly, (req, res) => {
+  const rows = db.prepare(`
+    SELECT u.id, u.name, u.email, u.phone, u.role, u.created_at,
+      COALESCE(SUM(CASE WHEN o.payment_status = 'verified' AND o.status != 'cancelled' THEN 1 ELSE 0 END), 0) AS order_count,
+      COALESCE(SUM(CASE WHEN o.payment_status = 'verified' AND o.status != 'cancelled' THEN o.total ELSE 0 END), 0) AS total_spent
+    FROM users u
+    LEFT JOIN orders o ON o.user_id = u.id
+    GROUP BY u.id
+    ORDER BY u.created_at DESC
+  `).all();
+  const tier_counts = { vip: 0, loyal: 0, regular: 0, new: 0, potential: 0 };
+  const users = rows.map((u) => {
+    if (u.role !== 'customer') return { ...u, tier: null };
+    const key = computeTier(u.order_count, u.total_spent);
+    tier_counts[key]++;
+    return { ...u, tier: { key, name: TIER_MAP[key].name } };
+  });
+  res.json({ users, tier_counts });
 });
 
 // PUT /api/users/:id/role — admin đổi vai trò
@@ -48,10 +62,10 @@ router.put('/:id/role', auth, adminOnly, (req, res) => {
   res.json({ user: db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(req.params.id) });
 });
 
-// GET /api/users/top-customers — admin: top khách hàng tiềm năng theo tổng tiền đã mua
+// GET /api/users/top-customers — admin/sale: top khách hàng tiềm năng theo tổng tiền đã mua
 // Chỉ tính đơn đã xác nhận thanh toán (payment_status='verified') và chưa hủy — khớp cách tính doanh thu.
-router.get('/top-customers', auth, adminOnly, (req, res) => {
-  const customers = db.prepare(`
+router.get('/top-customers', auth, staffOnly, (req, res) => {
+  const rows = db.prepare(`
     SELECT u.id, u.name, u.email, u.phone,
            COUNT(o.id) AS order_count,
            COALESCE(SUM(o.total), 0) AS total_spent,
@@ -64,11 +78,15 @@ router.get('/top-customers', auth, adminOnly, (req, res) => {
     ORDER BY total_spent DESC, order_count DESC
     LIMIT 10
   `).all();
+  const customers = rows.map((c) => {
+    const key = computeTier(c.order_count, c.total_spent);
+    return { ...c, tier: { key, name: TIER_MAP[key].name } };
+  });
   res.json({ customers });
 });
 
-// GET /api/users/:id/purchases — admin: một khách đã mua những gì
-router.get('/:id/purchases', auth, adminOnly, (req, res) => {
+// GET /api/users/:id/purchases — admin/sale: một khách đã mua những gì
+router.get('/:id/purchases', auth, staffOnly, (req, res) => {
   const customer = db.prepare(
     'SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?'
   ).get(req.params.id);
@@ -93,7 +111,16 @@ router.get('/:id/purchases', auth, adminOnly, (req, res) => {
     ORDER BY total_qty DESC, total_amount DESC
     LIMIT 5
   `).all(req.params.id);
-  res.json({ customer, summary, top_products: topProducts, orders });
+  const tierKey = customer.role === 'customer'
+    ? computeTier(summary.order_count, summary.total_spent)
+    : null;
+  res.json({
+    customer,
+    summary,
+    tier: tierKey ? { key: tierKey, name: TIER_MAP[tierKey].name } : null,
+    top_products: topProducts,
+    orders,
+  });
 });
 
 module.exports = router;

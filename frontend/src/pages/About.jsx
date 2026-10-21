@@ -1,7 +1,11 @@
-// Trang Giới thiệu — port từ web artifact BI99 (AboutView)
-import { Link } from 'react-router-dom';
+// Trang Giới thiệu — gộp: Câu chuyện -> Blog -> Giá trị cốt lõi -> Quy trình
+// (Blog từng là trang riêng /blog; đường dẫn cũ tự chuyển về mục #blog của trang này)
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import { useLang } from '../i18n/LanguageContext';
+import { api } from '../api';
+import { BlogCard } from './Blog';
 
 const VALUES = [
   ['🐄', 'v1t', 'v1d'],
@@ -13,8 +17,26 @@ const STEPS = ['s1', 's2', 's3', 's4', 's5', 's6'];
 
 export default function About() {
   const { t } = useLang();
+  const location = useLocation();
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const values = VALUES.map(([icon, tk, dk]) => [icon, t('about.' + tk), t('about.' + dk)]);
   const steps = STEPS.map((k) => [t('about.' + k + 't'), t('about.' + k + 'd')]);
+
+  useEffect(() => {
+    api.getPosts()
+      .then((d) => setPosts(d.posts || []))
+      .catch(() => setPosts([]))
+      .finally(() => setPostsLoading(false));
+  }, []);
+
+  // Vào từ đường dẫn /blog cũ (chuyển hướng kèm #blog) thì cuộn xuống mục Blog
+  useEffect(() => {
+    if (location.hash === '#blog' && !postsLoading) {
+      const el = document.getElementById('blog');
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    }
+  }, [location.hash, postsLoading]);
   return (
     <div className="container page">
       <PageTitle title={t('nav.about')} />
@@ -36,6 +58,23 @@ export default function About() {
           loading="lazy"
           onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
+      </div>
+
+      <div className="section" id="blog">
+        <div className="section-head"><h2>{t('blog.title')}</h2></div>
+        <p style={{ color: 'var(--muted)', marginBottom: 18 }}>{t('blog.subtitle')}</p>
+        {postsLoading ? (
+          <div className="empty"><h3>{t('blog.loading')}</h3></div>
+        ) : posts.length === 0 ? (
+          <div className="empty">
+            <h3>{t('blog.empty')}</h3>
+            <p>{t('blog.emptyDesc')}</p>
+          </div>
+        ) : (
+          <div className="product-grid">
+            {posts.map((p) => <BlogCard key={p.id} p={p} />)}
+          </div>
+        )}
       </div>
 
       <div className="section">

@@ -72,7 +72,7 @@ const PAYMENT_LABELS = {
 //   → INSERT orders/payments/shippings + lịch sử tạo đơn
 // ============================================================
 router.post('/', auth, (req, res) => {
-  const { customer_name, phone, address, items, shipping_method_id, voucher_code, payment_method, note } = req.body || {};
+  const { customer_name, phone, address, items, shipping_method_id, voucher_code, discount_card_code, payment_method, note } = req.body || {};
 
   // Validate thông tin giao hàng
   if (!customer_name || !phone || !address)
@@ -175,6 +175,9 @@ router.post('/', auth, (req, res) => {
     let discount_total = 0;
     let voucherRow = null;
     const code = (voucher_code || '').toString().trim();
+    const cardCodeEarly = (discount_card_code || '').toString().trim();
+    if (code && cardCodeEarly)
+      throw new Error('Chỉ dùng 1 loại ưu đãi cho mỗi đơn: mã khuyến mãi hoặc thẻ hạng khách hàng');
     if (code) {
       const r = validateVoucher(db, code, subtotal);
       if (!r.valid) {
@@ -189,6 +192,20 @@ router.post('/', auth, (req, res) => {
       }
       discount_total = r.discount;
       voucherRow = r.voucher;
+    }
+
+    // 2b. Thẻ discount theo hạng: giảm % cho 1 sản phẩm (món đắt nhất), KHÔNG cộng dồn với voucher
+    let cardRow = null;
+    let cardProductId = null;
+    const cardCode = cardCodeEarly.toUpperCase();
+    if (cardCode) {
+      cardRow = db.prepare(
+        "SELECT * FROM discount_cards WHERE code = ? AND user_id = ? AND status = 'unused' AND expires_at >= datetime('now','localtime')"
+      ).get(cardCode, req.user.id);
+      if (!cardRow) throw new Error('Thẻ discount không hợp lệ, đã dùng hoặc đã hết hạn');
+      const top = lines.reduce((a, b) => (b.price > (a ? a.price : 0) ? b : a), null);
+      discount_total = Math.floor((top.price * cardRow.percent) / 100);
+      cardProductId = top.product_id;
     }
 
     // 3. Tổng đơn = tạm tính + phí ship - giảm giá (không âm)
@@ -227,6 +244,14 @@ router.post('/', auth, (req, res) => {
     // 6. Tăng used_count của voucher (atomic trong cùng transaction)
     if (voucherRow) {
       db.prepare('UPDATE vouchers SET used_count = used_count + 1 WHERE id = ?').run(voucherRow.id);
+    }
+
+    // 6b. Đánh dấu thẻ discount đã dùng (guard status chống dùng trùng)
+    if (cardRow) {
+      const upd = db.prepare(
+        "UPDATE discount_cards SET status = 'used', used_order_id = ?, used_product_id = ? WHERE id = ? AND status = 'unused'"
+      ).run(orderId, cardProductId, cardRow.id);
+      if (!upd.changes) throw new Error('Thẻ discount đã được sử dụng');
     }
 
     // 7. Tạo payment: INSERT trực tiếp (đơn giản hơn gọi HTTP nội bộ)

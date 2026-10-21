@@ -15,7 +15,7 @@ function TranslatedArticle({ post }) {
   const content = useTranslatedText(post.content || '');
   return (
     <article className="glass blog-article">
-      <Link to="/blog" className="back-link">{t('blogDetail.allPosts')}</Link>
+      <Link to="/gioi-thieu#blog" className="back-link">{t('blogDetail.allPosts')}</Link>
       <h1>{title}</h1>
       <p className="meta">📅 {t('blogDetail.publishedOn')} {fmtDay(post.created_at)} • BI99</p>
       {post.cover_image_url && (
@@ -67,7 +67,7 @@ export default function BlogDetail() {
         <div className="empty">
           <h3>{t('blogDetail.notFound')}</h3>
           <p>{t('blogDetail.notFoundDesc')}</p>
-          <Link to="/blog" className="btn btn-primary">{t('blogDetail.backToBlog')}</Link>
+          <Link to="/gioi-thieu#blog" className="btn btn-primary">{t('blogDetail.backToBlog')}</Link>
         </div>
       </div>
     );

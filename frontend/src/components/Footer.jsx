@@ -16,7 +16,7 @@ export default function Footer() {
             <li><Link to="/">{t('nav.home')}</Link></li>
             <li><Link to="/gioi-thieu">{t('nav.about')}</Link></li>
             <li><Link to="/cua-hang">{t('footer.shop')}</Link></li>
-            <li><Link to="/blog">{t('nav.blog')}</Link></li>
+            <li><Link to="/gioi-thieu#blog">{t('nav.blog')}</Link></li>
             <li><Link to="/lien-he">{t('nav.contact')}</Link></li>
             <li><Link to="/gio-hang">{t('nav.cart')}</Link></li>
             <li><Link to="/don-hang">{t('footer.trackOrder')}</Link></li>

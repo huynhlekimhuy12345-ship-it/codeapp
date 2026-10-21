@@ -1,0 +1,81 @@
+/* --- Trang Hạng của tôi --- */
+.mytier-hero {
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid var(--panel-border); border-radius: var(--radius);
+  padding: 24px; box-shadow: var(--shadow); margin-bottom: 8px;
+}
+.mytier-hero-top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.mytier-hero-badge { font-size: 1.15rem; padding: 8px 22px; border-width: 2px; }
+.mytier-hero-benefit { color: var(--muted); font-size: .95rem; }
+
+.mytier-stats { display: flex; flex-wrap: wrap; gap: 14px 44px; margin-bottom: 20px; }
+.mytier-stat { display: flex; flex-direction: column; }
+.mytier-stat-value { font-size: 1.35rem; font-weight: 800; color: var(--amber-light); line-height: 1.25; }
+.mytier-stat-label { color: var(--muted); font-size: .86rem; }
+
+.mytier-progress-wrap { border-top: 1px solid rgba(232,181,106,.15); padding-top: 16px; }
+.mytier-progress-title { font-weight: 700; color: var(--cream); margin-bottom: 10px; }
+.mytier-next strong { color: var(--amber-light); }
+.mytier-max { color: var(--amber-light); font-weight: 700; font-size: 1.02rem; }
+.mytier-progress { margin-bottom: 12px; }
+.mytier-progress-track {
+  height: 12px; border-radius: 999px; overflow: hidden;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(232,181,106,.25);
+}
+.mytier-progress-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber), var(--amber-light));
+  transition: width .5s ease;
+}
+.mytier-progress-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: .9rem; margin-top: 5px; }
+.mytier-remain { color: var(--amber-light); font-weight: 700; }
+
+.mytier-section-title { margin: 30px 0 14px; color: var(--cream); font-size: 1.3rem; }
+.mytier-sub-title { margin: 22px 0 10px; color: var(--cream); font-size: 1.05rem; }
+
+/* --- Thẻ giảm giá kiểu phiếu --- */
+.mytier-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.mytier-card {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(232,181,106,.05);
+  border: 1.5px dashed rgba(232,181,106,.45); border-radius: 12px;
+  padding: 14px 16px;
+}
+.mytier-card.status-used, .mytier-card.status-expired { opacity: .62; }
+.mytier-card-off { font-size: 1.5rem; font-weight: 800; color: var(--amber-light); white-space: nowrap; }
+.mytier-card-main { flex: 1 1 auto; min-width: 0; }
+.mytier-card-code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-weight: 700; letter-spacing: .5px; font-size: 1rem; color: var(--cream);
+  overflow-wrap: anywhere;
+}
+.mytier-card-note { color: var(--muted); font-size: .85rem; }
+.mytier-card-expiry { color: var(--muted); font-size: .85rem; }
+
+.mytier-status {
+  flex: 0 0 auto; padding: 2px 10px; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; border: 1px solid;
+}
+.mytier-status.st-unused { color: #86efac; background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.4); }
+.mytier-status.st-used { color: var(--muted); background: rgba(150,150,150,.12); border-color: rgba(150,150,150,.35); }
+.mytier-status.st-expired { color: #fca5a5; background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); }
+
+/* --- Thẻ tháng trước (liệt kê gọn) --- */
+.mytier-past-list { display: flex; flex-direction: column; gap: 6px; }
+.mytier-past-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 8px 12px; border: 1px solid rgba(232,181,106,.15); border-radius: 10px;
+  background: rgba(255,255,255,.02); font-size: .92rem;
+}
+.mytier-past-row code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-weight: 700; }
+.mytier-past-row .mytier-status { margin-left: auto; }
+
+/* --- Bảng quyền lợi + bảng xếp hạng --- */
+.mytier-benefit-current td { background: rgba(232,181,106,.1); }
+.mytier-board-me td { background: rgba(232,181,106,.13); font-weight: 600; }
+.mytier-you {
+  margin-left: 8px; padding: 1px 9px; border-radius: 999px;
+  background: var(--amber); color: #231408; font-size: .75rem; font-weight: 800;
+}
+.mytier-mypos { margin-top: 12px; color: var(--amber-light); font-weight: 600; }
