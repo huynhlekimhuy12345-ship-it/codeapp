@@ -69,7 +69,9 @@ h1, h2, h3, .logo, .hero-title {
   background: linear-gradient(180deg, rgba(12, 8, 5, 0.32) 0%, rgba(12, 8, 5, 0.12) 40%, rgba(12, 8, 5, 0.38) 100%);
 }
 
-.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+/* KHÔNG đặt z-index ở .container: nó sẽ tạo vùng xếp lớp riêng, khiến cửa sổ nổi (.modal-overlay)
+   bên trong không bao giờ phủ lên được thanh menu — cửa sổ phải phủ trùm cả menu và làm mờ phía sau. */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; }
 .page { min-height: 70vh; padding: 36px 0 48px; }
 .page-title { margin-bottom: 22px; color: var(--cream); font-size: 1.8rem; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
 
@@ -703,7 +705,7 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 .modal-overlay, .modal-backdrop {
   position: fixed; inset: 0; background: rgba(8, 5, 3, 0.7);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  display: flex; z-index: 200; padding: 20px;
+  display: flex; z-index: 250; padding: 20px;
   overflow-y: auto; /* lớp phủ cuộn được khi khung popup cao hơn màn hình */
 }
 .modal {
@@ -856,14 +858,27 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 
 /* --- Cửa sổ lịch sử mua hàng của khách --- */
 .purchase-modal { max-height: 86vh; }
-.purchase-summary { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 6px; font-size: .92rem; }
-.purchase-subtitle { font-weight: 700; margin: 16px 0 8px; color: var(--cream); }
-.purchase-row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: .92rem; }
+.purchase-customer { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 4px; line-height: 1.5; }
+.purchase-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 10px 0 4px; font-size: .92rem; line-height: 1.5; }
+.purchase-subtitle { font-weight: 700; font-size: 1rem; margin: 18px 0 10px; color: var(--cream); }
+.purchase-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 6px 0; font-size: .92rem; line-height: 1.5;
+}
+.purchase-row > span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .purchase-orders { display: flex; flex-direction: column; gap: 12px; }
-.purchase-order { border: 1px solid var(--panel-border); border-radius: 10px; padding: 10px 12px; }
-.purchase-order-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-.purchase-order-head strong { margin-left: auto; }
-.purchase-pay { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+.purchase-order { border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px 14px; }
+.purchase-order-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: .92rem; line-height: 1.5;
+  padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px dashed rgba(232,181,106,.22);
+}
+.purchase-order-head strong { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.purchase-order-head .status-chip {
+  height: 26px; display: inline-flex; align-items: center; padding: 0 11px;
+  font-size: .78rem; line-height: 1;
+}
+.purchase-pay { color: var(--muted); font-size: .88rem; line-height: 1.5; margin-top: 8px; }
 
 /* --- Nhãn trạng thái đơn có màu riêng + menu chuyển trạng thái (tab Đơn hàng) --- */
 .status-chip.st-pending { background: rgba(232,181,106,.16); color: var(--amber-light); border-color: rgba(232,181,106,.35); }

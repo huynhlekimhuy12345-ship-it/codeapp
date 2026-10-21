@@ -242,11 +242,15 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS warranties (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    months INTEGER NOT NULL DEFAULT 12,
+    months INTEGER NOT NULL DEFAULT 0,
     start_date TEXT,
     end_date TEXT,
-    status TEXT NOT NULL DEFAULT 'active'
-      CHECK(status IN ('active','expired','void'))
+    status TEXT NOT NULL DEFAULT 'requested'
+      CHECK(status IN ('requested','accepted','received','active','expired','void','rejected')),
+    reason TEXT NOT NULL DEFAULT '',
+    images TEXT NOT NULL DEFAULT '[]',
+    received_note TEXT NOT NULL DEFAULT '',
+    received_at TEXT
   );
 
   -- Sửa chữa / bảo dưỡng
@@ -418,6 +422,53 @@ addColumnIfMissing('announcements', 'image_pos_y', 'image_pos_y INTEGER NOT NULL
 addColumnIfMissing('orders', 'shipping_fee', 'shipping_fee INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'discount_total', 'discount_total INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'shipping_method_id', 'shipping_method_id INTEGER REFERENCES shipping_methods(id) ON DELETE SET NULL');
+
+// --- Hậu mãi vào chat: ảnh minh họa cho đổi/trả, lý do + ảnh cho bảo hành,
+//     và thẻ yêu cầu (kind/ref) trong tin nhắn chat ---
+addColumnIfMissing('returns', 'images', "images TEXT NOT NULL DEFAULT '[]'");
+addColumnIfMissing('warranties', 'reason', "reason TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('warranties', 'images', "images TEXT NOT NULL DEFAULT '[]'");
+addColumnIfMissing('chat_messages', 'kind', "kind TEXT NOT NULL DEFAULT 'text'");
+addColumnIfMissing('chat_messages', 'ref_type', 'ref_type TEXT');
+addColumnIfMissing('chat_messages', 'ref_id', 'ref_id INTEGER');
+
+// --- Nới trạng thái bảo hành cho DB cũ: bản cũ chỉ cho active/expired/void, luồng mới
+// có thêm requested/accepted/received/rejected -> dựng lại bảng, giữ nguyên dữ liệu ---
+(function widenWarrantyStatuses() {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'warranties'").get();
+  if (!row || !row.sql || row.sql.includes("'requested'")) return;
+  const oldCols = db.prepare('PRAGMA table_info(warranties)').all().map((c) => c.name);
+  const newCols = ['id', 'order_id', 'months', 'start_date', 'end_date', 'status', 'reason', 'images', 'received_note', 'received_at'];
+  const copyCols = newCols.filter((c) => oldCols.includes(c));
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    db.exec('BEGIN');
+    db.exec(`CREATE TABLE warranties_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      months INTEGER NOT NULL DEFAULT 0,
+      start_date TEXT,
+      end_date TEXT,
+      status TEXT NOT NULL DEFAULT 'requested'
+        CHECK(status IN ('requested','accepted','received','active','expired','void','rejected')),
+      reason TEXT NOT NULL DEFAULT '',
+      images TEXT NOT NULL DEFAULT '[]',
+      received_note TEXT NOT NULL DEFAULT '',
+      received_at TEXT
+    )`);
+    db.exec(`INSERT INTO warranties_new (${copyCols.join(', ')}) SELECT ${copyCols.join(', ')} FROM warranties`);
+    db.exec('DROP TABLE warranties');
+    db.exec('ALTER TABLE warranties_new RENAME TO warranties');
+    db.exec('COMMIT');
+  } catch (e) {
+    try { db.exec('ROLLBACK'); } catch { /* bỏ qua */ }
+    throw e;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
+})();
+addColumnIfMissing('warranties', 'received_note', "received_note TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('warranties', 'received_at', 'received_at TEXT');
 
 // --- Cột mới cho order_items ---
 addColumnIfMissing('order_items', 'variant_id', 'variant_id INTEGER REFERENCES product_variants(id) ON DELETE SET NULL');

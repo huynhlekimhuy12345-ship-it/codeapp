@@ -1,6 +1,31 @@
 // Tab Hậu mãi (admin): Đổi trả / Bảo hành / Sửa chữa
 // Thiết kế: section header có icon + thẻ card với viền accent theo trạng thái
 import { useEffect, useState } from 'react';
+import '../../components/AftersalesCard.css';
+
+// Hàng ảnh minh họa khách đính kèm — bấm vào để xem lớn
+function ImagesRow({ images }) {
+  const [zoom, setZoom] = useState(null);
+  if (!Array.isArray(images) || images.length === 0) return null;
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: '.85rem', color: 'var(--muted)', marginBottom: 6 }}>Ảnh minh họa khách gửi:</div>
+      <div className="as-card-imgs" style={{ marginTop: 0 }}>
+        {images.map((src, i) => (
+          <button key={i} type="button" className="as-thumb" style={{ width: 64, height: 64 }}
+            onClick={() => setZoom(src)} aria-label="Xem ảnh">
+            <img src={src} alt="" />
+          </button>
+        ))}
+      </div>
+      {zoom && (
+        <div className="as-lightbox" onClick={() => setZoom(null)}>
+          <img src={zoom} alt="" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function req(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -83,13 +108,17 @@ const REPAIR_STATUS = {
   returned: { label: 'Đã trả khách', bg: 'rgba(148,163,184,.14)', fg: '#a8b3c4', dot: '#94a3b8' },
 };
 const WARRANTY_STATUS = {
+  requested: { label: 'Chờ duyệt', bg: 'rgba(232,181,106,.14)', fg: '#e8b56a', dot: '#e8b56a' },
+  accepted: { label: 'Đã chấp nhận', bg: 'rgba(96,165,250,.12)', fg: '#7fb3f5', dot: '#60a5fa' },
+  received: { label: 'Đã nhận hàng', bg: 'rgba(45,212,191,.12)', fg: '#5eead4', dot: '#2dd4bf' },
   active: { label: 'Đang hiệu lực', bg: 'rgba(74,222,128,.12)', fg: '#6ee7a0', dot: '#4ade80' },
   expired: { label: 'Hết hạn', bg: 'rgba(148,163,184,.14)', fg: '#a8b3c4', dot: '#94a3b8' },
+  rejected: { label: 'Từ chối', bg: 'rgba(248,113,113,.12)', fg: '#f58a8a', dot: '#f87171' },
   void: { label: 'Đã hủy', bg: 'rgba(248,113,113,.12)', fg: '#f58a8a', dot: '#f87171' },
 };
 
 /* ---------- Section Đổi trả ---------- */
-function ReturnsSection() {
+function ReturnsSection({ highlight }) {
   const [list, setList] = useState([]);
   const [filter, setFilter] = useState('');
   const [refundFor, setRefundFor] = useState(null);
@@ -117,8 +146,10 @@ function ReturnsSection() {
       <div style={{ display: 'grid', gap: 12 }}>
         {list.map((r) => {
           const s = RETURN_STATUS[r.status] || RETURN_STATUS.requested;
+          const hl = highlight === `return-${r.id}`;
           return (
-            <div key={r.id} style={{ ...card, borderLeft: `3px solid ${s.dot}` }}>
+            <div key={r.id} id={`as-return-${r.id}`}
+              style={{ ...card, borderLeft: `3px solid ${s.dot}`, ...(hl ? { boxShadow: '0 0 0 2px var(--amber), 0 0 24px rgba(232,181,106,.35)' } : {}) }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -134,6 +165,7 @@ function ReturnsSection() {
                   <div style={{ marginTop: 8, fontSize: '.92rem' }}>
                     <span style={{ color: 'var(--muted)' }}>Lý do: </span>{r.reason || '—'}
                   </div>
+                  <ImagesRow images={r.images} />
                   {r.refund_amount > 0 && (
                     <div style={{ marginTop: 4, fontSize: '.92rem' }}>
                       <span style={{ color: 'var(--muted)' }}>Hoàn tiền: </span>
@@ -177,13 +209,17 @@ function ReturnsSection() {
 }
 
 /* ---------- Section Bảo hành ---------- */
-function WarrantiesSection() {
+function WarrantiesSection({ highlight }) {
   const [list, setList] = useState([]);
   const [filter, setFilter] = useState('');
   const [orderId, setOrderId] = useState('');
   const [months, setMonths] = useState('12');
   const [extendId, setExtendId] = useState(null);
   const [extendMonths, setExtendMonths] = useState('12');
+  const [recvId, setRecvId] = useState(null);
+  const [recvNote, setRecvNote] = useState('');
+  const [actId, setActId] = useState(null);
+  const [actMonths, setActMonths] = useState('12');
 
   // Ô nhập trên hàng công cụ: cao 40px, nền tối + viền vàng hổ phách theo tông web
   const toolInput = {
@@ -207,10 +243,12 @@ function WarrantiesSection() {
     } catch (e) { alert(e.message); }
   };
 
-  const act = async (id, action, m) => {
+  const act = async (id, body) => {
     try {
-      await req(`/api/warranties/${id}`, { method: 'PUT', body: { action, months: m } });
+      await req(`/api/warranties/${id}`, { method: 'PUT', body });
       setExtendId(null);
+      setRecvId(null);
+      setActId(null);
       load();
     } catch (e) { alert(e.message); }
   };
@@ -219,7 +257,7 @@ function WarrantiesSection() {
     <section style={{ marginBottom: 28 }}>
       <SectionHead icon="🛡️" title="Bảo hành" count={list.length}
         filter={filter} setFilter={setFilter}
-        options={[['active', 'Đang hiệu lực'], ['expired', 'Hết hạn'], ['void', 'Đã hủy']]}
+        options={[['requested', 'Chờ duyệt'], ['accepted', 'Đã chấp nhận'], ['received', 'Đã nhận hàng'], ['active', 'Đang hiệu lực'], ['rejected', 'Từ chối'], ['void', 'Đã hủy']]}
         right={(
           <span className="inline-form" style={{ display: 'inline-flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input value={orderId} onChange={(e) => setOrderId(e.target.value)}
@@ -234,9 +272,13 @@ function WarrantiesSection() {
         )} />
       <div style={{ display: 'grid', gap: 12 }}>
         {list.map((w) => {
-          const s = WARRANTY_STATUS[w.status] || WARRANTY_STATUS.active;
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const disp = w.status === 'active' && w.end_date && w.end_date < todayStr ? 'expired' : w.status;
+          const s = WARRANTY_STATUS[disp] || WARRANTY_STATUS.active;
+          const hl = highlight === `warranty-${w.id}`;
           return (
-            <div key={w.id} style={{ ...card, borderLeft: `3px solid ${s.dot}` }}>
+            <div key={w.id} id={`as-warranty-${w.id}`}
+              style={{ ...card, borderLeft: `3px solid ${s.dot}`, ...(hl ? { boxShadow: '0 0 0 2px var(--amber), 0 0 24px rgba(232,181,106,.35)' } : {}) }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -247,30 +289,90 @@ function WarrantiesSection() {
                     Đơn <strong style={{ color: '#ffe9c4' }}>#{w.order_id}</strong>
                     {w.customer_name && <span> · {w.customer_name}</span>}
                   </div>
-                  <div style={{ marginTop: 6, fontSize: '.92rem' }}>
-                    ⏳ <strong>{w.months} tháng</strong>
-                    <span style={{ color: 'var(--muted)' }}> · {w.start_date} → {w.end_date}</span>
-                  </div>
+                  {w.months > 0 && (
+                    <div style={{ marginTop: 6, fontSize: '.92rem' }}>
+                      ⏳ <strong>{w.months} tháng</strong>
+                      <span style={{ color: 'var(--muted)' }}> · {w.start_date} → {w.end_date}</span>
+                    </div>
+                  )}
+                  {w.reason && (
+                    <div style={{ marginTop: 8, fontSize: '.92rem' }}>
+                      <span style={{ color: 'var(--muted)' }}>Lý do: </span>{w.reason}
+                    </div>
+                  )}
+                  {w.received_at && (
+                    <div style={{ marginTop: 8, fontSize: '.92rem' }}>
+                      <span style={{ color: 'var(--muted)' }}>📥 Đã nhận lại hàng: </span>
+                      {w.received_note || '—'}
+                      <span style={{ color: 'var(--muted)' }}> · {String(w.received_at).slice(0, 16).replace('T', ' ')}</span>
+                    </div>
+                  )}
+                  <ImagesRow images={w.images} />
                 </div>
-                {w.status !== 'void' && (
-                  <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
-                    {extendId !== w.id && (
+                <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
+                  {w.status === 'requested' && (
+                    <>
+                      <button className="btn btn-small btn-primary" onClick={() => act(w.id, { action: 'accept' })}>✓ Chấp nhận</button>
+                      <button className="btn btn-small btn-outline" onClick={() => act(w.id, { action: 'reject' })}>Từ chối</button>
+                    </>
+                  )}
+                  {w.status === 'accepted' && recvId !== w.id && actId !== w.id && (
+                    <>
                       <button className="btn btn-small btn-outline"
-                        onClick={() => { setExtendId(w.id); setExtendMonths('12'); }}>Gia hạn</button>
-                    )}
-                    {extendId === w.id && (
-                      <span className="inline-form">
-                        <input type="number" min="1" max="120" value={extendMonths}
-                          onChange={(e) => setExtendMonths(e.target.value)}
-                          style={{ width: 80, padding: '8px 12px', borderRadius: 8 }} aria-label="Số tháng gia hạn" />
-                        <button className="btn btn-small btn-primary"
-                          onClick={() => act(w.id, 'extend', parseInt(extendMonths))}>Xác nhận</button>
-                        <button className="btn btn-small btn-outline" onClick={() => setExtendId(null)}>Hủy</button>
-                      </span>
-                    )}
-                    <button className="btn btn-small btn-danger" onClick={() => act(w.id, 'void')}>Hủy BH</button>
-                  </div>
-                )}
+                        onClick={() => { setRecvId(w.id); setRecvNote(''); }}>📥 Đã nhận lại hàng</button>
+                      <button className="btn btn-small btn-primary"
+                        onClick={() => { setActId(w.id); setActMonths('12'); }}>🛡️ Cấp bảo hành</button>
+                    </>
+                  )}
+                  {w.status === 'received' && actId !== w.id && (
+                    <button className="btn btn-small btn-primary"
+                      onClick={() => { setActId(w.id); setActMonths('12'); }}>🛡️ Cấp bảo hành</button>
+                  )}
+                  {recvId === w.id && (
+                    <span className="inline-form">
+                      <input type="text" value={recvNote}
+                        onChange={(e) => setRecvNote(e.target.value)}
+                        placeholder="Ghi chú tình trạng hàng nhận lại"
+                        style={{ width: 230, padding: '8px 12px', borderRadius: 8 }} aria-label="Ghi chú hàng nhận lại" />
+                      <button className="btn btn-small btn-primary"
+                        onClick={() => act(w.id, { action: 'received', note: recvNote })}>Xác nhận</button>
+                      <button className="btn btn-small btn-outline" onClick={() => setRecvId(null)}>Hủy</button>
+                    </span>
+                  )}
+                  {actId === w.id && (
+                    <span className="inline-form">
+                      <input type="number" min="1" max="120" value={actMonths}
+                        onChange={(e) => setActMonths(e.target.value)}
+                        placeholder="Số tháng"
+                        style={{ width: 90, padding: '8px 12px', borderRadius: 8 }} aria-label="Số tháng bảo hành" />
+                      <button className="btn btn-small btn-primary"
+                        onClick={() => act(w.id, { action: 'activate', months: parseInt(actMonths) })}>Cấp & thông báo khách</button>
+                      <button className="btn btn-small btn-outline" onClick={() => setActId(null)}>Hủy</button>
+                    </span>
+                  )}
+                  {(disp === 'active' || disp === 'expired') && (
+                    <>
+                      {extendId !== w.id && (
+                        <button className="btn btn-small btn-outline"
+                          onClick={() => { setExtendId(w.id); setExtendMonths('12'); }}>Gia hạn</button>
+                      )}
+                      {extendId === w.id && (
+                        <span className="inline-form">
+                          <input type="number" min="1" max="120" value={extendMonths}
+                            onChange={(e) => setExtendMonths(e.target.value)}
+                            style={{ width: 80, padding: '8px 12px', borderRadius: 8 }} aria-label="Số tháng gia hạn" />
+                          <button className="btn btn-small btn-primary"
+                            onClick={() => act(w.id, { action: 'extend', months: parseInt(extendMonths) })}>Xác nhận</button>
+                          <button className="btn btn-small btn-outline" onClick={() => setExtendId(null)}>Hủy</button>
+                        </span>
+                      )}
+                      <button className="btn btn-small btn-danger" onClick={() => act(w.id, { action: 'void' })}>Hủy BH</button>
+                    </>
+                  )}
+                  {(w.status === 'accepted' || w.status === 'received') && recvId !== w.id && actId !== w.id && (
+                    <button className="btn btn-small btn-danger" onClick={() => act(w.id, { action: 'void' })}>Hủy BH</button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -364,10 +466,36 @@ function RepairsSection() {
 }
 
 export default function AftersalesTab() {
+  // Đơn đích khi nhân viên bấm "Mở đơn hậu mãi" từ thẻ trong chat: cuộn tới + viền sáng
+  const [highlight, setHighlight] = useState('');
+  useEffect(() => {
+    let target = null;
+    try {
+      target = JSON.parse(sessionStorage.getItem('bi99_open_aftersales') || 'null');
+      sessionStorage.removeItem('bi99_open_aftersales');
+    } catch (e) { /* bỏ qua */ }
+    if (!target || !target.refId) return undefined;
+    const key = `${target.refType}-${target.refId}`;
+    setHighlight(key);
+    let tries = 0;
+    const iv = setInterval(() => {
+      const el = document.getElementById(`as-${key}`);
+      tries += 1;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        clearInterval(iv);
+      } else if (tries > 12) {
+        clearInterval(iv);
+      }
+    }, 250);
+    const to = setTimeout(() => setHighlight(''), 6000);
+    return () => { clearInterval(iv); clearTimeout(to); };
+  }, []);
+
   return (
     <div>
-      <ReturnsSection />
-      <WarrantiesSection />
+      <ReturnsSection highlight={highlight} />
+      <WarrantiesSection highlight={highlight} />
       <RepairsSection />
     </div>
   );

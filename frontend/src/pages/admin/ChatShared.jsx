@@ -1,6 +1,25 @@
 // Khung hiển thị tin nhắn dùng chung cho 2 tab chat trong quản trị.
 import { useEffect, useRef, useState } from 'react';
 import { detectLang, translateToVietnamese } from '../../i18n/autoTranslate';
+import AftersalesCard from '../../components/AftersalesCard';
+
+// Nhãn tiếng Việt cho thẻ hậu mãi (trang quản trị giữ tiếng Việt)
+export const AS_LABELS = {
+  return: 'Yêu cầu trả hàng',
+  exchange: 'Yêu cầu đổi hàng',
+  warranty: 'Yêu cầu bảo hành',
+  order: 'Đơn #{id}',
+  reason: 'Lý do',
+  months: '{count} tháng',
+  open: 'Mở trang Bảo hành',
+  viewImage: 'Xem ảnh',
+  receivedNote: 'Đã nhận lại hàng',
+  statuses: {
+    requested: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối', completed: 'Hoàn thành',
+    accepted: 'Đã chấp nhận', received: 'Đã nhận hàng',
+    active: 'Đang hiệu lực', expired: 'Hết hạn', void: 'Đã hủy',
+  },
+};
 
 // Tin cần dịch: không phải tiếng Việt (bỏ qua câu tiếng Anh quá ngắn kiểu "hi", "ok")
 function needsTranslation(text) {
@@ -50,7 +69,7 @@ export function fmtTime(ts) {
     : d.toLocaleDateString('vi-VN');
 }
 
-export function MessageList({ messages, meId }) {
+export function MessageList({ messages, meId, onOpenRequest }) {
   const ref = useRef(null);
   useEffect(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
@@ -65,8 +84,14 @@ export function MessageList({ messages, meId }) {
               {m.sender_role === 'admin' ? 'Admin ' : m.sender_role === 'sale' ? 'Sale ' : ''}{m.sender_name || '—'}
             </div>
           )}
-          <div className="chat-bubble">{m.content}</div>
-          {m.sender_id !== meId && needsTranslation(m.content) && <TranslatedLine text={m.content} />}
+          {m.kind === 'aftersales' && m.aftersales ? (
+            <AftersalesCard data={m.aftersales} labels={AS_LABELS} onOpen={onOpenRequest} />
+          ) : (
+            <>
+              <div className="chat-bubble">{m.content}</div>
+              {m.sender_id !== meId && needsTranslation(m.content) && <TranslatedLine text={m.content} />}
+            </>
+          )}
           <div className="chat-time">{fmtTime(m.created_at)}</div>
         </div>
       ))}

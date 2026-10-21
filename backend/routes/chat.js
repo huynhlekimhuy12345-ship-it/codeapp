@@ -6,6 +6,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
+const { parseImages } = require('../lib/images');
 
 const router = express.Router();
 const STAFF = ['admin', 'sale'];
@@ -59,11 +60,54 @@ function convShape(c, meId) {
 }
 
 function messagesOf(convId) {
-  return db.prepare(
-    `SELECT m.id, m.sender_id, m.content, m.created_at, u.name AS sender_name, u.role AS sender_role
+  const rows = db.prepare(
+    `SELECT m.id, m.sender_id, m.content, m.kind, m.ref_type, m.ref_id, m.created_at,
+            u.name AS sender_name, u.role AS sender_role
      FROM chat_messages m LEFT JOIN users u ON u.id = m.sender_id
      WHERE m.conversation_id = ? ORDER BY m.id ASC`
   ).all(convId);
+  return enrichAftersales(rows);
+}
+
+// Tin nhắn thẻ hậu mãi (kind='aftersales'): gắn thông tin TRỰC TIẾP từ đơn gốc
+// (lý do, ảnh, trạng thái mới nhất) để thẻ luôn đúng hiện trạng, không lưu bản sao tĩnh.
+function enrichAftersales(messages) {
+  const retIds = [...new Set(messages.filter((m) => m.kind === 'aftersales' && m.ref_type === 'return' && m.ref_id).map((m) => m.ref_id))];
+  const warIds = [...new Set(messages.filter((m) => m.kind === 'aftersales' && m.ref_type === 'warranty' && m.ref_id).map((m) => m.ref_id))];
+  const rets = {};
+  const wars = {};
+  if (retIds.length) {
+    db.prepare(`SELECT * FROM returns WHERE id IN (${retIds.map(() => '?').join(',')})`)
+      .all(...retIds).forEach((r) => { rets[r.id] = r; });
+  }
+  if (warIds.length) {
+    db.prepare(`SELECT * FROM warranties WHERE id IN (${warIds.map(() => '?').join(',')})`)
+      .all(...warIds).forEach((w) => { wars[w.id] = w; });
+  }
+  const todayStr = new Date().toISOString().slice(0, 10);
+  for (const m of messages) {
+    if (m.kind !== 'aftersales') continue;
+    if (m.ref_type === 'return' && rets[m.ref_id]) {
+      const r = rets[m.ref_id];
+      m.aftersales = {
+        ref_type: 'return', id: r.id, order_id: r.order_id, type: r.type,
+        reason: r.reason, images: parseImages(r.images), status: r.status,
+      };
+    } else if (m.ref_type === 'warranty' && wars[m.ref_id]) {
+      const w = wars[m.ref_id];
+      m.aftersales = {
+        ref_type: 'warranty', id: w.id, order_id: w.order_id, months: w.months,
+        reason: w.reason || '', images: parseImages(w.images),
+        status: w.status === 'active'
+          ? (w.end_date && w.end_date < todayStr ? 'expired' : 'active')
+          : w.status,
+        end_date: w.end_date,
+        received_note: w.received_note || '',
+        received_at: w.received_at || null,
+      };
+    }
+  }
+  return messages;
 }
 
 function markRead(convId, userId) {

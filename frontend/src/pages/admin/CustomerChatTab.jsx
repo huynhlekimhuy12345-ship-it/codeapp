@@ -58,6 +58,14 @@ export default function CustomerChatTab() {
     catch (e) { alert(e.message); }
   };
 
+  // Bấm "Mở đơn hậu mãi" trên thẻ trong chat -> ghi nhớ đơn đích rồi báo Admin chuyển tab
+  const openRequest = (data) => {
+    try {
+      sessionStorage.setItem('bi99_open_aftersales', JSON.stringify({ refType: data.ref_type, refId: data.id }));
+    } catch (e) { /* bỏ qua */ }
+    window.dispatchEvent(new CustomEvent('bi99:goto-aftersales'));
+  };
+
   const iAmIn = sel ? sel.staff_participants.some((p) => p.id === user.id) : false;
   const canSend = sel && sel.status === 'active' && iAmIn;
 
@@ -110,7 +118,7 @@ export default function CustomerChatTab() {
                   <button className="btn btn-small btn-danger-outline" onClick={() => setClosing(true)}>Kết thúc cuộc trò chuyện</button>
                 )}
               </div>
-              <MessageList messages={messages} meId={user.id} />
+              <MessageList messages={messages} meId={user.id} onOpenRequest={openRequest} />
               {canSend ? (
                 <Composer onSend={send} />
               ) : (

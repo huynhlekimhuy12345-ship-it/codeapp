@@ -4,6 +4,47 @@ import { Link } from 'react-router-dom';
 import { api, fmtVND, fmtDate } from '../api';
 import { useLang } from '../i18n/LanguageContext';
 import { useProductName } from '../i18n/TranslatedProduct';
+import { fileToCompressedDataUrl } from '../utils/image';
+
+// Ô chọn ảnh minh họa cho yêu cầu hậu mãi: bắt buộc 1–3 ảnh chụp tình trạng sản phẩm,
+// ảnh được nén nhỏ ngay trên trình duyệt trước khi gửi kèm đơn.
+function ImagePicker({ images, setImages, t, onError }) {
+  const pick = async (e) => {
+    const files = [...(e.target.files || [])];
+    e.target.value = '';
+    if (!files.length) return;
+    const room = 3 - images.length;
+    if (room <= 0) { onError(t('myOrders.imagesMax')); return; }
+    const out = [...images];
+    for (const f of files.slice(0, room)) {
+      try { out.push(await fileToCompressedDataUrl(f)); }
+      catch { onError(t('myOrders.imageBad')); }
+    }
+    setImages(out);
+  };
+  return (
+    <div className="field">
+      <label>{t('myOrders.imagesLabel')}</label>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {images.map((src, i) => (
+          <span key={i} style={{ position: 'relative', width: 64, height: 64, display: 'inline-block' }}>
+            <img src={src} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--panel-border)' }} />
+            <button type="button" aria-label="✕"
+              onClick={() => setImages(images.filter((_, j) => j !== i))}
+              style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: '50%', border: 'none', background: '#b3261e', color: '#fff', cursor: 'pointer', lineHeight: 1, fontSize: '.72rem', padding: 0 }}>✕</button>
+          </span>
+        ))}
+        {images.length < 3 && (
+          <label style={{ width: 64, height: 64, borderRadius: 8, border: '1.5px dashed rgba(232,181,106,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--amber-light)', margin: 0 }}>
+            +
+            <input type="file" accept="image/*" multiple hidden onChange={pick} />
+          </label>
+        )}
+      </div>
+      <p style={{ color: 'var(--muted)', fontSize: '.85rem', marginTop: 6 }}>{t('myOrders.imagesHint')}</p>
+    </div>
+  );
+}
 
 // Nhãn phương thức thanh toán (khớp backend routes/orders.js) — qua i18n
 
@@ -97,10 +138,16 @@ export default function MyOrders() {
   // Hủy đơn: đơn đang chọn + lý do nhập trong dialog
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
-  // Yêu cầu đổi/trả: đơn đang chọn + hình thức (đổi/trả) + lý do
+  // Yêu cầu đổi/trả: đơn đang chọn + hình thức (đổi/trả) + lý do + ảnh minh họa
   const [returnTarget, setReturnTarget] = useState(null);
   const [returnType, setReturnType] = useState('return');
   const [returnReason, setReturnReason] = useState('');
+  const [returnImages, setReturnImages] = useState([]);
+  // Yêu cầu bảo hành: đơn đang chọn + lý do + ảnh minh họa
+  // (thời hạn bảo hành do shop quyết định khi duyệt, khách không chọn)
+  const [warrantyTarget, setWarrantyTarget] = useState(null);
+  const [warrantyReason, setWarrantyReason] = useState('');
+  const [warrantyImages, setWarrantyImages] = useState([]);
   // Toast thông báo trong trang
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -136,28 +183,37 @@ export default function MyOrders() {
   };
 
   // Tạo yêu cầu đổi/trả cho đơn đã giao → POST /api/returns
+  // Bắt buộc lý do + ít nhất 1 ảnh minh họa; tạo xong đơn tự vào chat tư vấn với shop.
   const doRequestReturn = async () => {
     if (!returnReason.trim()) { showToast(t('myOrders.needReturnReason'), true); return; }
+    if (returnImages.length === 0) { showToast(t('myOrders.needImages'), true); return; }
     try {
       await authFetch('/api/returns', {
         method: 'POST',
-        body: { order_id: returnTarget.id, type: returnType, reason: returnReason.trim() },
+        body: { order_id: returnTarget.id, type: returnType, reason: returnReason.trim(), images: returnImages },
       }, t);
       showToast(t('myOrders.returnSent', { type: returnType === 'exchange' ? t('myOrders.exchange') : t('myOrders.return'), id: returnTarget.id }));
       setReturnTarget(null);
       setReturnType('return');
       setReturnReason('');
+      setReturnImages([]);
     } catch (e) { showToast(e.message, true); }
   };
 
-  // Tạo bảo hành 12 tháng cho đơn đã giao → POST /api/warranties
-  const doRequestWarranty = async (id) => {
+  // Tạo yêu cầu bảo hành cho đơn đã giao → POST /api/warranties
+  // Bắt buộc lý do + ít nhất 1 ảnh minh họa; tạo xong đơn tự vào chat tư vấn với shop.
+  const doRequestWarranty = async () => {
+    if (!warrantyReason.trim()) { showToast(t('myOrders.needWarrantyReason'), true); return; }
+    if (warrantyImages.length === 0) { showToast(t('myOrders.needImages'), true); return; }
     try {
       await authFetch('/api/warranties', {
         method: 'POST',
-        body: { order_id: id, months: 12 },
+        body: { order_id: warrantyTarget.id, reason: warrantyReason.trim(), images: warrantyImages },
       }, t);
-      showToast(t('myOrders.warrantyCreated', { id }));
+      showToast(t('myOrders.warrantyCreated', { id: warrantyTarget.id }));
+      setWarrantyTarget(null);
+      setWarrantyReason('');
+      setWarrantyImages([]);
     } catch (e) { showToast(e.message, true); }
   };
 
@@ -196,10 +252,11 @@ export default function MyOrders() {
             {o.status === 'delivered' && (
               <>
                 <button className="btn btn-small btn-outline"
-                  onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); }}>
+                  onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); setReturnImages([]); }}>
                   {t('myOrders.requestReturn')}
                 </button>
-                <button className="btn btn-small btn-outline" onClick={() => doRequestWarranty(o.id)}>
+                <button className="btn btn-small btn-outline"
+                  onClick={() => { setWarrantyTarget(o); setWarrantyReason(''); setWarrantyImages([]); }}>
                   {t('myOrders.requestWarranty')}
                 </button>
               </>
@@ -258,9 +315,38 @@ export default function MyOrders() {
                 rows={3}
               />
             </div>
+            <ImagePicker images={returnImages} setImages={setReturnImages} t={t}
+              onError={(m) => showToast(m, true)} />
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setReturnTarget(null)}>{t('myOrders.close')}</button>
               <button className="btn btn-primary" onClick={doRequestReturn}>{t('myOrders.sendRequest')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog yêu cầu bảo hành: nhập lý do + ảnh minh họa (thời hạn do shop quyết khi duyệt) */}
+      {warrantyTarget && (
+        <div className="modal-backdrop" onClick={() => setWarrantyTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('myOrders.warrantyTitle', { id: warrantyTarget.id })}</h3>
+            <p style={{ color: 'var(--muted)', fontSize: '.95rem' }}>
+              {t('myOrders.warrantyDesc')}
+            </p>
+            <div className="field">
+              <label>{t('myOrders.reason')}</label>
+              <textarea
+                value={warrantyReason}
+                onChange={(e) => setWarrantyReason(e.target.value)}
+                placeholder={t('myOrders.warrantyPlaceholder')}
+                rows={3}
+              />
+            </div>
+            <ImagePicker images={warrantyImages} setImages={setWarrantyImages} t={t}
+              onError={(m) => showToast(m, true)} />
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setWarrantyTarget(null)}>{t('myOrders.close')}</button>
+              <button className="btn btn-primary" onClick={doRequestWarranty}>{t('myOrders.sendRequest')}</button>
             </div>
           </div>
         </div>

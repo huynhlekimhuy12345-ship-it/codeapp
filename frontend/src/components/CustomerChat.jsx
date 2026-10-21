@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
+import AftersalesCard from './AftersalesCard';
 import './CustomerChat.css';
 
 const staffLabel = (p) => `${p.role === 'admin' ? 'Admin' : 'Sale'} ${p.name}`;
@@ -67,6 +68,22 @@ export default function CustomerChat() {
   }, [open, conv?.messages?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isCustomer) return null;
+
+  // Nhãn cho thẻ hậu mãi trong chat (theo ngôn ngữ đang chọn)
+  const asLabels = {
+    return: t('chat.cardReturn'),
+    exchange: t('chat.cardExchange'),
+    warranty: t('chat.cardWarranty'),
+    order: t('chat.cardOrder'),
+    reason: t('chat.cardReason'),
+    months: t('chat.cardMonths'),
+    viewImage: t('chat.viewImage'),
+    receivedNote: t('chat.cardReceivedNote'),
+    statuses: Object.fromEntries(
+      ['requested', 'approved', 'rejected', 'completed', 'accepted', 'received', 'active', 'expired', 'void']
+        .map((s) => [s, t(`chat.cardStatus_${s}`)])
+    ),
+  };
 
   const status = conv === undefined ? 'loading' : conv === null ? 'none' : conv.status;
   const staff = conv?.staff_participants || [];
@@ -149,7 +166,11 @@ export default function CustomerChat() {
                 {(conv.messages || []).map((m) => (
                   <div key={m.id} className={`cchat-msg ${m.sender_id === user.id ? 'mine' : 'theirs'}`}>
                     {m.sender_id !== user.id && <div className="cchat-sender">{m.sender_name}</div>}
-                    <div className="cchat-bubble">{m.content}</div>
+                    {m.kind === 'aftersales' && m.aftersales ? (
+                      <AftersalesCard data={m.aftersales} labels={asLabels} />
+                    ) : (
+                      <div className="cchat-bubble">{m.content}</div>
+                    )}
                   </div>
                 ))}
                 {status === 'waiting' && <p className="cchat-note cchat-wait-note">⏳ {t('chat.waitingHint')}</p>}

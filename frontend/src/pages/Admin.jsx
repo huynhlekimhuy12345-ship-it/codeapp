@@ -804,7 +804,7 @@ function UsersTab() {
               <p style={{ color: 'var(--muted)' }}>Đang tải…</p>
             ) : detailData ? (
               <>
-                <p style={{ marginBottom: 4 }}>
+                <p className="purchase-customer">
                   <strong>{detailData.customer.name}</strong> • {detailData.customer.email}
                   {detailData.customer.phone ? ` • ${detailData.customer.phone}` : ''}
                   {detailData.tier && <> • <TierBadge tier={detailData.tier} /></>}
@@ -914,7 +914,7 @@ const NAV = [
   { key: 'inventory', icon: '🏭', label: 'Kho & NCC' },
   { key: 'payments', icon: '💳', label: 'Thanh toán' },
   { key: 'shipping', icon: '🚚', label: 'Vận chuyển' },
-  { key: 'aftersales', icon: '🛠️', label: 'Hậu mãi' },
+  { key: 'aftersales', icon: '🛠️', label: 'Bảo hành' },
   { key: 'vouchers', icon: '🎟️', label: 'Voucher' },
   { key: 'promos', icon: '🎉', label: 'Sự kiện' },
   { key: 'news', icon: '📰', label: 'Tin tức', badge: 'MỚI' },
@@ -1205,6 +1205,13 @@ export default function Admin() {
   }, [tab]);
   // Đổi tab quản trị → về đầu trang (đổi tab không đổi địa chỉ nên App không tự cuộn)
   useEffect(() => { window.scrollTo(0, 0); }, [tab]);
+  // Từ tab Chat bấm "Mở đơn hậu mãi" trên thẻ yêu cầu → chuyển sang tab Hậu mãi
+  // (AftersalesTab tự đọc đơn đích trong sessionStorage để cuộn tới + làm nổi bật)
+  useEffect(() => {
+    const fn = () => setTab('aftersales');
+    window.addEventListener('bi99:goto-aftersales', fn);
+    return () => window.removeEventListener('bi99:goto-aftersales', fn);
+  }, []);
   // Số tin nhắn liên hệ chưa đọc → hiện ô đỏ ở mục Tin nhắn (nạp lại mỗi lần đổi tab)
   useEffect(() => {
     if (tab === 'messages') return; // tab Tin nhắn tự báo số qua onUnreadChange

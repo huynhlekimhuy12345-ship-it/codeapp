@@ -2,8 +2,13 @@
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
+const { validateImages, parseImages } = require('../lib/images');
+const { postAftersalesCard } = require('../lib/chatCard');
 
 const router = express.Router();
+
+// Trả về bản sao có images đã parse từ JSON sang mảng
+const withImages = (row) => (row ? { ...row, images: parseImages(row.images) } : row);
 
 // Trạng thái còn "đang xử lý" — yêu cầu mới cho đơn đã có yêu cầu này sẽ bị 409
 const OPEN_STATUSES = ['requested', 'approved'];
@@ -20,20 +25,25 @@ const ACTION_FLOW = {
 function getOrderForUser(orderId, user) {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
   if (!order) return { error: 404, message: 'Không tìm thấy đơn hàng' };
-  if (user.role !== 'admin' && order.user_id !== user.id)
+  // Nhân viên (admin/sale) được xử lý mọi đơn; khách chỉ đơn của mình
+  if (!['admin', 'sale'].includes(user.role) && order.user_id !== user.id)
     return { error: 403, message: 'Bạn không có quyền với đơn hàng này' };
   return { order };
 }
 
 // POST /api/returns — khách tạo yêu cầu đổi/trả (chỉ cho đơn ĐÃ GIAO của mình)
+// Bắt buộc: lý do + ít nhất 1 ảnh minh họa. Tạo xong, đơn được đăng thành thẻ
+// vào cuộc trò chuyện chat của khách với shop (xem lib/chatCard.js).
 router.post('/', auth, (req, res) => {
-  const { order_id, type, reason } = req.body || {};
+  const { order_id, type, reason, images } = req.body || {};
   if (!order_id)
     return res.status(400).json({ error: 'Thiếu order_id' });
   if (!['return', 'exchange'].includes(type))
     return res.status(400).json({ error: 'type phải là "return" (trả) hoặc "exchange" (đổi)' });
   if (!(reason || '').trim())
     return res.status(400).json({ error: 'Vui lòng ghi rõ lý do đổi/trả' });
+  const img = validateImages(images);
+  if (img.error) return res.status(400).json({ error: img.error });
 
   const { order, error, message } = getOrderForUser(order_id, req.user);
   if (error) return res.status(error).json({ error: message });
@@ -52,10 +62,22 @@ router.post('/', auth, (req, res) => {
     return res.status(409).json({ error: 'Đơn này đã có yêu cầu đổi/trả đang được xử lý' });
 
   const info = db
-    .prepare('INSERT INTO returns (order_id, type, reason) VALUES (?, ?, ?)')
-    .run(order.id, type, reason.trim());
+    .prepare('INSERT INTO returns (order_id, type, reason, images) VALUES (?, ?, ?, ?)')
+    .run(order.id, type, reason.trim(), img.value);
   const ret = db.prepare('SELECT * FROM returns WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json({ return: ret });
+
+  // Đăng thẻ yêu cầu vào chat của khách (nối tiếp cuộc đang có, hoặc tạo cuộc chờ mới).
+  // Đơn khách vãng lai (không có tài khoản) thì không có chat — bỏ qua.
+  if (order.user_id) {
+    const label = type === 'exchange' ? '🔄 Yêu cầu đổi hàng' : '↩️ Yêu cầu trả hàng';
+    postAftersalesCard(order.user_id, {
+      refType: 'return',
+      refId: ret.id,
+      content: `${label} — Đơn #${order.id}: ${reason.trim().slice(0, 200)}`,
+    });
+  }
+
+  res.status(201).json({ return: withImages(ret) });
 });
 
 // GET /api/returns — khách xem yêu cầu của mình, admin xem tất cả (?status= để lọc)
@@ -63,7 +85,7 @@ router.get('/', auth, (req, res) => {
   const { status } = req.query;
   const conds = [];
   const params = [];
-  if (req.user.role !== 'admin') { conds.push('o.user_id = ?'); params.push(req.user.id); }
+  if (req.user.role === 'customer') { conds.push('o.user_id = ?'); params.push(req.user.id); }
   if (status) { conds.push('r.status = ?'); params.push(status); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const list = db
@@ -73,7 +95,7 @@ router.get('/', auth, (req, res) => {
        ${where} ORDER BY r.id DESC`
     )
     .all(...params);
-  res.json({ returns: list });
+  res.json({ returns: list.map(withImages) });
 });
 
 // GET /api/returns/:id — chủ đơn hoặc admin
@@ -82,7 +104,7 @@ router.get('/:id', auth, (req, res) => {
   if (!ret) return res.status(404).json({ error: 'Không tìm thấy yêu cầu' });
   const { error, message } = getOrderForUser(ret.order_id, req.user);
   if (error) return res.status(error).json({ error: message });
-  res.json({ return: ret });
+  res.json({ return: withImages(ret) });
 });
 
 // PUT /api/returns/:id — admin duyệt / từ chối / hoàn thành yêu cầu

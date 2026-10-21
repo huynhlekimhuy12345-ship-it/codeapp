@@ -19,7 +19,7 @@ app.use((req, res, next) => {
   res.set('X-Frame-Options', 'SAMEORIGIN');
   next();
 });
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '8mb' })); // đủ chỗ cho ảnh minh họa (base64) của yêu cầu hậu mãi
 
 // API routes
 app.use('/api/auth', require('./routes/auth'));
