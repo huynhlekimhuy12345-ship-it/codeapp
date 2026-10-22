@@ -63,24 +63,38 @@ function eventWithTypes(event, userId) {
   };
 }
 
-// Sinh danh sách loại thẻ ngẫu nhiên: loại đầu hiếm nhất (% cao nhất, hạn ngắn nhất),
-// càng về sau % càng thấp, hạn càng dài — độ hiếm giảm dần theo % và số ngày.
-// Số thẻ của từng loại CŨNG ngẫu nhiên (tối đa 10): thẻ càng hiếm càng ít thẻ.
+// Sinh danh sách loại thẻ ngẫu nhiên theo ĐỘ HIẾM:
+// mỗi loại rút ngẫu nhiên một cấp hiếm theo trọng số (Thường 45% · May mắn 30% ·
+// Hiếm 17% · Cực hiếm 8%) — cấp càng hiếm càng ít khả năng xuất hiện, và có lần
+// sinh sẽ KHÔNG có cấp đó luôn (đúng tính chất "có hôm không có thẻ đó").
+// % giảm, hạn dùng và số thẻ đều random TRONG cấp: hiếm = % cao, hạn ngắn, ít thẻ (tối đa 10).
+// Kết quả sắp xếp hiếm nhất lên đầu cho dễ nhìn.
+const RARITY_TIERS = [
+  { label: 'Cực hiếm', weight: 8, pctMin: 18, pctMax: MAX_PERCENT, dayMin: 1, dayMax: 2, qtyMin: 1, qtyMax: 3 },
+  { label: 'Hiếm', weight: 17, pctMin: 14, pctMax: 17, dayMin: 2, dayMax: 3, qtyMin: 2, qtyMax: 5 },
+  { label: 'May mắn', weight: 30, pctMin: 10, pctMax: 13, dayMin: 3, dayMax: 5, qtyMin: 3, qtyMax: 7 },
+  { label: 'Thường', weight: 45, pctMin: 5, pctMax: 9, dayMin: 5, dayMax: MAX_DAYS, qtyMin: 5, qtyMax: 10 },
+];
+const randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+function pickTier() {
+  const total = RARITY_TIERS.reduce((s, t) => s + t.weight, 0);
+  let roll = Math.random() * total;
+  for (const t of RARITY_TIERS) { roll -= t.weight; if (roll <= 0) return t; }
+  return RARITY_TIERS[RARITY_TIERS.length - 1];
+}
 function randomTypes(count) {
   const n = Math.max(1, Math.min(20, parseInt(count) || 10));
   const types = [];
   for (let i = 0; i < n; i++) {
-    const ratio = n === 1 ? 0 : i / (n - 1); // 0 = hiếm nhất, 1 = thường nhất
-    const percent = Math.max(5, Math.round(MAX_PERCENT - ratio * (MAX_PERCENT - 5)));
-    let days; let qty;
-    if (percent >= 18) { days = 1 + Math.floor(Math.random() * 2); qty = 1 + Math.floor(Math.random() * 3); }        // 1-2 ngày · 1-3 thẻ
-    else if (percent >= 14) { days = 2 + Math.floor(Math.random() * 2); qty = 2 + Math.floor(Math.random() * 4); }   // 2-3 ngày · 2-5 thẻ
-    else if (percent >= 10) { days = 3 + Math.floor(Math.random() * 3); qty = 3 + Math.floor(Math.random() * 5); }   // 3-5 ngày · 3-7 thẻ
-    else { days = 5 + Math.floor(Math.random() * 3); qty = 5 + Math.floor(Math.random() * 6); }                       // 5-7 ngày · 5-10 thẻ
-    const label = percent >= 18 ? 'Cực hiếm' : percent >= 14 ? 'Hiếm' : percent >= 10 ? 'May mắn' : 'Thường';
-    types.push({ label, percent, valid_days: Math.min(MAX_DAYS, days), quantity: qty });
+    const tier = pickTier();
+    types.push({
+      label: tier.label,
+      percent: randInt(tier.pctMin, tier.pctMax),
+      valid_days: randInt(tier.dayMin, tier.dayMax),
+      quantity: randInt(tier.qtyMin, tier.qtyMax),
+    });
   }
-  return types;
+  return types.sort((a, b) => b.percent - a.percent);
 }
 
 // GET /api/hunt-events/active — sự kiện đang mở/ sắp mở cho trang Khuyến mãi.
