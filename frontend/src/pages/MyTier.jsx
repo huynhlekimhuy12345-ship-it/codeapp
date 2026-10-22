@@ -160,7 +160,6 @@ export default function MyTier() {
             <span className="beast-card-info">
               <span className="beast-card-tier">{tierName(tr.key)}</span>
               <span className="beast-card-beast">{t(`tier.beast.${tr.key}`)}</span>
-              <span className="beast-card-threshold">{THRESHOLDS[tr.key] ? THRESHOLDS[tr.key](t) : ''}</span>
               {tr.key === tier.key
                 ? <span className="beast-card-you">{t('tier.statusCurrent')}</span>
                 : <span className="beast-card-you ghost" aria-hidden="true">·</span>}

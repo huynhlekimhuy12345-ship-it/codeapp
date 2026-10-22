@@ -34,11 +34,13 @@
   --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
   position: relative; display: flex; flex-direction: row;
   width: 100%; height: 150px; overflow: hidden;
-  border-radius: 14px; border: 1px solid rgba(255,255,255,.25);
+  border-radius: 14px; border: 2px solid var(--frame, rgba(255,255,255,.25));
   font-family: inherit; text-align: left; cursor: pointer; color: #2a1c10;
   transform: rotateX(var(--rx)) rotateY(var(--ry));
   transition: transform .25s ease, box-shadow .25s ease;
-  box-shadow: 0 10px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.45), 0 0 16px var(--frameglow, transparent),
+    inset 0 0 0 2px rgba(255,255,255,.45), inset 0 0 0 4px rgba(25,17,10,.22),
+    inset 0 1px 0 rgba(255,255,255,.5);
 }
 /* Vân kim loại xước mờ + ánh sáng hắt từ góc trên trái, cho bề mặt ra chất thẻ thật */
 .metal-card::before {
@@ -48,7 +50,8 @@
     repeating-linear-gradient(100deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px);
 }
 .metal-card:hover { box-shadow: 0 18px 34px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.6); }
-.metal-card.selected { box-shadow: 0 0 0 2.5px var(--amber), 0 18px 34px rgba(0,0,0,.55); }
+.metal-card.selected { box-shadow: 0 0 0 2.5px var(--amber), 0 0 22px rgba(232,181,106,.5), 0 18px 34px rgba(0,0,0,.55),
+    inset 0 0 0 2px rgba(255,255,255,.45), inset 0 0 0 4px rgba(25,17,10,.22); }
 .metal-shine {
   position: absolute; inset: 0; pointer-events: none; z-index: 2;
   background: radial-gradient(420px circle at var(--mx) var(--my), rgba(255,255,255,.38), transparent 45%);
@@ -56,6 +59,11 @@
 }
 .metal-card:hover .metal-shine { opacity: 1; }
 
+.metal-potential { --frame: #f3e9d7; --frameglow: rgba(243,233,215,.35); }
+.metal-bronze { --frame: #ffd894; --frameglow: rgba(255,216,148,.45); }
+.metal-silver { --frame: #ffffff; --frameglow: rgba(255,255,255,.50); }
+.metal-gold { --frame: #ffe066; --frameglow: rgba(255,224,102,.50); }
+.metal-diamond { --frame: #a5ecff; --frameglow: rgba(165,236,255,.55); }
 .metal-potential { background: linear-gradient(125deg, #7a7062, #3a342d 42%, #63584c 68%, #2b251f); color: #e8ded2; border-color: rgba(255,255,255,.16); }
 .metal-bronze { background: linear-gradient(125deg, #ffdca3, #eda254 28%, #a85f27 55%, #f4bc74 80%, #8a4d1e); }
 .metal-silver { background: linear-gradient(125deg, #ffffff, #d9e0ea 28%, #96a4b7 52%, #f2f6fb 78%, #aebacb); }
@@ -93,14 +101,14 @@
   filter: drop-shadow(0 3px 7px rgba(0,0,0,.30));
 }
 /* Rồng và hổ dáng cao hẹp: phóng vừa khít khung, đã kiểm không mất bộ phận */
-.beast-bronze img { transform: scale(1.10); }
-.beast-silver img { transform: scale(1.02) translateY(2%); }
+.beast-bronze img { transform: scale(1.03); }
+.beast-silver img { transform: scale(0.97) translateY(1.5%); }
 /* Kỳ Lân nét mảnh trên nền pastel: quầng tối đậm sau lưng cho nổi hình */
 .metal-diamond .metal-art { background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.66), transparent 74%); }
 
 .metal-info {
   position: relative; z-index: 3; flex: 1; min-width: 0;
-  display: flex; flex-direction: column; padding: 14px 18px 13px 6px;
+  display: flex; flex-direction: column; padding: 14px 18px 13px 24px;
 }
 .metal-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .metal-brand { font-weight: 800; letter-spacing: .14em; font-size: .92rem; opacity: .9; }
@@ -119,9 +127,20 @@
 .metal-beast {
   margin-top: 4px; font-size: 1.16rem; font-weight: 800; letter-spacing: .12em;
   text-transform: uppercase; line-height: 1.15;
-  color: #edf1f6; text-shadow: 0 1px 2px rgba(20,14,8,.45);
+  color: #aee6ff;
+  -webkit-text-stroke: 1px rgba(25,17,10,.9);
+  text-shadow:
+    1.5px 0 0 rgba(25,17,10,.9), -1.5px 0 0 rgba(25,17,10,.9),
+    0 1.5px 0 rgba(25,17,10,.9), 0 -1.5px 0 rgba(25,17,10,.9),
+    1px 1px 0 rgba(25,17,10,.9), -1px -1px 0 rgba(25,17,10,.9),
+    1px -1px 0 rgba(25,17,10,.9), -1px 1px 0 rgba(25,17,10,.9),
+    0 3px 7px rgba(15,10,5,.45);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.metal-bronze .metal-beast { color: #8fd4ff; }
+.metal-silver .metal-beast { color: #ffffff; }
+.metal-gold .metal-beast { color: #ff8a66; }
+.metal-diamond .metal-beast { color: #d9b8ff; }
 .metal-bottom { display: flex; margin-top: auto; }
 .metal-holder {
   font-size: .8rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
