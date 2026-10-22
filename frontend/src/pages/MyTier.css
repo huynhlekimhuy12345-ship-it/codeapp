@@ -105,7 +105,7 @@ a.tier-badge { text-decoration: none; }
   filter: drop-shadow(0 6px 16px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(255,255,255,.25));
 }
 /* Thanh Long và Bạch Hổ phóng to thêm cho lực, xịch xuống để không bị cắt đỉnh */
-.beast-bronze .beast-card-art { transform: scale(1.21) translateY(2.5%); }
+.beast-bronze .beast-card-art { transform: scale(1.21) translateY(5.5%); }
 .beast-silver .beast-card-art { transform: scale(1.17) translateY(2.5%); }
 .beast-card-brand {
   position: absolute; top: 10px; left: 12px; z-index: 2;
