@@ -23,18 +23,17 @@
 
 .guide-section-title { margin: 30px 0 14px; color: var(--cream); font-size: 1.3rem; }
 
-/* --- Sân khấu bậc thang 5 thẻ kim loại --- */
+/* --- Hàng thẻ NGANG: 2 thẻ một hàng, thánh thú trọn khung trái (chủ shop chốt 2026-10-22) --- */
 .metal-stage {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
-  align-items: end; perspective: 1200px;
-  padding: 8px 2px 4px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  perspective: 1200px; padding: 8px 2px 4px;
 }
-.metal-step { margin-bottom: calc(var(--step) * 16px); }
+.metal-step { margin-bottom: 0; }
 
 .metal-card {
   --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
-  position: relative; display: flex; flex-direction: column; justify-content: space-between;
-  width: 100%; aspect-ratio: 1.586; padding: 13px 14px; overflow: hidden;
+  position: relative; display: flex; flex-direction: row;
+  width: 100%; height: 150px; overflow: hidden;
   border-radius: 14px; border: 1px solid rgba(255,255,255,.25);
   font-family: inherit; text-align: left; cursor: pointer; color: #2a1c10;
   transform: rotateX(var(--rx)) rotateY(var(--ry));
@@ -83,21 +82,47 @@
   50% { background-position: -30% 0; }
 }
 
-.metal-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; position: relative; z-index: 3; }
+/* Khung thánh thú bên trái: hình nằm trọn, không cắt bộ phận nào */
+.metal-art {
+  position: relative; z-index: 1; width: 36%; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.34), transparent 74%);
+}
+.metal-art img {
+  max-width: 96%; max-height: 98%; object-fit: contain;
+  filter: drop-shadow(0 3px 7px rgba(0,0,0,.30));
+}
+/* Rồng và hổ dáng cao hẹp: phóng vừa khít khung, đã kiểm không mất bộ phận */
+.beast-bronze img { transform: scale(1.10); }
+.beast-silver img { transform: scale(1.02) translateY(2%); }
+/* Kỳ Lân nét mảnh trên nền pastel: quầng tối đậm sau lưng cho nổi hình */
+.metal-diamond .metal-art { background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.66), transparent 74%); }
+
+.metal-info {
+  position: relative; z-index: 3; flex: 1; min-width: 0;
+  display: flex; flex-direction: column; padding: 14px 18px 13px 6px;
+}
+.metal-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .metal-brand { font-weight: 800; letter-spacing: .14em; font-size: .92rem; opacity: .9; }
 .metal-status {
-  padding: 2px 9px; border-radius: 999px; font-size: .66rem; font-weight: 700;
+  padding: 2px 9px; border-radius: 999px; font-size: .7rem; font-weight: 700;
   background: rgba(20,12,6,.72); color: #f5e8d5; white-space: nowrap;
 }
 .metal-status.st-current { background: #231408; color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
 .metal-status.st-achieved { background: rgba(22,68,32,.8); color: #b7f4c7; }
-.metal-mid { display: flex; align-items: center; gap: 10px; position: relative; z-index: 3; }
+/* Tên hạng: màu sáng như thẻ Tiềm năng trên mọi thẻ */
 .metal-name {
-  font-size: 1.16rem; font-weight: 800; letter-spacing: .02em;
-  text-shadow: 0 1px 0 rgba(255,255,255,.45), 0 -1px 1px rgba(60,35,5,.35);
+  margin-top: 8px; font-size: 1.3rem; font-weight: 800; letter-spacing: .02em;
+  color: #f5eedd; text-shadow: 0 1px 3px rgba(25,18,10,.55);
 }
-.metal-potential .metal-name { text-shadow: 0 1px 2px rgba(0,0,0,.6); }
-.metal-bottom { display: flex; position: relative; z-index: 3; }
+/* Tên thánh thú: bạch kim lì một màu, không lấp lánh */
+.metal-beast {
+  margin-top: 4px; font-size: 1.16rem; font-weight: 800; letter-spacing: .12em;
+  text-transform: uppercase; line-height: 1.15;
+  color: #edf1f6; text-shadow: 0 1px 2px rgba(20,14,8,.45);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.metal-bottom { display: flex; margin-top: auto; }
 .metal-holder {
   font-size: .8rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(255,255,255,.4), 0 -1px 1px rgba(60,35,5,.3); opacity: .92;
@@ -140,6 +165,5 @@
 /* --- Điện thoại: thẻ xếp dọc, hết bậc thang --- */
 @media (max-width: 900px) {
   .metal-stage { grid-template-columns: 1fr; gap: 12px; }
-  .metal-step { margin-bottom: 0; }
-  .metal-card { max-width: 430px; }
+  .metal-card { max-width: 520px; height: 148px; }
 }

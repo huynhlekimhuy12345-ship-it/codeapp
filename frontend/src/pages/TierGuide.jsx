@@ -26,12 +26,19 @@ const THRESHOLDS = {
   gold: (t) => t('tier.thresholdGold', { amount: fmtVND(10000000) }),
   diamond: (t) => t('tier.thresholdDiamond', { amount: fmtVND(20000000) }),
 };
-const TIER_ICONS = { potential: '🌱', bronze: '🥉', silver: '🥈', gold: '🥇', diamond: '💎' };
 
-// Một tấm thẻ kim loại: nghiêng 3D theo trỏ chuột + vệt sáng chạy theo vị trí trỏ.
-// Mặt thẻ tối giản như thẻ thật (chủ shop chốt 2026-10-21): chỉ tên shop, tên hạng, tên thành viên —
-// mục tiêu và ưu đãi xem ở khung chi tiết bên dưới khi bấm vào thẻ.
-function MetalCard({ tierKey, name, memberName, status, statusLabel, selected, onSelect }) {
+// Một tấm thẻ kim loại NGANG (chủ shop chốt 2026-10-22): thánh thú nằm trọn khung trái,
+// bên phải là tên hạng màu sáng + tên thánh thú bạch kim lì + tên thành viên; bấm thẻ xem đặc quyền.
+// Rê chuột nghiêng 3D nhẹ + vệt sáng chạy theo vị trí trỏ.
+const BEAST_IMG = {
+  potential: '/images/beasts/potential.webp',
+  bronze: '/images/beasts/bronze.webp',
+  silver: '/images/beasts/silver.webp',
+  gold: '/images/beasts/gold.webp',
+  diamond: '/images/beasts/diamond.webp',
+};
+
+function MetalCard({ tierKey, name, beastName, memberName, status, statusLabel, selected, onSelect }) {
   const ref = useRef(null);
   const onMove = (e) => {
     const el = ref.current;
@@ -39,8 +46,8 @@ function MetalCard({ tierKey, name, memberName, status, statusLabel, selected, o
     const r = el.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width;
     const y = (e.clientY - r.top) / r.height;
-    el.style.setProperty('--rx', `${(0.5 - y) * 10}deg`);
-    el.style.setProperty('--ry', `${(x - 0.5) * 12}deg`);
+    el.style.setProperty('--rx', `${(0.5 - y) * 6}deg`);
+    el.style.setProperty('--ry', `${(x - 0.5) * 7}deg`);
     el.style.setProperty('--mx', `${x * 100}%`);
     el.style.setProperty('--my', `${y * 100}%`);
   };
@@ -61,15 +68,19 @@ function MetalCard({ tierKey, name, memberName, status, statusLabel, selected, o
       aria-pressed={selected}
     >
       <span className="metal-shine" aria-hidden />
-      <span className="metal-top">
-        <span className="metal-brand">BI99</span>
-        {status && <span className={`metal-status st-${status}`}>{statusLabel}</span>}
+      <span className={`metal-art beast-${tierKey}`} aria-hidden>
+        <img src={BEAST_IMG[tierKey]} alt="" />
       </span>
-      <span className="metal-mid">
-        <span className="metal-name">{TIER_ICONS[tierKey]} {name}</span>
-      </span>
-      <span className="metal-bottom">
-        <span className="metal-holder">{memberName}</span>
+      <span className="metal-info">
+        <span className="metal-top">
+          <span className="metal-brand">BI99</span>
+          {status && <span className={`metal-status st-${status}`}>{statusLabel}</span>}
+        </span>
+        <span className="metal-name">{name}</span>
+        <span className="metal-beast">{beastName}</span>
+        <span className="metal-bottom">
+          <span className="metal-holder">{memberName}</span>
+        </span>
       </span>
     </button>
   );
@@ -192,6 +203,7 @@ export default function TierGuide() {
               <MetalCard
                 tierKey={tr.key}
                 name={tierName(tr.key)}
+                beastName={t(`tier.beast.${tr.key}`)}
                 memberName={user?.name || t('tier.memberGuest')}
                 status={st}
                 statusLabel={st ? t(st === 'current' ? 'tier.statusCurrent' : st === 'achieved' ? 'tier.statusAchieved' : 'tier.statusLocked') : null}
