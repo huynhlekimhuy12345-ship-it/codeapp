@@ -71,61 +71,66 @@
 .mytier-past-row code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-weight: 700; }
 .mytier-past-row .mytier-status { margin-left: auto; }
 
-/* --- Thang 5 hạng: thẻ thánh thú bạch kim phủ toàn thẻ, nền kim loại theo hạng --- */
-.mytier-ladder { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; margin-bottom: 0; }
+/* --- Thang 5 hạng: thẻ thánh thú NGANG kiểu thẻ ngân hàng, nền kim loại theo hạng --- */
+.mytier-ladder { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; margin-bottom: 0; }
 a.beast-card { text-decoration: none; }
 a.tier-badge { text-decoration: none; }
 .beast-card {
-  position: relative; flex: 1 1 168px; height: 308px; border-radius: 18px; overflow: hidden;
-  border: 1px solid rgba(255,255,255,.4); color: #fff; display: block;
+  position: relative; display: flex; height: 196px; border-radius: 18px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,.4); color: #fff;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -18px 30px rgba(0,0,0,.18);
   transition: transform .15s ease, box-shadow .15s ease;
 }
-.beast-card:hover { transform: translateY(-3px); }
+.beast-card:hover { transform: translateY(-2px); }
 .beast-card::before {
   content: ''; position: absolute; inset: 0; z-index: 0;
-  background: radial-gradient(95% 60% at 50% 36%, rgba(18,14,9,.45), transparent 72%);
+  background: radial-gradient(60% 90% at 22% 50%, rgba(20,16,10,.42), transparent 70%);
 }
 .beast-card::after {
   content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
-  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.20) 46%, transparent 60%);
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.18) 46%, transparent 60%);
 }
-.beast-potential { background: linear-gradient(165deg,#7d6248,#453723); }
-.beast-bronze { background: linear-gradient(165deg,#eda15c,#9c4a1a); }
-.beast-silver { background: linear-gradient(165deg,#eef2f7,#aebdd0 55%,#64788f); }
-.beast-gold { background: linear-gradient(165deg,#f6cd62,#c07f13 60%,#96600c); }
-.beast-diamond { background: linear-gradient(165deg,#bfe6ff,#5f97d6 60%,#3f6db3); }
+.beast-potential { background: linear-gradient(120deg,#7d6248,#453723); }
+.beast-bronze { background: linear-gradient(120deg,#eda15c,#9c4a1a); }
+.beast-silver { background: linear-gradient(120deg,#eef2f7,#aebdd0 55%,#64788f); }
+.beast-gold { background: linear-gradient(120deg,#f6cd62,#c07f13 60%,#96600c); }
+.beast-diamond { background: linear-gradient(120deg,#bfe6ff,#5f97d6 60%,#3f6db3); }
 .beast-card.current {
-  border: 2px solid #fff; transform: translateY(-4px);
+  border: 2px solid #fff;
   box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 14px 38px -12px rgba(0,0,0,.7);
 }
+.beast-card-artwrap {
+  position: relative; z-index: 1; width: 44%; height: 100%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
 .beast-card-art {
-  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
-  object-fit: contain; padding: 16px 2px 86px; transform: scale(1.07);
+  max-height: 112%; max-width: 106%;
   filter: drop-shadow(0 6px 16px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(255,255,255,.25));
 }
-/* Thanh Long và Bạch Hổ phóng to thêm cho lực, xịch xuống để không bị cắt đỉnh */
-.beast-bronze .beast-card-art { transform: scale(1.21) translateY(5.5%); }
-.beast-silver .beast-card-art { transform: scale(1.17) translateY(2.5%); }
-.beast-card-brand {
-  position: absolute; top: 10px; left: 12px; z-index: 2;
-  font-size: .64rem; letter-spacing: .42em; color: rgba(255,255,255,.95);
-  text-shadow: 0 1px 4px rgba(0,0,0,.55);
-}
+/* Thanh Long và Bạch Hổ to thêm cho lực, xịch xuống để không bị cắt đỉnh */
+.beast-bronze .beast-card-art { transform: scale(1.14) translateY(3%); }
+.beast-silver .beast-card-art { transform: scale(1.11) translateY(2.5%); }
 .beast-card-info {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  padding: 26px 8px 13px;
-  background: linear-gradient(180deg, transparent, rgba(12,9,6,.52) 62%);
+  position: relative; z-index: 2; flex: 1; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 14px 22px 14px 2px;
 }
-.beast-card-tier { font-size: 1.02rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 2px 9px rgba(0,0,0,.65); }
-.beast-card-beast { margin-top: 3px; font-size: .72rem; letter-spacing: .32em; text-transform: uppercase; color: rgba(255,255,255,.92); text-shadow: 0 1px 6px rgba(0,0,0,.65); }
-.beast-card-threshold { margin-top: 6px; font-size: .78rem; line-height: 1.4; color: rgba(255,255,255,.92); text-shadow: 0 1px 5px rgba(0,0,0,.6); min-height: 2.2em; }
+.beast-card-brand { font-size: .64rem; letter-spacing: .42em; color: rgba(255,255,255,.9); text-shadow: 0 1px 4px rgba(0,0,0,.55); margin-bottom: 8px; }
+.beast-card-tier { font-size: 1.5rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+.beast-card-beast { margin-top: 5px; font-size: .78rem; letter-spacing: .36em; text-transform: uppercase; color: rgba(255,255,255,.92); text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.beast-card-threshold { margin-top: 12px; font-size: .92rem; color: rgba(255,255,255,.94); text-shadow: 0 1px 5px rgba(0,0,0,.55); }
+.beast-card-perk { margin-top: 3px; font-size: .92rem; color: rgba(255,255,255,.94); text-shadow: 0 1px 5px rgba(0,0,0,.55); }
 .beast-card-you {
-  margin-top: 6px; padding: 4px 13px; border-radius: 999px; background: #fff; color: #33302a;
-  font-size: .78rem; font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  align-self: flex-start; margin-top: 12px; padding: 5px 14px; border-radius: 999px;
+  background: #fff; color: #33302a; font-size: .8rem; font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,.35);
 }
-.beast-card-you.ghost { background: transparent; box-shadow: none; color: transparent; }
+@media (max-width: 560px) {
+  .beast-card { height: 168px; }
+  .beast-card-artwrap { width: 40%; }
+  .beast-card-tier { font-size: 1.15rem; }
+  .beast-card-info { padding: 10px 14px 10px 0; }
+  .beast-card-threshold, .beast-card-perk { font-size: .84rem; }
+}
 .mytier-perk-panel {
   background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius);
   padding: 18px 20px; box-shadow: var(--shadow);

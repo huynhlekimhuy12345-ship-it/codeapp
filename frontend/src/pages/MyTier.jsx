@@ -155,15 +155,16 @@ export default function MyTier() {
             to={`/phan-hang?tier=${tr.key}`}
             className={`beast-card beast-${tr.key}${tr.key === tier.key ? ' current' : ''}`}
           >
-            <img className="beast-card-art" src={BEAST_IMG[tr.key]} alt={t(`tier.beast.${tr.key}`)} loading="lazy" />
-            <span className="beast-card-brand">BI99</span>
+            <span className="beast-card-artwrap">
+              <img className="beast-card-art" src={BEAST_IMG[tr.key]} alt={t(`tier.beast.${tr.key}`)} loading="lazy" />
+            </span>
             <span className="beast-card-info">
+              <span className="beast-card-brand">BI99</span>
               <span className="beast-card-tier">{tierName(tr.key)}</span>
               <span className="beast-card-beast">{t(`tier.beast.${tr.key}`)}</span>
               <span className="beast-card-threshold">{THRESHOLDS[tr.key] ? THRESHOLDS[tr.key](t) : ''}</span>
-              {tr.key === tier.key
-                ? <span className="beast-card-you">{t('tier.statusCurrent')}</span>
-                : <span className="beast-card-you ghost" aria-hidden="true">·</span>}
+              <span className="beast-card-perk">{t('tier.cardsPerMonth', { count: tr.cards, percent: tr.percent })}</span>
+              {tr.key === tier.key && <span className="beast-card-you">{t('tier.statusCurrent')}</span>}
             </span>
           </Link>
         ))}
