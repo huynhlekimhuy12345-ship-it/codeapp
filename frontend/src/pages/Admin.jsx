@@ -3,6 +3,7 @@ import PageTitle from '../components/PageTitle';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, fmtDay, ORDER_STATUS, nextStatuses } from '../api';
 import { detectLang, translateToVietnamese } from '../i18n/autoTranslate';
+import { armStaffNotifications, staffNotify, setTitleAlert, clearTitleAlert } from '../utils/staffNotify';
 import InventoryTab from './admin/InventoryTab';
 import PaymentsTab from './admin/PaymentsTab';
 import ShippingTab from './admin/ShippingTab';
@@ -1189,12 +1190,29 @@ export default function Admin() {
     api.getPayments().then((d) => setPendingPays((d.payments || []).filter((p) => p.status === 'pending').length)).catch(() => {});
   };
   useEffect(() => {
+    armStaffNotifications();
     const loadSummary = () => api.chatStaffSummary().then(setChatSummary).catch(() => {});
     loadSummary();
     refreshBadges();
-    const iv = setInterval(() => { loadSummary(); refreshBadges(); }, 20000);
-    return () => clearInterval(iv);
+    // Tóm tắt chat nạp lại mỗi 10s để báo khách chờ kịp thời; các ô đỏ còn lại 20s
+    const ivSummary = setInterval(loadSummary, 10000);
+    const ivBadges = setInterval(refreshBadges, 20000);
+    return () => { clearInterval(ivSummary); clearInterval(ivBadges); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Có cuộc chờ MỚI (số cuộc chờ tăng) → bật thông báo desktop cho nhân viên;
+  // còn cuộc chờ nào là tiêu đề tab nhấp nháy trong lúc nhân viên đang ở tab khác.
+  // Lần nạp đầu tiên chỉ ghi mốc, không báo (tránh báo lại các cuộc chờ có từ trước).
+  const prevWaitingRef = useRef(null);
+  useEffect(() => {
+    const w = chatSummary.waiting;
+    const prev = prevWaitingRef.current;
+    prevWaitingRef.current = w;
+    if (prev !== null && w > prev) {
+      staffNotify('💬 Có khách đang chờ nhận chat', `Hiện có ${w} cuộc đang chờ. Mở mục "Chat khách hàng" để nhận cuộc trò chuyện.`, 'bi99-waiting');
+    }
+    if (w > 0) setTitleAlert('waiting', `(${w}) Khách đang chờ chat`);
+    else clearTitleAlert('waiting');
+  }, [chatSummary.waiting]);
   // Đổi tab: vào tab Đơn hàng thì đánh dấu đã xem (ô đỏ đơn mới về 0);
   // số thanh toán chờ duyệt luôn nạp lại để duyệt xong là giảm ngay khi qua tab khác
   useEffect(() => {

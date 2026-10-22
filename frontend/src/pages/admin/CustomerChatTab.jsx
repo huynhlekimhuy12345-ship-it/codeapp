@@ -1,7 +1,8 @@
 // Tab Chat khách hàng: danh sách cuộc trò chuyện (đang chờ -> đang mở -> đã đóng),
 // nhân viên Nhận/Tham gia (tối đa 2 người), nhắn 2 chiều, Kết thúc cuộc.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
+import { staffNotify, setTitleAlert, clearTitleAlert } from '../../utils/staffNotify';
 import { useStore } from '../../context/StoreContext';
 import { Composer, MessageList, fmtTime } from './ChatShared';
 import './ChatTabs.css';
@@ -43,6 +44,42 @@ export default function CustomerChatTab() {
     const iv = setInterval(loadMsgs, 3000);
     return () => clearInterval(iv);
   }, [selId, loadMsgs]);
+
+  // Cuộc chờ MỚI xuất hiện trong danh sách → thông báo desktop ngay (poll 5s ở tab này
+  // nhanh hơn nhịp tóm tắt của trang quản trị; cùng tag nên không hiện trùng 2 lần).
+  const knownWaitingRef = useRef(null);
+  useEffect(() => {
+    const ids = list.filter((c) => c.status === 'waiting').map((c) => c.id);
+    if (knownWaitingRef.current === null) {
+      knownWaitingRef.current = new Set(ids);
+      return;
+    }
+    const fresh = ids.filter((id) => !knownWaitingRef.current.has(id));
+    if (fresh.length) {
+      staffNotify('💬 Có khách đang chờ nhận chat', 'Có khách vừa gửi yêu cầu trò chuyện. Bấm "Nhận cuộc trò chuyện" để bắt đầu.', 'bi99-waiting');
+    }
+    knownWaitingRef.current = new Set(ids);
+  }, [list]);
+
+  // Tin nhắn mới của khách trong cuộc đang mở, lúc tab trình duyệt đang bị ẩn
+  // → nhấp nháy tiêu đề tab cho tới khi nhân viên quay lại xem.
+  const lastMsgRef = useRef({ conv: null, id: null });
+  useEffect(() => {
+    if (!selId || !messages.length) return;
+    const last = messages[messages.length - 1];
+    const prev = lastMsgRef.current;
+    lastMsgRef.current = { conv: selId, id: last.id };
+    if (prev.conv !== selId || prev.id === null || last.id === prev.id) return;
+    if (last.sender_id !== user.id && document.hidden) {
+      setTitleAlert('msg', '💬 Tin nhắn mới từ khách');
+    }
+  }, [messages, selId, user.id]);
+  useEffect(() => { clearTitleAlert('msg'); }, [selId]);
+  useEffect(() => {
+    const onVis = () => { if (!document.hidden) clearTitleAlert('msg'); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   const accept = async (id) => {
     try { await api.chatAccept(id); setSelId(id); loadList(); loadMsgs(); }
