@@ -84,17 +84,29 @@ a.tier-badge { text-decoration: none; }
 .beast-card:hover { transform: translateY(-3px); }
 .beast-card::before {
   content: ''; position: absolute; inset: 0; z-index: 0;
-  background: radial-gradient(95% 60% at 50% 36%, rgba(18,14,9,.45), transparent 72%);
+  background:
+    radial-gradient(95% 60% at 50% 36%, rgba(18,14,9,.48), transparent 72%),
+    radial-gradient(130% 95% at 12% 0%, rgba(255,255,255,.38), transparent 55%),
+    repeating-linear-gradient(100deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px);
 }
 .beast-card::after {
   content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
-  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.20) 46%, transparent 60%);
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.30) 47%, rgba(255,255,255,.07) 55%, transparent 70%);
+  background-size: 260% 100%; animation: beast-sheen 7s ease-in-out infinite;
 }
-.beast-potential { background: linear-gradient(165deg,#7d6248,#453723); }
-.beast-bronze { background: linear-gradient(165deg,#eda15c,#9c4a1a); }
-.beast-silver { background: linear-gradient(165deg,#eef2f7,#aebdd0 55%,#64788f); }
-.beast-gold { background: linear-gradient(165deg,#f6cd62,#c07f13 60%,#96600c); }
-.beast-diamond { background: linear-gradient(165deg,#bfe6ff,#5f97d6 60%,#3f6db3); }
+.mytier-ladder .beast-card:nth-child(2)::after { animation-delay: .7s; }
+.mytier-ladder .beast-card:nth-child(3)::after { animation-delay: 1.4s; }
+.mytier-ladder .beast-card:nth-child(4)::after { animation-delay: 2.1s; }
+.mytier-ladder .beast-card:nth-child(5)::after { animation-delay: 2.8s; }
+@keyframes beast-sheen {
+  0%, 100% { background-position: 130% 0; }
+  50% { background-position: -30% 0; }
+}
+.beast-potential { background: linear-gradient(125deg, #7a7062, #3a342d 42%, #63584c 68%, #2b251f); }
+.beast-bronze { background: linear-gradient(125deg, #ffdca3, #eda254 28%, #a85f27 55%, #f4bc74 80%, #8a4d1e); }
+.beast-silver { background: linear-gradient(125deg, #ffffff, #d9e0ea 28%, #96a4b7 52%, #f2f6fb 78%, #aebacb); }
+.beast-gold { background: linear-gradient(125deg, #fff3b0, #f6cb5f 30%, #c8892a 55%, #ffe28c 80%, #a86f1c); }
+.beast-diamond { background: linear-gradient(120deg, #eafcff, #aee6ff 24%, #d3c2ff 48%, #9fe3ff 70%, #fdf0ff); }
 .beast-card.current {
   border: 2px solid #fff; transform: translateY(-4px);
   box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 14px 38px -12px rgba(0,0,0,.7);
