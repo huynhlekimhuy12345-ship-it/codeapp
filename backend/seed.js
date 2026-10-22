@@ -96,7 +96,7 @@ const blogPosts = [
     "slug": "cach-bao-quan-do-da-ben-dep",
     "coverImageUrl": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=80",
     "excerpt": "Đồ da thật càng dùng càng bóng đẹp nếu được chăm sóc đúng cách. Cùng BI99 tìm hiểu các nguyên tắc vệ sinh, dưỡng ẩm và cất giữ để chiếc túi, ví da của bạn bền đẹp nhiều năm.",
-    "content": "Da bò thật là chất liệu \"sống\": càng dùng lâu, bề mặt da càng lên nước, mềm và bóng đẹp — người chơi da gọi đó là patina. Nhưng để da đạt được vẻ đẹp ấy, bạn cần chăm sóc đúng cách.\n\n1. Vệ sinh đúng cách\nDùng khăn mềm khô hoặc hơi ẩm lau nhẹ bề mặt để loại bỏ bụi bẩn. Tuyệt đối không ngâm nước, không dùng hóa chất tẩy rửa mạnh hay xăng, cồn lên bề mặt da. Với vết bẩn cứng đầu, hãy dùng dung dịch vệ sinh chuyên dụng cho đồ da.\n\n2. Dưỡng ẩm cho da\nSau khi vệ sinh, thoa một lớp mỏng kem dưỡng da (leather conditioner) hoặc mỡ chồn, để khoảng 15 phút rồi lau lại bằng khăn sạch. Dưỡng ẩm giúp da không bị khô nứt, giữ độ mềm mại và màu sắc đều đẹp. Chỉ cần thực hiện 1–2 tháng một lần.\n\n3. Cất giữ nơi khô thoáng\nKhi không sử dụng, hãy nhồi giấy mềm vào trong túi/ví để giữ form, cho vào túi vải chống bụi và để nơi khô ráo, tránh ánh nắng trực tiếp. Không bọc đồ da trong túi nilon kín vì da cần \"thở\"; môi trường ẩm kín dễ khiến da mốc.\n\n4. Xử lý khi bị ướt\nNếu đồ da dính mưa, thấm khô bằng khăn mềm và để khô tự nhiên ở nhiệt độ phòng. Không dùng máy sấy hay phơi nắng gắt — nhiệt độ cao làm da co, cứng và nứt.\n\n5. Mang đi bảo dưỡng định kỳ\nVới sản phẩm của BI99, bạn được bảo hành 12 tháng và hỗ trợ bảo dưỡng, đánh bóng, sửa đường chỉ trọn đời tại xưởng. Đừng ngần ngại mang sản phẩm ghé xưởng để thợ da kiểm tra và chăm sóc giúp bạn.",
+    "content": "Da bò thật là chất liệu \"sống\": càng dùng lâu, bề mặt da càng lên nước, mềm và bóng đẹp — người chơi da gọi đó là patina. Nhưng để da đạt được vẻ đẹp ấy, bạn cần chăm sóc đúng cách.\n\n1. Vệ sinh đúng cách\nDùng khăn mềm khô hoặc hơi ẩm lau nhẹ bề mặt để loại bỏ bụi bẩn. Tuyệt đối không ngâm nước, không dùng hóa chất tẩy rửa mạnh hay xăng, cồn lên bề mặt da. Với vết bẩn cứng đầu, hãy dùng dung dịch vệ sinh chuyên dụng cho đồ da.\n\n2. Dưỡng ẩm cho da\nSau khi vệ sinh, thoa một lớp mỏng kem dưỡng da (leather conditioner) hoặc mỡ chồn, để khoảng 15 phút rồi lau lại bằng khăn sạch. Dưỡng ẩm giúp da không bị khô nứt, giữ độ mềm mại và màu sắc đều đẹp. Chỉ cần thực hiện 1–2 tháng một lần.\n\n3. Cất giữ nơi khô thoáng\nKhi không sử dụng, hãy nhồi giấy mềm vào trong túi/ví để giữ form, cho vào túi vải chống bụi và để nơi khô ráo, tránh ánh nắng trực tiếp. Không bọc đồ da trong túi nilon kín vì da cần \"thở\"; môi trường ẩm kín dễ khiến da mốc.\n\n4. Xử lý khi bị ướt\nNếu đồ da dính mưa, thấm khô bằng khăn mềm và để khô tự nhiên ở nhiệt độ phòng. Không dùng máy sấy hay phơi nắng gắt — nhiệt độ cao làm da co, cứng và nứt.\n\n5. Mang đi bảo dưỡng định kỳ\nVới sản phẩm của BI99, bạn được bảo hành 1 tháng và hỗ trợ bảo dưỡng, đánh bóng, sửa đường chỉ trọn đời tại xưởng. Đừng ngần ngại mang sản phẩm ghé xưởng để thợ da kiểm tra và chăm sóc giúp bạn.",
     "daysAgo": 2
   },
   {
@@ -150,8 +150,8 @@ const sampleAnnouncements = [
     show_on_banner: 1, send_notification: 1, daysAgo: 0,
   },
   {
-    title: 'Chính sách bảo hành 12 tháng cho mọi sản phẩm da thật',
-    content: 'Từ nay, mọi sản phẩm da thật tại BI99 đều được bảo hành 12 tháng về đường chỉ, khóa kéo và lỗi chất liệu; hỗ trợ đánh bóng, dưỡng da miễn phí trong 6 tháng đầu.',
+    title: 'Chính sách bảo hành 1 tháng cho mọi sản phẩm da thật',
+    content: 'Từ nay, mọi sản phẩm da thật tại BI99 đều được bảo hành 1 tháng về đường chỉ, khóa kéo và lỗi chất liệu; hỗ trợ đánh bóng, dưỡng da miễn phí trong 6 tháng đầu.',
     badge: 'Chính sách mới',
     cta_text: '', cta_link: '',
     image_url: 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=1200&q=80',

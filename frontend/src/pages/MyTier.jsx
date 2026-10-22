@@ -9,6 +9,15 @@ const STATUS_KEY = { unused: 'statusUnused', used: 'statusUsed', expired: 'statu
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 const TIER_ORDER = ['potential', 'bronze', 'silver', 'gold', 'diamond'];
 
+// Thánh thú bạch kim cho từng hạng (ảnh ở public/images/beasts)
+const BEAST_IMG = {
+  potential: '/images/beasts/potential.webp',
+  bronze: '/images/beasts/bronze.webp',
+  silver: '/images/beasts/silver.webp',
+  gold: '/images/beasts/gold.webp',
+  diamond: '/images/beasts/diamond.webp',
+};
+
 // Mốc lên hạng (khớp mốc backend): Đồng từ 2 đơn, Bạc 5tr, Vàng 10tr, Kim cương 20tr
 const THRESHOLDS = {
   potential: (t) => t('tier.thresholdPotential'),
@@ -144,13 +153,18 @@ export default function MyTier() {
           <Link
             key={tr.key}
             to={`/phan-hang?tier=${tr.key}`}
-            className={`mytier-step tier-border-${tr.key}`}
+            className={`beast-card beast-${tr.key}${tr.key === tier.key ? ' current' : ''}`}
           >
-            <span className={`tier-badge tier-${tr.key}`}>
-              {tr.key === 'diamond' ? '💎 ' : ''}{tierName(tr.key)}
+            <img className="beast-card-art" src={BEAST_IMG[tr.key]} alt={t(`tier.beast.${tr.key}`)} loading="lazy" />
+            <span className="beast-card-brand">BI99</span>
+            <span className="beast-card-info">
+              <span className="beast-card-tier">{tierName(tr.key)}</span>
+              <span className="beast-card-beast">{t(`tier.beast.${tr.key}`)}</span>
+              <span className="beast-card-threshold">{THRESHOLDS[tr.key] ? THRESHOLDS[tr.key](t) : ''}</span>
+              {tr.key === tier.key
+                ? <span className="beast-card-you">{t('tier.statusCurrent')}</span>
+                : <span className="beast-card-you ghost" aria-hidden="true">·</span>}
             </span>
-            <span className="mytier-step-threshold">{THRESHOLDS[tr.key] ? THRESHOLDS[tr.key](t) : ''}</span>
-            {tr.key === tier.key && <span className="mytier-step-you">{t('tier.statusCurrent')}</span>}
           </Link>
         ))}
       </div>
