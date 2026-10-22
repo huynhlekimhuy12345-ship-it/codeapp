@@ -233,9 +233,26 @@ db.exec(`
     type TEXT CHECK(type IN ('return','exchange')),
     reason TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'requested'
-      CHECK(status IN ('requested','approved','rejected','completed')),
+      CHECK(status IN ('requested','approved','received','rejected','completed')),
     refund_amount INTEGER NOT NULL DEFAULT 0,
+    reject_reason TEXT NOT NULL DEFAULT '',
+    received_note TEXT NOT NULL DEFAULT '',
+    received_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Chi tiết từng món trong một yêu cầu đổi/trả (snapshot tại thời điểm khách gửi)
+  CREATE TABLE IF NOT EXISTS return_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    return_id INTEGER NOT NULL REFERENCES returns(id) ON DELETE CASCADE,
+    order_item_id INTEGER REFERENCES order_items(id) ON DELETE SET NULL,
+    product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+    variant_id INTEGER REFERENCES product_variants(id) ON DELETE SET NULL,
+    product_name TEXT NOT NULL DEFAULT '',
+    variant_sku TEXT NOT NULL DEFAULT '',
+    price INTEGER NOT NULL DEFAULT 0,
+    quantity INTEGER NOT NULL DEFAULT 0,
+    restocked_qty INTEGER NOT NULL DEFAULT 0
   );
 
   -- Bảo hành theo đơn hàng
@@ -431,6 +448,62 @@ addColumnIfMissing('warranties', 'images', "images TEXT NOT NULL DEFAULT '[]'");
 addColumnIfMissing('chat_messages', 'kind', "kind TEXT NOT NULL DEFAULT 'text'");
 addColumnIfMissing('chat_messages', 'ref_type', 'ref_type TEXT');
 addColumnIfMissing('chat_messages', 'ref_id', 'ref_id INTEGER');
+
+// --- Đổi/trả chi tiết theo món: cột ghi chú/lý do cho returns + bảng return_items ---
+addColumnIfMissing('returns', 'reject_reason', "reject_reason TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('returns', 'received_note', "received_note TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('returns', 'received_at', 'received_at TEXT');
+
+// --- Nới trạng thái đổi/trả cho DB cũ: thêm 'received' (đã nhận lại hàng) vào CHECK ---
+(function widenReturnStatuses() {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'returns'").get();
+  if (!row || !row.sql || row.sql.includes("'received'")) return;
+  const oldCols = db.prepare('PRAGMA table_info(returns)').all().map((c) => c.name);
+  const newCols = ['id', 'order_id', 'type', 'reason', 'status', 'refund_amount', 'reject_reason', 'received_note', 'received_at', 'created_at', 'images'];
+  const copyCols = newCols.filter((c) => oldCols.includes(c));
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    db.exec('BEGIN');
+    db.exec(`CREATE TABLE returns_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      type TEXT CHECK(type IN ('return','exchange')),
+      reason TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'requested'
+        CHECK(status IN ('requested','approved','received','rejected','completed')),
+      refund_amount INTEGER NOT NULL DEFAULT 0,
+      reject_reason TEXT NOT NULL DEFAULT '',
+      received_note TEXT NOT NULL DEFAULT '',
+      received_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      images TEXT NOT NULL DEFAULT '[]'
+    )`);
+    db.exec(`INSERT INTO returns_new (${copyCols.join(', ')}) SELECT ${copyCols.join(', ')} FROM returns`);
+    db.exec('DROP TABLE returns');
+    db.exec('ALTER TABLE returns_new RENAME TO returns');
+    db.exec('COMMIT');
+  } catch (e) {
+    try { db.exec('ROLLBACK'); } catch { /* bỏ qua */ }
+    throw e;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
+})();
+
+// Bảng chi tiết món đổi/trả cho DB cũ (DB mới đã tạo ở khối CREATE TABLE phía trên)
+db.exec(`CREATE TABLE IF NOT EXISTS return_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  return_id INTEGER NOT NULL REFERENCES returns(id) ON DELETE CASCADE,
+  order_item_id INTEGER REFERENCES order_items(id) ON DELETE SET NULL,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  variant_id INTEGER REFERENCES product_variants(id) ON DELETE SET NULL,
+  product_name TEXT NOT NULL DEFAULT '',
+  variant_sku TEXT NOT NULL DEFAULT '',
+  price INTEGER NOT NULL DEFAULT 0,
+  quantity INTEGER NOT NULL DEFAULT 0,
+  restocked_qty INTEGER NOT NULL DEFAULT 0
+)`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_return_items_return ON return_items(return_id)');
 
 // --- Nới trạng thái bảo hành cho DB cũ: bản cũ chỉ cho active/expired/void, luồng mới
 // có thêm requested/accepted/received/rejected -> dựng lại bảng, giữ nguyên dữ liệu ---

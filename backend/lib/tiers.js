@@ -35,7 +35,19 @@ function userStats(userId) {
     FROM orders
     WHERE user_id = ? AND payment_status = 'verified' AND status != 'cancelled'
   `).get(userId);
-  return { order_count: r.order_count, total_spent: r.total_spent, last_order_at: r.last_order_at };
+  // Tổng chi thực = tổng đơn đã thanh toán - tiền đã hoàn từ đổi/trả hoàn tất
+  // (đơn hoàn toàn bộ đã sang 'refunded' nên không còn trong tổng trên, không trừ 2 lần)
+  const refunded = db.prepare(`
+    SELECT COALESCE(SUM(r.refund_amount), 0) AS v
+    FROM returns r JOIN orders o ON o.id = r.order_id
+    WHERE o.user_id = ? AND r.status = 'completed'
+      AND o.payment_status = 'verified' AND o.status != 'cancelled'
+  `).get(userId).v;
+  return {
+    order_count: r.order_count,
+    total_spent: Math.max(0, (r.total_spent || 0) - (refunded || 0)),
+    last_order_at: r.last_order_at,
+  };
 }
 
 // Hạng hiện tại + khoảng còn thiếu để lên hạng kế tiếp (need.orders hoặc need.spent)

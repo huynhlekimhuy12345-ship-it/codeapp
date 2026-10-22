@@ -133,12 +133,30 @@ const FLOW = {
 
 const fmtDay = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '');
 
+// Thông báo cho khách khi bảo hành đổi trạng thái: chuông + tin nhắn trong chat.
+// Lỗi thông báo không bao giờ làm hỏng thao tác chính.
+function notifyWarrantyCustomer(w, title, content, senderId) {
+  const order = db.prepare('SELECT user_id FROM orders WHERE id = ?').get(w.order_id);
+  if (!order || !order.user_id) return;
+  try {
+    db.prepare(
+      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+    ).run(order.user_id, 'warranty', title, content, '/don-hang');
+  } catch (e) { /* bỏ qua lỗi thông báo */ }
+  try {
+    postChatNotice(order.user_id, senderId, content);
+  } catch (e) { /* bỏ qua lỗi thông báo */ }
+}
+
 // PUT /api/warranties/:id — nhân viên xử lý yêu cầu / bảo hành
 router.put('/:id', auth, staffOnly, (req, res) => {
   const { action, months, note } = req.body || {};
   const ACTIONS = ['accept', 'reject', 'received', 'activate', 'extend', 'void'];
   if (!ACTIONS.includes(action))
     return res.status(400).json({ error: 'action không hợp lệ' });
+
+  if (action === 'reject' && !String(note || '').trim())
+    return res.status(400).json({ error: 'Từ chối phải ghi rõ lý do (truyền vào trường note) để khách hàng biết' });
 
   const w = db.prepare('SELECT * FROM warranties WHERE id = ?').get(req.params.id);
   if (!w) return res.status(404).json({ error: 'Không tìm thấy bảo hành' });
@@ -147,12 +165,26 @@ router.put('/:id', auth, staffOnly, (req, res) => {
 
   if (action === 'accept') {
     db.prepare("UPDATE warranties SET status = 'accepted' WHERE id = ?").run(w.id);
+    notifyWarrantyCustomer(w,
+      `🛡️ Yêu cầu bảo hành đơn #${w.order_id} đã được chấp nhận`,
+      `🛡️ Shop đã chấp nhận yêu cầu bảo hành cho đơn #${w.order_id}. Bạn vui lòng đóng gói và gửi hàng về shop giúp shop nhé. Shop sẽ thông báo ngay khi nhận được hàng.`,
+      req.user.id);
   } else if (action === 'reject') {
     db.prepare("UPDATE warranties SET status = 'rejected' WHERE id = ?").run(w.id);
+    const reasonText = String(note || '').trim();
+    notifyWarrantyCustomer(w,
+      `❌ Yêu cầu bảo hành đơn #${w.order_id} bị từ chối`,
+      `❌ Shop rất tiếc, yêu cầu bảo hành cho đơn #${w.order_id} chưa được chấp nhận.${reasonText ? ` Lý do: ${reasonText}.` : ''} Bạn cần hỗ trợ thêm cứ nhắn cho shop nhé.`,
+      req.user.id);
   } else if (action === 'received') {
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const noteText = String(note || '').trim().slice(0, 500);
     db.prepare("UPDATE warranties SET status = 'received', received_note = ?, received_at = ? WHERE id = ?")
-      .run(String(note || '').trim().slice(0, 500), now, w.id);
+      .run(noteText, now, w.id);
+    notifyWarrantyCustomer(w,
+      `📥 Shop đã nhận lại hàng bảo hành của đơn #${w.order_id}`,
+      `📥 Shop đã nhận lại hàng bảo hành của đơn #${w.order_id}${noteText ? `. Tình trạng hàng nhận lại: ${noteText}` : ''}. Shop đang xử lý bảo hành cho bạn.`,
+      req.user.id);
   } else if (action === 'activate') {
     const n = parseInt(months);
     if (!n || n <= 0 || n > 120)
@@ -184,6 +216,10 @@ router.put('/:id', auth, staffOnly, (req, res) => {
     }
   } else if (action === 'void') {
     db.prepare("UPDATE warranties SET status = 'void' WHERE id = ?").run(w.id);
+    notifyWarrantyCustomer(w,
+      `🛡️ Bảo hành đơn #${w.order_id} đã bị hủy`,
+      `🛡️ Bảo hành của đơn #${w.order_id} đã bị hủy.${String(note || '').trim() ? ` Ghi chú: ${String(note).trim()}` : ''} Nếu bạn cần hỗ trợ thêm, cứ nhắn cho shop nhé.`,
+      req.user.id);
   } else if (action === 'extend') {
     const n = parseInt(months);
     if (!n || n <= 0 || n > 120)
@@ -193,6 +229,10 @@ router.put('/:id', auth, staffOnly, (req, res) => {
     const newEnd = addMonths(base, n);
     db.prepare("UPDATE warranties SET end_date = ?, months = months + ?, status = 'active' WHERE id = ?")
       .run(newEnd, n, w.id);
+    notifyWarrantyCustomer(w,
+      `🛡️ Bảo hành đơn #${w.order_id} đã được gia hạn`,
+      `🛡️ Bảo hành của đơn #${w.order_id} được gia hạn thêm ${n} tháng, hiệu lực đến ${fmtDay(newEnd)}. Cảm ơn bạn đã tin tưởng BI99!`,
+      req.user.id);
   }
 
   const warranty = db.prepare('SELECT * FROM warranties WHERE id = ?').get(w.id);

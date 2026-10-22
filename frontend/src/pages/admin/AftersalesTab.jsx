@@ -1,5 +1,7 @@
-// Tab Hậu mãi (admin): Đổi trả / Bảo hành / Sửa chữa
-// Thiết kế: section header có icon + thẻ card với viền accent theo trạng thái
+// Tab Bảo hành (admin): Đổi trả / Bảo hành / Sửa chữa
+// Thiết kế: mỗi thẻ chỉ hiện dòng tóm tắt, bấm "Xem chi tiết" mới mở thông tin
+// và các bước xử lý. Mọi ô nhập đều có nhãn rõ ràng; ô bắt buộc có dấu * đỏ —
+// rê chuột lên dấu * để xem chú thích cách nhập. Ô số gõ trực tiếp.
 import { useEffect, useState } from 'react';
 import '../../components/AftersalesCard.css';
 
@@ -51,6 +53,23 @@ const card = {
   padding: '16px 18px',
 };
 
+const fieldInput = {
+  padding: '8px 12px', borderRadius: 8, background: 'rgba(12,8,5,.6)',
+  border: '1.5px solid rgba(232,181,106,.35)', color: 'var(--cream)',
+  font: 'inherit', fontSize: '.95rem', boxSizing: 'border-box',
+};
+
+// Nhãn ô nhập: chữ rõ ràng phía trên ô; ô bắt buộc thêm dấu * đỏ có chú thích
+// hiện ra khi rê chuột (class tip-star trong index.css).
+function FieldLabel({ children, required, tip }) {
+  return (
+    <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 600, color: '#ffe9c4', marginBottom: 6 }}>
+      {children}
+      {required && <> <span className="tip-star" data-tip={tip || 'Ô bắt buộc phải nhập'}>*</span></>}
+    </label>
+  );
+}
+
 function Pill({ bg, fg, dot, children }) {
   return (
     <span style={{
@@ -74,7 +93,7 @@ function SectionHead({ icon, title, count, filter, setFilter, options, right }) 
           color: '#e8b56a', borderRadius: 20, padding: '2px 10px',
         }}>{count}</span>
       </h3>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         {right}
         <select className="select-dark" value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
@@ -94,9 +113,19 @@ function Empty({ icon, text }) {
   );
 }
 
+// Nút mở/đóng phần chi tiết của một thẻ
+function ToggleDetail({ open, onClick }) {
+  return (
+    <button className="btn btn-small btn-outline" onClick={onClick}>
+      {open ? 'Thu gọn ▴' : 'Xem chi tiết ▾'}
+    </button>
+  );
+}
+
 const RETURN_STATUS = {
   requested: { label: 'Chờ duyệt', bg: 'rgba(232,181,106,.14)', fg: '#e8b56a', dot: '#e8b56a' },
   approved: { label: 'Đã duyệt', bg: 'rgba(96,165,250,.12)', fg: '#7fb3f5', dot: '#60a5fa' },
+  received: { label: 'Đã nhận hàng', bg: 'rgba(45,212,191,.12)', fg: '#5eead4', dot: '#2dd4bf' },
   rejected: { label: 'Từ chối', bg: 'rgba(248,113,113,.12)', fg: '#f58a8a', dot: '#f87171' },
   completed: { label: 'Hoàn thành', bg: 'rgba(74,222,128,.12)', fg: '#6ee7a0', dot: '#4ade80' },
 };
@@ -121,21 +150,63 @@ const WARRANTY_STATUS = {
 function ReturnsSection({ highlight }) {
   const [list, setList] = useState([]);
   const [filter, setFilter] = useState('');
-  const [refundFor, setRefundFor] = useState(null);
-  const [refundValue, setRefundValue] = useState('0');
+  const [openId, setOpenId] = useState(null);
+  // Form đang mở theo từng yêu cầu: { [id]: 'reject' | 'receive' | 'complete' }
+  const [formKind, setFormKind] = useState({});
+  const [rejectReason, setRejectReason] = useState({});
+  const [recvNote, setRecvNote] = useState({});
+  const [restockQty, setRestockQty] = useState({}); // { [returnId]: { [itemId]: 'so luong' } }
+  const [refundValue, setRefundValue] = useState({});
 
   const load = () =>
     req(`/api/returns${filter ? '?status=' + filter : ''}`)
       .then((d) => setList(d.returns || []))
       .catch(() => {});
   useEffect(() => { load(); }, [filter]);
+  // Được nhảy tới từ thẻ chat: tự mở chi tiết yêu cầu đích
+  useEffect(() => {
+    if (highlight && highlight.startsWith('return-')) setOpenId(parseInt(highlight.slice(7)) || null);
+  }, [highlight]);
 
-  const act = async (id, action, refund_amount) => {
+  const suggestedRefund = (r) => (r.items || []).reduce((s, i) => s + i.price * i.quantity, 0);
+
+  const openForm = (r, kind) => {
+    setOpenId(r.id);
+    setFormKind((s) => ({ ...s, [r.id]: kind }));
+    if (kind === 'receive' || kind === 'complete') {
+      setRestockQty((s) => ({
+        ...s,
+        [r.id]: Object.fromEntries((r.items || []).map((i) => [i.id, String(i.quantity - (i.restocked_qty || 0))])),
+      }));
+    }
+    if (kind === 'complete') {
+      setRefundValue((s) => ({ ...s, [r.id]: String(r.refund_amount || suggestedRefund(r)) }));
+    }
+  };
+  const closeForm = (id) => setFormKind((s) => { const n = { ...s }; delete n[id]; return n; });
+
+  const buildRestock = (r) =>
+    (r.items || []).map((i) => ({ id: i.id, qty: parseInt((restockQty[r.id] || {})[i.id]) || 0 }));
+
+  const act = async (r, action, extra = {}) => {
     try {
-      await req(`/api/returns/${id}`, { method: 'PUT', body: { action, refund_amount } });
-      setRefundFor(null);
+      await req(`/api/returns/${r.id}`, { method: 'PUT', body: { action, ...extra } });
+      closeForm(r.id);
       load();
     } catch (e) { alert(e.message); }
+  };
+
+  const doReject = (r) => {
+    const reason = (rejectReason[r.id] || '').trim();
+    if (!reason) { alert('Vui lòng ghi rõ lý do từ chối — khách hàng sẽ nhận được lý do này.'); return; }
+    act(r, 'rejected', { reason });
+  };
+  const doReceive = (r) => act(r, 'received', { note: (recvNote[r.id] || '').trim(), restock: buildRestock(r) });
+  const doComplete = (r) => {
+    const body = { refund_amount: parseInt(refundValue[r.id]) || 0 };
+    // Chưa qua bước nhận hàng thì nhập kho luôn trong bước hoàn thành
+    if (r.status === 'approved') body.restock = buildRestock(r);
+    act(r, 'completed', body);
   };
 
   return (
@@ -147,58 +218,174 @@ function ReturnsSection({ highlight }) {
         {list.map((r) => {
           const s = RETURN_STATUS[r.status] || RETURN_STATUS.requested;
           const hl = highlight === `return-${r.id}`;
+          const open = openId === r.id;
+          const kind = formKind[r.id];
+          const itemCount = (r.items || []).reduce((n, i) => n + i.quantity, 0);
           return (
             <div key={r.id} id={`as-return-${r.id}`}
               style={{ ...card, borderLeft: `3px solid ${s.dot}`, ...(hl ? { boxShadow: '0 0 0 2px var(--amber), 0 0 24px rgba(232,181,106,.35)' } : {}) }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <strong style={{ fontSize: '1.02rem' }}>Yêu cầu #{r.id}</strong>
-                    <Pill {...s}>{s.label}</Pill>
-                    <span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>{RETURN_TYPE[r.type] || r.type}</span>
-                  </div>
-                  <div style={{ marginTop: 8, fontSize: '.9rem', color: 'var(--muted)' }}>
+              {/* Hàng tóm tắt — luôn hiện */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: '1.02rem' }}>Yêu cầu #{r.id}</strong>
+                  <Pill {...s}>{s.label}</Pill>
+                  <span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>{RETURN_TYPE[r.type] || r.type}</span>
+                  <span style={{ fontSize: '.9rem', color: 'var(--muted)' }}>
                     Đơn <strong style={{ color: '#ffe9c4' }}>#{r.order_id}</strong>
                     {r.customer_name && <span> · {r.customer_name}</span>}
+                    {itemCount > 0 && <span> · {itemCount} sản phẩm</span>}
                     {' · '}{r.created_at}
-                  </div>
-                  <div style={{ marginTop: 8, fontSize: '.92rem' }}>
-                    <span style={{ color: 'var(--muted)' }}>Lý do: </span>{r.reason || '—'}
+                  </span>
+                  {r.refund_amount > 0 && (
+                    <span style={{ fontSize: '.9rem' }}>Hoàn: <strong style={{ color: '#6ee7a0' }}>{fmt(r.refund_amount)}</strong></span>
+                  )}
+                </div>
+                <ToggleDetail open={open} onClick={() => setOpenId(open ? null : r.id)} />
+              </div>
+
+              {open && (
+                <div style={{ marginTop: 14, borderTop: '1px solid rgba(232,181,106,.14)', paddingTop: 14 }}>
+                  <div style={{ fontSize: '.92rem' }}>
+                    <span style={{ color: 'var(--muted)' }}>Lý do khách gửi: </span>{r.reason || '—'}
                   </div>
                   <ImagesRow images={r.images} />
-                  {r.refund_amount > 0 && (
-                    <div style={{ marginTop: 4, fontSize: '.92rem' }}>
-                      <span style={{ color: 'var(--muted)' }}>Hoàn tiền: </span>
-                      <strong style={{ color: '#6ee7a0' }}>{fmt(r.refund_amount)}</strong>
+
+                  {/* Danh sách món đổi/trả */}
+                  {(r.items || []).length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <FieldLabel>Sản phẩm đổi/trả</FieldLabel>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {r.items.map((i) => (
+                          <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: '.92rem', padding: '7px 10px', border: '1px solid rgba(232,181,106,.14)', borderRadius: 8, flexWrap: 'wrap' }}>
+                            <span>
+                              {i.product_name}
+                              {i.variant_sku && <span style={{ color: 'var(--muted)' }}> · SKU {i.variant_sku}</span>}
+                              <span style={{ color: 'var(--muted)' }}> × {i.quantity}</span>
+                              {i.restocked_qty > 0 && <span style={{ color: '#5eead4' }}> · đã nhập kho {i.restocked_qty}</span>}
+                            </span>
+                            <strong style={{ color: '#ffe9c4' }}>{fmt(i.price * i.quantity)}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {r.status === 'rejected' && r.reject_reason && (
+                    <div style={{ marginTop: 10, fontSize: '.92rem' }}>
+                      <span style={{ color: 'var(--muted)' }}>Lý do từ chối: </span>
+                      <span style={{ color: '#f58a8a' }}>{r.reject_reason}</span>
+                    </div>
+                  )}
+                  {r.received_at && (
+                    <div style={{ marginTop: 10, fontSize: '.92rem' }}>
+                      <span style={{ color: 'var(--muted)' }}>📥 Đã nhận lại hàng: </span>
+                      {r.received_note || '—'}
+                      <span style={{ color: 'var(--muted)' }}> · {String(r.received_at).slice(0, 16).replace('T', ' ')}</span>
+                    </div>
+                  )}
+
+                  {/* Hàng nút xử lý theo trạng thái */}
+                  <div className="row-actions" style={{ marginTop: 14, justifyContent: 'flex-start' }}>
+                    {r.status === 'requested' && !kind && (
+                      <>
+                        <button className="btn btn-small btn-primary" onClick={() => act(r, 'approved')}>✓ Duyệt</button>
+                        <button className="btn btn-small btn-outline" onClick={() => openForm(r, 'reject')}>Từ chối</button>
+                      </>
+                    )}
+                    {r.status === 'approved' && !kind && (
+                      <>
+                        <button className="btn btn-small btn-outline" onClick={() => openForm(r, 'receive')}>📥 Đã nhận lại hàng</button>
+                        <button className="btn btn-small btn-primary" onClick={() => openForm(r, 'complete')}>Hoàn thành</button>
+                      </>
+                    )}
+                    {r.status === 'received' && !kind && (
+                      <button className="btn btn-small btn-primary" onClick={() => openForm(r, 'complete')}>Hoàn thành</button>
+                    )}
+                  </div>
+
+                  {/* Form từ chối */}
+                  {kind === 'reject' && (
+                    <div style={{ marginTop: 12, maxWidth: 560 }}>
+                      <FieldLabel required tip="Bắt buộc ghi rõ. Khách sẽ nhận được lý do này qua chuông thông báo và trong tin nhắn chat.">Lý do từ chối</FieldLabel>
+                      <textarea value={rejectReason[r.id] || ''}
+                        onChange={(e) => setRejectReason((st) => ({ ...st, [r.id]: e.target.value }))}
+                        placeholder="Ví dụ: Sản phẩm đã qua sử dụng, trầy xước nhiều nên shop không nhận lại được…"
+                        rows={3} style={{ ...fieldInput, width: '100%' }} />
+                      <div className="row-actions" style={{ marginTop: 8 }}>
+                        <button className="btn btn-small btn-danger" onClick={() => doReject(r)}>Xác nhận từ chối</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(r.id)}>Hủy</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Form nhận hàng: ghi chú + chọn số lượng nhập kho từng món */}
+                  {kind === 'receive' && (
+                    <div style={{ marginTop: 12, maxWidth: 640 }}>
+                      <FieldLabel tip="Ghi tình trạng hàng khi nhận lại (còn nguyên, trầy xước nhẹ…). Khách sẽ thấy ghi chú này trong thông báo.">Ghi chú tình trạng hàng nhận lại</FieldLabel>
+                      <input type="text" value={recvNote[r.id] || ''}
+                        onChange={(e) => setRecvNote((st) => ({ ...st, [r.id]: e.target.value }))}
+                        placeholder="Ví dụ: Hàng còn nguyên vẹn, đủ phụ kiện"
+                        style={{ ...fieldInput, width: '100%' }} />
+                      <div style={{ marginTop: 12 }}>
+                        <FieldLabel tip="Chỉ nhập lại vào kho số lượng còn tốt, bán lại được. Món hư hỏng thì để 0. Gõ trực tiếp số vào ô.">Số lượng nhập kho từng món</FieldLabel>
+                        <div style={{ display: 'grid', gap: 6 }}>
+                          {(r.items || []).map((i) => {
+                            const remain = i.quantity - (i.restocked_qty || 0);
+                            return (
+                              <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.92rem', flexWrap: 'wrap' }}>
+                                <span style={{ flex: 1, minWidth: 180 }}>{i.product_name}{i.variant_sku && <span style={{ color: 'var(--muted)' }}> · SKU {i.variant_sku}</span>}</span>
+                                <input type="number" min="0" max={remain}
+                                  value={(restockQty[r.id] || {})[i.id] ?? String(remain)}
+                                  onChange={(e) => setRestockQty((st) => ({ ...st, [r.id]: { ...(st[r.id] || {}), [i.id]: e.target.value } }))}
+                                  style={{ ...fieldInput, width: 80 }} aria-label={`Số lượng nhập kho của ${i.product_name}`} />
+                                <span style={{ color: 'var(--muted)' }}>/ {remain} món</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="row-actions" style={{ marginTop: 10 }}>
+                        <button className="btn btn-small btn-primary" onClick={() => doReceive(r)}>Xác nhận đã nhận hàng</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(r.id)}>Hủy</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Form hoàn thành: tiền hoàn (tự gợi ý) + nhập kho nếu chưa nhận hàng */}
+                  {kind === 'complete' && (
+                    <div style={{ marginTop: 12, maxWidth: 640 }}>
+                      {r.status === 'approved' && (
+                        <div style={{ marginBottom: 12 }}>
+                          <FieldLabel tip="Yêu cầu này chưa qua bước nhận hàng — chọn luôn số lượng nhập kho tại đây. Chỉ nhập số còn tốt, món hư hỏng để 0.">Số lượng nhập kho từng món</FieldLabel>
+                          <div style={{ display: 'grid', gap: 6 }}>
+                            {(r.items || []).map((i) => {
+                              const remain = i.quantity - (i.restocked_qty || 0);
+                              return (
+                                <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.92rem', flexWrap: 'wrap' }}>
+                                  <span style={{ flex: 1, minWidth: 180 }}>{i.product_name}{i.variant_sku && <span style={{ color: 'var(--muted)' }}> · SKU {i.variant_sku}</span>}</span>
+                                  <input type="number" min="0" max={remain}
+                                    value={(restockQty[r.id] || {})[i.id] ?? String(remain)}
+                                    onChange={(e) => setRestockQty((st) => ({ ...st, [r.id]: { ...(st[r.id] || {}), [i.id]: e.target.value } }))}
+                                    style={{ ...fieldInput, width: 80 }} aria-label={`Số lượng nhập kho của ${i.product_name}`} />
+                                  <span style={{ color: 'var(--muted)' }}>/ {remain} món</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      <FieldLabel required tip="Đã tự gợi ý bằng tổng giá trị các món đổi/trả. Gõ trực tiếp số tiền thực hoàn cho khách — số tiền này sẽ bị trừ vào doanh thu. Để 0 nếu là đổi hàng không hoàn tiền.">Số tiền hoàn cho khách (đ)</FieldLabel>
+                      <input type="number" min="0" value={refundValue[r.id] || ''}
+                        onChange={(e) => setRefundValue((st) => ({ ...st, [r.id]: e.target.value }))}
+                        style={{ ...fieldInput, width: 220 }} />
+                      <div className="row-actions" style={{ marginTop: 10 }}>
+                        <button className="btn btn-small btn-primary" onClick={() => doComplete(r)}>Xác nhận hoàn thành</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(r.id)}>Hủy</button>
+                      </div>
                     </div>
                   )}
                 </div>
-                <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
-                  {r.status === 'requested' && (
-                    <>
-                      <button className="btn btn-small btn-primary" onClick={() => act(r.id, 'approved')}>✓ Duyệt</button>
-                      <button className="btn btn-small btn-outline" onClick={() => act(r.id, 'rejected')}>Từ chối</button>
-                    </>
-                  )}
-                  {r.status === 'approved' && refundFor !== r.id && (
-                    <button className="btn btn-small btn-primary"
-                      onClick={() => { setRefundFor(r.id); setRefundValue(String(r.refund_amount || 0)); }}>
-                      Hoàn thành
-                    </button>
-                  )}
-                  {r.status === 'approved' && refundFor === r.id && (
-                    <span className="inline-form">
-                      <input type="number" min="0" value={refundValue}
-                        onChange={(e) => setRefundValue(e.target.value)}
-                        placeholder="Số tiền hoàn (đ)"
-                        style={{ width: 150, padding: '8px 12px', borderRadius: 8 }} />
-                      <button className="btn btn-small btn-primary"
-                        onClick={() => act(r.id, 'completed', parseInt(refundValue) || 0)}>Xác nhận</button>
-                      <button className="btn btn-small btn-outline" onClick={() => setRefundFor(null)}>Hủy</button>
-                    </span>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -213,13 +400,14 @@ function WarrantiesSection({ highlight }) {
   const [list, setList] = useState([]);
   const [filter, setFilter] = useState('');
   const [orderId, setOrderId] = useState('');
-  const [months, setMonths] = useState('12');
-  const [extendId, setExtendId] = useState(null);
-  const [extendMonths, setExtendMonths] = useState('12');
-  const [recvId, setRecvId] = useState(null);
-  const [recvNote, setRecvNote] = useState('');
-  const [actId, setActId] = useState(null);
-  const [actMonths, setActMonths] = useState('12');
+  const [months, setMonths] = useState('1');
+  const [openId, setOpenId] = useState(null);
+  // Form đang mở theo từng bảo hành: 'reject' | 'receive' | 'activate' | 'extend'
+  const [formKind, setFormKind] = useState({});
+  const [rejectNote, setRejectNote] = useState({});
+  const [recvNote, setRecvNote] = useState({});
+  const [actMonths, setActMonths] = useState({});
+  const [extendMonths, setExtendMonths] = useState({});
 
   // Ô nhập trên hàng công cụ: cao 40px, nền tối + viền vàng hổ phách theo tông web
   const toolInput = {
@@ -233,9 +421,13 @@ function WarrantiesSection({ highlight }) {
       .then((d) => setList(d.warranties || []))
       .catch(() => {});
   useEffect(() => { load(); }, [filter]);
+  useEffect(() => {
+    if (highlight && highlight.startsWith('warranty-')) setOpenId(parseInt(highlight.slice(9)) || null);
+  }, [highlight]);
 
   const create = async () => {
-    if (!orderId.trim()) { alert('Nhập mã đơn hàng'); return; }
+    if (!orderId.trim()) { alert('Nhập mã đơn hàng cần tạo bảo hành'); return; }
+    if (!parseInt(months)) { alert('Nhập số tháng bảo hành'); return; }
     try {
       await req('/api/warranties', { method: 'POST', body: { order_id: parseInt(orderId), months: parseInt(months) } });
       setOrderId('');
@@ -243,14 +435,26 @@ function WarrantiesSection({ highlight }) {
     } catch (e) { alert(e.message); }
   };
 
-  const act = async (id, body) => {
+  const openForm = (w, kind) => {
+    setOpenId(w.id);
+    setFormKind((s) => ({ ...s, [w.id]: kind }));
+    if (kind === 'activate') setActMonths((s) => ({ ...s, [w.id]: s[w.id] || '1' }));
+    if (kind === 'extend') setExtendMonths((s) => ({ ...s, [w.id]: s[w.id] || '1' }));
+  };
+  const closeForm = (id) => setFormKind((s) => { const n = { ...s }; delete n[id]; return n; });
+
+  const act = async (w, body) => {
     try {
-      await req(`/api/warranties/${id}`, { method: 'PUT', body });
-      setExtendId(null);
-      setRecvId(null);
-      setActId(null);
+      await req(`/api/warranties/${w.id}`, { method: 'PUT', body });
+      closeForm(w.id);
       load();
     } catch (e) { alert(e.message); }
+  };
+
+  const doReject = (w) => {
+    const note = (rejectNote[w.id] || '').trim();
+    if (!note) { alert('Vui lòng ghi rõ lý do từ chối — khách hàng sẽ nhận được lý do này.'); return; }
+    act(w, { action: 'reject', note });
   };
 
   return (
@@ -259,13 +463,19 @@ function WarrantiesSection({ highlight }) {
         filter={filter} setFilter={setFilter}
         options={[['requested', 'Chờ duyệt'], ['accepted', 'Đã chấp nhận'], ['received', 'Đã nhận hàng'], ['active', 'Đang hiệu lực'], ['rejected', 'Từ chối'], ['void', 'Đã hủy']]}
         right={(
-          <span className="inline-form" style={{ display: 'inline-flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <input value={orderId} onChange={(e) => setOrderId(e.target.value)}
-              placeholder="Mã đơn" type="number"
-              style={{ ...toolInput, width: 130 }} aria-label="Mã đơn hàng" />
-            <input value={months} onChange={(e) => setMonths(e.target.value)}
-              placeholder="Số tháng" type="number" min="1" max="120"
-              style={{ ...toolInput, width: 100 }} aria-label="Số tháng bảo hành" />
+          <span style={{ display: 'inline-flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <span>
+              <FieldLabel required tip="Nhập mã số của đơn hàng cần tạo bảo hành (xem mã trong tab Đơn hàng).">Mã đơn</FieldLabel>
+              <input value={orderId} onChange={(e) => setOrderId(e.target.value)}
+                placeholder="Ví dụ: 25" type="number"
+                style={{ ...toolInput, width: 130, marginBottom: 0 }} aria-label="Mã đơn hàng" />
+            </span>
+            <span>
+              <FieldLabel required tip="Thời hạn bảo hành tính bằng tháng, hiệu lực ngay khi tạo. Chính sách hiện tại của shop là bảo hành 1 tháng.">Số tháng</FieldLabel>
+              <input value={months} onChange={(e) => setMonths(e.target.value)}
+                type="number" min="1" max="120"
+                style={{ ...toolInput, width: 100, marginBottom: 0 }} aria-label="Số tháng bảo hành" />
+            </span>
             <button className="btn btn-small btn-primary" onClick={create}
               style={{ height: 40, display: 'inline-flex', alignItems: 'center' }}>+ Tạo bảo hành</button>
           </span>
@@ -276,28 +486,30 @@ function WarrantiesSection({ highlight }) {
           const disp = w.status === 'active' && w.end_date && w.end_date < todayStr ? 'expired' : w.status;
           const s = WARRANTY_STATUS[disp] || WARRANTY_STATUS.active;
           const hl = highlight === `warranty-${w.id}`;
+          const open = openId === w.id;
+          const kind = formKind[w.id];
           return (
             <div key={w.id} id={`as-warranty-${w.id}`}
               style={{ ...card, borderLeft: `3px solid ${s.dot}`, ...(hl ? { boxShadow: '0 0 0 2px var(--amber), 0 0 24px rgba(232,181,106,.35)' } : {}) }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <strong style={{ fontSize: '1.02rem' }}>Bảo hành #{w.id}</strong>
-                    <Pill {...s}>{s.label}</Pill>
-                  </div>
-                  <div style={{ marginTop: 8, fontSize: '.9rem', color: 'var(--muted)' }}>
+              {/* Hàng tóm tắt — luôn hiện */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: '1.02rem' }}>Bảo hành #{w.id}</strong>
+                  <Pill {...s}>{s.label}</Pill>
+                  <span style={{ fontSize: '.9rem', color: 'var(--muted)' }}>
                     Đơn <strong style={{ color: '#ffe9c4' }}>#{w.order_id}</strong>
                     {w.customer_name && <span> · {w.customer_name}</span>}
-                  </div>
-                  {w.months > 0 && (
-                    <div style={{ marginTop: 6, fontSize: '.92rem' }}>
-                      ⏳ <strong>{w.months} tháng</strong>
-                      <span style={{ color: 'var(--muted)' }}> · {w.start_date} → {w.end_date}</span>
-                    </div>
-                  )}
+                    {w.months > 0 && <span> · ⏳ {w.months} tháng ({w.start_date} → {w.end_date})</span>}
+                  </span>
+                </div>
+                <ToggleDetail open={open} onClick={() => setOpenId(open ? null : w.id)} />
+              </div>
+
+              {open && (
+                <div style={{ marginTop: 14, borderTop: '1px solid rgba(232,181,106,.14)', paddingTop: 14 }}>
                   {w.reason && (
-                    <div style={{ marginTop: 8, fontSize: '.92rem' }}>
-                      <span style={{ color: 'var(--muted)' }}>Lý do: </span>{w.reason}
+                    <div style={{ fontSize: '.92rem' }}>
+                      <span style={{ color: 'var(--muted)' }}>Lý do khách gửi: </span>{w.reason}
                     </div>
                   )}
                   {w.received_at && (
@@ -308,72 +520,93 @@ function WarrantiesSection({ highlight }) {
                     </div>
                   )}
                   <ImagesRow images={w.images} />
+
+                  <div className="row-actions" style={{ marginTop: 14, justifyContent: 'flex-start' }}>
+                    {w.status === 'requested' && !kind && (
+                      <>
+                        <button className="btn btn-small btn-primary" onClick={() => act(w, { action: 'accept' })}>✓ Chấp nhận</button>
+                        <button className="btn btn-small btn-outline" onClick={() => openForm(w, 'reject')}>Từ chối</button>
+                      </>
+                    )}
+                    {w.status === 'accepted' && !kind && (
+                      <>
+                        <button className="btn btn-small btn-outline" onClick={() => openForm(w, 'receive')}>📥 Đã nhận lại hàng</button>
+                        <button className="btn btn-small btn-primary" onClick={() => openForm(w, 'activate')}>🛡️ Cấp bảo hành</button>
+                        <button className="btn btn-small btn-danger" onClick={() => { if (window.confirm('Hủy bảo hành này? Khách sẽ được thông báo.')) act(w, { action: 'void' }); }}>Hủy BH</button>
+                      </>
+                    )}
+                    {w.status === 'received' && !kind && (
+                      <>
+                        <button className="btn btn-small btn-primary" onClick={() => openForm(w, 'activate')}>🛡️ Cấp bảo hành</button>
+                        <button className="btn btn-small btn-danger" onClick={() => { if (window.confirm('Hủy bảo hành này? Khách sẽ được thông báo.')) act(w, { action: 'void' }); }}>Hủy BH</button>
+                      </>
+                    )}
+                    {(disp === 'active' || disp === 'expired') && !kind && (
+                      <>
+                        <button className="btn btn-small btn-outline" onClick={() => openForm(w, 'extend')}>Gia hạn</button>
+                        <button className="btn btn-small btn-danger" onClick={() => { if (window.confirm('Hủy bảo hành này? Khách sẽ được thông báo.')) act(w, { action: 'void' }); }}>Hủy BH</button>
+                      </>
+                    )}
+                  </div>
+
+                  {kind === 'reject' && (
+                    <div style={{ marginTop: 12, maxWidth: 560 }}>
+                      <FieldLabel required tip="Bắt buộc ghi rõ. Khách sẽ nhận được lý do này qua chuông thông báo và trong tin nhắn chat.">Lý do từ chối</FieldLabel>
+                      <textarea value={rejectNote[w.id] || ''}
+                        onChange={(e) => setRejectNote((st) => ({ ...st, [w.id]: e.target.value }))}
+                        placeholder="Ví dụ: Hư hỏng do va đập mạnh, không thuộc diện bảo hành…"
+                        rows={3} style={{ ...fieldInput, width: '100%' }} />
+                      <div className="row-actions" style={{ marginTop: 8 }}>
+                        <button className="btn btn-small btn-danger" onClick={() => doReject(w)}>Xác nhận từ chối</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(w.id)}>Hủy</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {kind === 'receive' && (
+                    <div style={{ marginTop: 12, maxWidth: 560 }}>
+                      <FieldLabel tip="Ghi tình trạng hàng khi nhận lại (còn nguyên, hư hỏng thêm ở đâu…). Khách sẽ thấy ghi chú này trong thông báo.">Ghi chú tình trạng hàng nhận lại</FieldLabel>
+                      <input type="text" value={recvNote[w.id] || ''}
+                        onChange={(e) => setRecvNote((st) => ({ ...st, [w.id]: e.target.value }))}
+                        placeholder="Ví dụ: Đã nhận đủ hàng, đang kiểm tra lỗi"
+                        style={{ ...fieldInput, width: '100%' }} />
+                      <div className="row-actions" style={{ marginTop: 8 }}>
+                        <button className="btn btn-small btn-primary"
+                          onClick={() => act(w, { action: 'received', note: (recvNote[w.id] || '').trim() })}>Xác nhận đã nhận hàng</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(w.id)}>Hủy</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {kind === 'activate' && (
+                    <div style={{ marginTop: 12, maxWidth: 420 }}>
+                      <FieldLabel required tip="Thời hạn bảo hành tính bằng tháng, bắt đầu từ hôm nay. Chính sách hiện tại của shop là bảo hành 1 tháng. Cấp xong khách sẽ nhận thông báo qua chuông và chat.">Số tháng bảo hành</FieldLabel>
+                      <input type="number" min="1" max="120" value={actMonths[w.id] || ''}
+                        onChange={(e) => setActMonths((st) => ({ ...st, [w.id]: e.target.value }))}
+                        style={{ ...fieldInput, width: 140 }} />
+                      <div className="row-actions" style={{ marginTop: 8 }}>
+                        <button className="btn btn-small btn-primary"
+                          onClick={() => act(w, { action: 'activate', months: parseInt(actMonths[w.id]) })}>Cấp & thông báo khách</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(w.id)}>Hủy</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {kind === 'extend' && (
+                    <div style={{ marginTop: 12, maxWidth: 420 }}>
+                      <FieldLabel required tip="Số tháng cộng thêm vào hạn bảo hành hiện tại (nếu đã hết hạn thì tính từ hôm nay).">Số tháng gia hạn</FieldLabel>
+                      <input type="number" min="1" max="120" value={extendMonths[w.id] || ''}
+                        onChange={(e) => setExtendMonths((st) => ({ ...st, [w.id]: e.target.value }))}
+                        style={{ ...fieldInput, width: 140 }} />
+                      <div className="row-actions" style={{ marginTop: 8 }}>
+                        <button className="btn btn-small btn-primary"
+                          onClick={() => act(w, { action: 'extend', months: parseInt(extendMonths[w.id]) })}>Xác nhận gia hạn</button>
+                        <button className="btn btn-small btn-outline" onClick={() => closeForm(w.id)}>Hủy</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
-                  {w.status === 'requested' && (
-                    <>
-                      <button className="btn btn-small btn-primary" onClick={() => act(w.id, { action: 'accept' })}>✓ Chấp nhận</button>
-                      <button className="btn btn-small btn-outline" onClick={() => act(w.id, { action: 'reject' })}>Từ chối</button>
-                    </>
-                  )}
-                  {w.status === 'accepted' && recvId !== w.id && actId !== w.id && (
-                    <>
-                      <button className="btn btn-small btn-outline"
-                        onClick={() => { setRecvId(w.id); setRecvNote(''); }}>📥 Đã nhận lại hàng</button>
-                      <button className="btn btn-small btn-primary"
-                        onClick={() => { setActId(w.id); setActMonths('12'); }}>🛡️ Cấp bảo hành</button>
-                    </>
-                  )}
-                  {w.status === 'received' && actId !== w.id && (
-                    <button className="btn btn-small btn-primary"
-                      onClick={() => { setActId(w.id); setActMonths('12'); }}>🛡️ Cấp bảo hành</button>
-                  )}
-                  {recvId === w.id && (
-                    <span className="inline-form">
-                      <input type="text" value={recvNote}
-                        onChange={(e) => setRecvNote(e.target.value)}
-                        placeholder="Ghi chú tình trạng hàng nhận lại"
-                        style={{ width: 230, padding: '8px 12px', borderRadius: 8 }} aria-label="Ghi chú hàng nhận lại" />
-                      <button className="btn btn-small btn-primary"
-                        onClick={() => act(w.id, { action: 'received', note: recvNote })}>Xác nhận</button>
-                      <button className="btn btn-small btn-outline" onClick={() => setRecvId(null)}>Hủy</button>
-                    </span>
-                  )}
-                  {actId === w.id && (
-                    <span className="inline-form">
-                      <input type="number" min="1" max="120" value={actMonths}
-                        onChange={(e) => setActMonths(e.target.value)}
-                        placeholder="Số tháng"
-                        style={{ width: 90, padding: '8px 12px', borderRadius: 8 }} aria-label="Số tháng bảo hành" />
-                      <button className="btn btn-small btn-primary"
-                        onClick={() => act(w.id, { action: 'activate', months: parseInt(actMonths) })}>Cấp & thông báo khách</button>
-                      <button className="btn btn-small btn-outline" onClick={() => setActId(null)}>Hủy</button>
-                    </span>
-                  )}
-                  {(disp === 'active' || disp === 'expired') && (
-                    <>
-                      {extendId !== w.id && (
-                        <button className="btn btn-small btn-outline"
-                          onClick={() => { setExtendId(w.id); setExtendMonths('12'); }}>Gia hạn</button>
-                      )}
-                      {extendId === w.id && (
-                        <span className="inline-form">
-                          <input type="number" min="1" max="120" value={extendMonths}
-                            onChange={(e) => setExtendMonths(e.target.value)}
-                            style={{ width: 80, padding: '8px 12px', borderRadius: 8 }} aria-label="Số tháng gia hạn" />
-                          <button className="btn btn-small btn-primary"
-                            onClick={() => act(w.id, { action: 'extend', months: parseInt(extendMonths) })}>Xác nhận</button>
-                          <button className="btn btn-small btn-outline" onClick={() => setExtendId(null)}>Hủy</button>
-                        </span>
-                      )}
-                      <button className="btn btn-small btn-danger" onClick={() => act(w.id, { action: 'void' })}>Hủy BH</button>
-                    </>
-                  )}
-                  {(w.status === 'accepted' || w.status === 'received') && recvId !== w.id && actId !== w.id && (
-                    <button className="btn btn-small btn-danger" onClick={() => act(w.id, { action: 'void' })}>Hủy BH</button>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -442,18 +675,26 @@ function RepairsSection() {
                 )}
               </div>
               {e && (
-                <div className="row-actions" style={{ marginTop: 10 }}>
-                  <select value={e.status}
-                    onChange={(ev) => setEditing((s2) => ({ ...s2, [r.id]: { ...s2[r.id], status: ev.target.value } }))}
-                    style={{ padding: '8px 12px', borderRadius: 8 }} aria-label="Trạng thái sửa chữa">
-                    {Object.entries(REPAIR_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
-                  <input type="number" min="0" value={e.fee}
-                    onChange={(ev) => setEditing((s2) => ({ ...s2, [r.id]: { ...s2[r.id], fee: ev.target.value } }))}
-                    placeholder="Phí (đ)" aria-label="Phí sửa chữa"
-                    style={{ width: 130, padding: '8px 12px', borderRadius: 8 }} />
-                  <button className="btn btn-small btn-primary" onClick={() => save(r.id)}>Lưu</button>
-                  <button className="btn btn-small btn-outline" onClick={() => cancelEdit(r.id)}>Hủy</button>
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 12, alignItems: 'flex-end' }}>
+                  <span>
+                    <FieldLabel>Trạng thái sửa chữa</FieldLabel>
+                    <select value={e.status}
+                      onChange={(ev) => setEditing((s2) => ({ ...s2, [r.id]: { ...s2[r.id], status: ev.target.value } }))}
+                      style={{ ...fieldInput, marginBottom: 0 }} aria-label="Trạng thái sửa chữa">
+                      {Object.entries(REPAIR_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                    </select>
+                  </span>
+                  <span>
+                    <FieldLabel tip="Phí sửa chữa tính bằng đồng, gõ trực tiếp số tiền. Để 0 nếu sửa miễn phí.">Phí sửa chữa (đ)</FieldLabel>
+                    <input type="number" min="0" value={e.fee}
+                      onChange={(ev) => setEditing((s2) => ({ ...s2, [r.id]: { ...s2[r.id], fee: ev.target.value } }))}
+                      placeholder="Ví dụ: 150000" aria-label="Phí sửa chữa"
+                      style={{ ...fieldInput, width: 150, marginBottom: 0 }} />
+                  </span>
+                  <span className="row-actions">
+                    <button className="btn btn-small btn-primary" onClick={() => save(r.id)}>Lưu</button>
+                    <button className="btn btn-small btn-outline" onClick={() => cancelEdit(r.id)}>Hủy</button>
+                  </span>
                 </div>
               )}
             </div>

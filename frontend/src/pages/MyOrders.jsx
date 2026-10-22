@@ -46,6 +46,82 @@ function ImagePicker({ images, setImages, t, onError }) {
   );
 }
 
+// Bộ chọn sản phẩm cho dialog đổi/trả: khách tick từng món + gõ số lượng muốn
+// đổi/trả (tối đa = đã mua - đã hoàn tất đổi/trả trước đó). Tự nạp chi tiết đơn
+// và lịch sử đổi/trả của chính khách khi mở dialog.
+function ReturnItemPicker({ orderId, value, onChange, t, onError }) {
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    (async () => {
+      try {
+        const [{ order }, retData] = await Promise.all([
+          api.getOrder(orderId),
+          authFetch('/api/returns', {}, t).catch(() => ({ returns: [] })),
+        ]);
+        if (!alive) return;
+        const returnedMap = {};
+        for (const r of retData.returns || []) {
+          if (r.order_id !== orderId || r.status !== 'completed') continue;
+          for (const it of r.items || []) {
+            if (it.order_item_id) returnedMap[it.order_item_id] = (returnedMap[it.order_item_id] || 0) + it.quantity;
+          }
+        }
+        onChange((order.items || []).map((i) => {
+          const max = Math.max(0, i.quantity - (returnedMap[i.id] || 0));
+          return {
+            order_item_id: i.id, product_name: i.product_name, variant_sku: i.variant_sku || '',
+            price: i.price, max, qty: max, checked: max > 0,
+          };
+        }));
+      } catch (e) { if (alive) onError(e.message); }
+      if (alive) setLoading(false);
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
+
+  if (loading) return <div className="field"><label>{t('myOrders.returnItems')} <span className="tip-star" data-tip={t('myOrders.returnItemsHint')}>*</span></label><p style={{ color: 'var(--muted)' }}>{t('common.loading')}</p></div>;
+  return (
+    <div className="field">
+      <label>{t('myOrders.returnItems')} <span className="tip-star" data-tip={t('myOrders.returnItemsHint')}>*</span></label>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {value.map((row, idx) => (
+          <ReturnPickRow key={row.order_item_id} row={row} t={t}
+            onToggle={(c) => onChange(value.map((x, j) => (j === idx ? { ...x, checked: c } : x)))}
+            onQty={(q) => onChange(value.map((x, j) => (j === idx ? { ...x, qty: q } : x)))} />
+        ))}
+      </div>
+      <p style={{ color: 'var(--muted)', fontSize: '.85rem', marginTop: 6 }}>{t('myOrders.returnItemsHint')}</p>
+    </div>
+  );
+}
+
+function ReturnPickRow({ row, onToggle, onQty, t }) {
+  const name = useProductName({ name: row.product_name });
+  const disabled = row.max <= 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid var(--panel-border)', borderRadius: 10, opacity: disabled ? 0.55 : 1 }}>
+      <input type="checkbox" checked={row.checked && !disabled} disabled={disabled}
+        onChange={(e) => onToggle(e.target.checked)} style={{ width: 18, height: 18, flexShrink: 0 }} />
+      <span style={{ flex: 1, fontSize: '.92rem' }}>
+        {name}
+        {row.variant_sku && <span style={{ color: 'var(--muted)' }}> · {row.variant_sku}</span>}
+        <span style={{ color: 'var(--muted)' }}> — {fmtVND(row.price)}</span>
+        {disabled && <span style={{ color: 'var(--muted)' }}> ({t('myOrders.alreadyReturned')})</span>}
+      </span>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.85rem', color: 'var(--muted)', margin: 0 }}>
+        {t('myOrders.qtyShort')}
+        <input type="number" min="1" max={row.max} value={row.qty} disabled={disabled || !row.checked}
+          onChange={(e) => onQty(e.target.value)}
+          style={{ width: 64, padding: '6px 8px', borderRadius: 8 }} aria-label={t('myOrders.qtyShort')} />
+        <span>/ {row.max}</span>
+      </label>
+    </div>
+  );
+}
+
 // Nhãn phương thức thanh toán (khớp backend routes/orders.js) — qua i18n
 
 // Gọi API có auth — bản rút gọn dùng riêng trong trang này cho các route mới
@@ -143,6 +219,7 @@ export default function MyOrders() {
   const [returnType, setReturnType] = useState('return');
   const [returnReason, setReturnReason] = useState('');
   const [returnImages, setReturnImages] = useState([]);
+  const [returnPick, setReturnPick] = useState([]);
   // Yêu cầu bảo hành: đơn đang chọn + lý do + ảnh minh họa
   // (thời hạn bảo hành do shop quyết định khi duyệt, khách không chọn)
   const [warrantyTarget, setWarrantyTarget] = useState(null);
@@ -185,18 +262,24 @@ export default function MyOrders() {
   // Tạo yêu cầu đổi/trả cho đơn đã giao → POST /api/returns
   // Bắt buộc lý do + ít nhất 1 ảnh minh họa; tạo xong đơn tự vào chat tư vấn với shop.
   const doRequestReturn = async () => {
+    const items = returnPick
+      .filter((r) => r.checked && r.max > 0)
+      .map((r) => ({ order_item_id: r.order_item_id, quantity: Math.max(1, Math.min(parseInt(r.qty) || 0, r.max)) }))
+      .filter((x) => x.quantity >= 1);
+    if (items.length === 0) { showToast(t('myOrders.needReturnItems'), true); return; }
     if (!returnReason.trim()) { showToast(t('myOrders.needReturnReason'), true); return; }
     if (returnImages.length === 0) { showToast(t('myOrders.needImages'), true); return; }
     try {
       await authFetch('/api/returns', {
         method: 'POST',
-        body: { order_id: returnTarget.id, type: returnType, reason: returnReason.trim(), images: returnImages },
+        body: { order_id: returnTarget.id, type: returnType, reason: returnReason.trim(), images: returnImages, items },
       }, t);
       showToast(t('myOrders.returnSent', { type: returnType === 'exchange' ? t('myOrders.exchange') : t('myOrders.return'), id: returnTarget.id }));
       setReturnTarget(null);
       setReturnType('return');
       setReturnReason('');
       setReturnImages([]);
+      setReturnPick([]);
     } catch (e) { showToast(e.message, true); }
   };
 
@@ -252,7 +335,7 @@ export default function MyOrders() {
             {o.status === 'delivered' && (
               <>
                 <button className="btn btn-small btn-outline"
-                  onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); setReturnImages([]); }}>
+                  onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); setReturnImages([]); setReturnPick([]); }}>
                   {t('myOrders.requestReturn')}
                 </button>
                 <button className="btn btn-small btn-outline"
@@ -306,6 +389,8 @@ export default function MyOrders() {
                 <option value="exchange">{t('myOrders.returnExchange')}</option>
               </select>
             </div>
+            <ReturnItemPicker orderId={returnTarget.id} value={returnPick} onChange={setReturnPick} t={t}
+              onError={(m) => showToast(m, true)} />
             <div className="field">
               <label>{t('myOrders.reason')}</label>
               <textarea

@@ -29,16 +29,24 @@ function isValidDate(s) {
 // đơn cancelled / hoàn tiền (refunded) không tính),
 // số đơn hôm nay, số đơn chờ xử lý, số SP sắp hết, số khách hàng
 router.get('/summary', (req, res) => {
+  // Khoản hoàn từ đổi/trả đã hoàn tất, tính trên cùng tập đơn (đơn còn 'verified';
+  // đơn hoàn toàn bộ đã chuyển 'refunded' nên tự bị loại, không trừ 2 lần)
+  const refundOf = (dateCond) => db.prepare(
+    `SELECT COALESCE(SUM(r.refund_amount), 0) AS v
+     FROM returns r JOIN orders o ON o.id = r.order_id
+     WHERE r.status = 'completed' AND o.payment_status = 'verified' AND o.status != 'cancelled'
+       AND ${dateCond}`
+  ).get().v;
   const revenue_today = db.prepare(
     `SELECT COALESCE(SUM(total), 0) AS v FROM orders
      WHERE payment_status = 'verified' AND status != 'cancelled'
        AND date(created_at, 'localtime') = ${LOCAL}`
-  ).get().v;
+  ).get().v - refundOf(`date(o.created_at, 'localtime') = ${LOCAL}`);
   const revenue_month = db.prepare(
     `SELECT COALESCE(SUM(total), 0) AS v FROM orders
      WHERE payment_status = 'verified' AND status != 'cancelled'
        AND strftime('%Y-%m', created_at, 'localtime') = strftime('%Y-%m', ${LOCAL})`
-  ).get().v;
+  ).get().v - refundOf(`strftime('%Y-%m', o.created_at, 'localtime') = strftime('%Y-%m', ${LOCAL})`);
   const orders_today = db.prepare(
     `SELECT COUNT(*) AS n FROM orders WHERE date(created_at, 'localtime') = ${LOCAL}`
   ).get().n;
@@ -91,6 +99,17 @@ router.get('/revenue', (req, res) => {
   ).all(fmt, from, to);
   const byLabel = Object.fromEntries(rows.map((r) => [r.label, r]));
 
+  // Khoản hoàn đổi/trả theo cùng nhãn thời gian (tính theo ngày của đơn gốc)
+  const refundRows = db.prepare(
+    `SELECT strftime(?, o.created_at, 'localtime') AS label,
+            COALESCE(SUM(r.refund_amount), 0) AS refund
+     FROM returns r JOIN orders o ON o.id = r.order_id
+     WHERE r.status = 'completed' AND o.payment_status = 'verified' AND o.status != 'cancelled'
+       AND date(o.created_at, 'localtime') >= date(?) AND date(o.created_at, 'localtime') <= date(?)
+     GROUP BY label`
+  ).all(fmt, from, to);
+  const refundByLabel = Object.fromEntries(refundRows.map((r) => [r.label, Number(r.refund) || 0]));
+
   // Lấp khoảng trống: sinh chuỗi nhãn từ from đến to (JS thuần, không query thêm)
   const labels = [];
   const [fy, fm, fd] = from.split('-').map(Number);
@@ -109,7 +128,7 @@ router.get('/revenue', (req, res) => {
 
   res.json(labels.map((label) => ({
     label,
-    revenue: Number(byLabel[label]?.revenue) || 0,
+    revenue: Math.max(0, (Number(byLabel[label]?.revenue) || 0) - (refundByLabel[label] || 0)),
     orders: Number(byLabel[label]?.orders) || 0,
   })));
 });
@@ -129,11 +148,24 @@ router.get('/top-products', (req, res) => {
      ORDER BY qty_sold DESC
      LIMIT ?`
   ).all(limit);
-  res.json(rows.map((r) => ({
-    product_name: r.product_name,
-    qty_sold: Number(r.qty_sold) || 0,
-    revenue: Number(r.revenue) || 0,
-  })));
+  // Trừ phần đã đổi/trả hoàn tất để số bán chạy phản ánh lượng bán thực
+  const returned = db.prepare(
+    `SELECT ri.product_name,
+            COALESCE(SUM(ri.quantity), 0) AS qty,
+            COALESCE(SUM(ri.quantity * ri.price), 0) AS revenue
+     FROM return_items ri JOIN returns r ON r.id = ri.return_id
+     WHERE r.status = 'completed'
+     GROUP BY ri.product_name`
+  ).all();
+  const returnedMap = Object.fromEntries(returned.map((x) => [x.product_name, x]));
+  res.json(rows.map((r) => {
+    const back = returnedMap[r.product_name] || { qty: 0, revenue: 0 };
+    return {
+      product_name: r.product_name,
+      qty_sold: Math.max(0, (Number(r.qty_sold) || 0) - (Number(back.qty) || 0)),
+      revenue: Math.max(0, (Number(r.revenue) || 0) - (Number(back.revenue) || 0)),
+    };
+  }).filter((r) => r.qty_sold > 0));
 });
 
 // GET /api/reports/low-stock?threshold=5 — sản phẩm & biến thể sắp hết hàng (kèm SKU)
@@ -168,10 +200,19 @@ router.get('/payments-by-method', (req, res) => {
     `SELECT method, COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
      FROM payments WHERE status = 'verified' GROUP BY method ORDER BY count DESC`
   ).all();
+  // Trừ khoản hoàn một phần của các đơn còn 'verified' (đơn hoàn toàn bộ đã
+  // chuyển payment sang 'refunded' nên không nằm trong tổng gốc, tránh trừ 2 lần)
+  const refunds = db.prepare(
+    `SELECT p.method, COALESCE(SUM(r.refund_amount), 0) AS refund
+     FROM returns r JOIN payments p ON p.order_id = r.order_id
+     WHERE r.status = 'completed' AND p.status = 'verified'
+     GROUP BY p.method`
+  ).all();
+  const refundMap = Object.fromEntries(refunds.map((x) => [x.method, Number(x.refund) || 0]));
   res.json(rows.map((r) => ({
     method: r.method,
     count: r.count,
-    total: Number(r.total) || 0,
+    total: Math.max(0, (Number(r.total) || 0) - (refundMap[r.method] || 0)),
   })));
 });
 

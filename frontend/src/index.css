@@ -973,3 +973,17 @@ select.select-dark {
 }
 .cat-product-name { flex: 1 1 auto; min-width: 0; }
 .cat-product-meta { color: var(--muted); font-size: .88rem; flex: 0 0 auto; }
+
+/* Dấu sao bắt buộc + bong bóng chú thích khi rê chuột (dùng cho các ô nhập hậu mãi) */
+.req-star { color: #e5484d; font-weight: 800; cursor: help; position: relative; }
+.tip-star { color: #e5484d; font-weight: 800; cursor: help; position: relative; display: inline-block; }
+.tip-star::after {
+  content: attr(data-tip);
+  position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
+  width: max-content; max-width: 240px; white-space: normal; text-align: left;
+  background: #241b12; color: #ffe9c4; border: 1px solid rgba(232,181,106,.45);
+  padding: 8px 10px; border-radius: 8px; font-size: .78rem; font-weight: 400; line-height: 1.45;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .15s ease;
+  z-index: 60;
+}
+.tip-star:hover::after, .tip-star:focus::after { opacity: 1; }
