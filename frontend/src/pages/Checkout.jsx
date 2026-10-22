@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import PageTitle from '../components/PageTitle';
 import { useNavigate } from 'react-router-dom';
 import { api, fmtVND, fmtDay } from '../api';
@@ -92,8 +93,16 @@ export default function Checkout() {
   const discount = voucher?.valid ? voucher.discount : cardDiscount;
   const grandTotal = Math.max(0, orderTotal + shipFee - discount);
 
+  // Đang mở cửa sổ chọn thẻ thì phím Escape đóng lại
+  useEffect(() => {
+    if (!cardsOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setCardsOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [cardsOpen]);
+
   // Chọn/bỏ chọn thẻ: chọn thẻ thì xóa trạng thái voucher (chỉ dùng 1 loại ưu đãi).
-  // Chọn xong thì thu gọn danh sách lại cho gọn trang.
+  // Chọn xong thì đóng cửa sổ chọn thẻ.
   const pickCard = (c) => {
     if (selectedCard?.id === c.id) { setSelectedCard(null); return; }
     setSelectedCard(c);
@@ -304,44 +313,58 @@ export default function Checkout() {
                 <span className="checkout-cards-arrow" aria-hidden="true">{cardsOpen ? '▴' : '▾'}</span>
               </div>
 
-              {cardsOpen && (
-                <div className="checkout-cards-list">
+              {cardsOpen && createPortal((
+                <div className="card-picker-overlay" onClick={() => setCardsOpen(false)}>
                   <div
-                    className={`checkout-card-option${!selectedCard ? ' selected' : ''}`}
-                    role="radio"
-                    aria-checked={!selectedCard}
-                    tabIndex={0}
-                    onClick={() => { setSelectedCard(null); setCardsOpen(false); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCard(null); setCardsOpen(false); } }}
+                    className="card-picker-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('tier.myCards')}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <span>{t('tier.noCard')}</span>
-                    {!selectedCard && <span className="checkout-card-check">✓</span>}
-                  </div>
-                  {myCards.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`checkout-card-option${selectedCard?.id === c.id ? ' selected' : ''}`}
-                      role="radio"
-                      aria-checked={selectedCard?.id === c.id}
-                      tabIndex={0}
-                      onClick={() => pickCard(c)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(c); } }}
-                    >
-                      <span aria-hidden="true">{c.source === 'hunt' ? '🎯' : '🎟️'}</span>
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <span className="card-code">{c.code}</span>
-                        {' • '}{c.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${c.tier}`)}
-                        {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
-                      </span>
-                      <span className="card-off">−{c.percent}%</span>
-                      {selectedCard?.id === c.id && <span className="checkout-card-check">✓</span>}
+                    <div className="card-picker-head">
+                      <strong>🎟️ {t('tier.myCards')}</strong>
+                      <button type="button" className="card-picker-close" aria-label="Đóng" onClick={() => setCardsOpen(false)}>✕</button>
                     </div>
-                  ))}
-                  {selectedCard && (
-                    <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>{t('tier.oneDiscountOnly')}</p>
-                  )}
+                    <div className="checkout-cards-list">
+                      <div
+                        className={`checkout-card-option${!selectedCard ? ' selected' : ''}`}
+                        role="radio"
+                        aria-checked={!selectedCard}
+                        tabIndex={0}
+                        onClick={() => { setSelectedCard(null); setCardsOpen(false); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCard(null); setCardsOpen(false); } }}
+                      >
+                        <span>{t('tier.noCard')}</span>
+                        {!selectedCard && <span className="checkout-card-check">✓</span>}
+                      </div>
+                      {myCards.map((c) => (
+                        <div
+                          key={c.id}
+                          className={`checkout-card-option${selectedCard?.id === c.id ? ' selected' : ''}`}
+                          role="radio"
+                          aria-checked={selectedCard?.id === c.id}
+                          tabIndex={0}
+                          onClick={() => pickCard(c)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(c); } }}
+                        >
+                          <span aria-hidden="true">{c.source === 'hunt' ? '🎯' : '🎟️'}</span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span className="card-code">{c.code}</span>
+                            {' • '}{c.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${c.tier}`)}
+                            {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
+                          </span>
+                          <span className="card-off">−{c.percent}%</span>
+                          {selectedCard?.id === c.id && <span className="checkout-card-check">✓</span>}
+                        </div>
+                      ))}
+                      {selectedCard && (
+                        <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>{t('tier.oneDiscountOnly')}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
+              ), document.body)}
             </div>
           )}
 
