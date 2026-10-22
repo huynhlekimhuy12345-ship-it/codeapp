@@ -88,7 +88,7 @@ router.post('/register', registerRateLimit, (req, res) => {
 
   const hash = bcrypt.hashSync(password, 10);
   const info = db.prepare(
-    'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)'
+    "INSERT INTO users (name, email, password_hash, known_tier) VALUES (?, ?, ?, 'potential')"
   ).run(name.trim(), email.trim().toLowerCase(), hash);
   const user = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json({ user, token: signToken(user) });

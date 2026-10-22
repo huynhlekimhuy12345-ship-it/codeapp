@@ -68,6 +68,36 @@ function tierInfo(userId) {
   return { tier: TIER_MAP[tierKey], stats, next };
 }
 
+// Kiểm tra thăng hạng: so hạng hiện tại với hạng cao nhất đã ghi nhận (users.known_tier).
+// - known_tier NULL (khách cũ chưa đồng bộ): ghi mốc hiện tại, KHÔNG báo (tránh báo nhầm hàng loạt).
+// - Hạng mới CAO HƠN mốc: báo chuông "thăng hạng" + nâng mốc lên hạng mới.
+// - Tụt hạng (do hoàn tiền): giữ nguyên mốc — chỉ báo khi vượt đỉnh cũ, không báo lặp.
+// Trả về true nếu vừa gửi thông báo thăng hạng.
+function checkTierUpgrade(userId) {
+  const user = db.prepare('SELECT known_tier FROM users WHERE id = ?').get(userId);
+  if (!user) return false;
+  const current = tierInfo(userId).tier.key;
+  if (user.known_tier == null) {
+    db.prepare('UPDATE users SET known_tier = ? WHERE id = ?').run(current, userId);
+    return false;
+  }
+  if (TIER_ORDER.indexOf(current) > TIER_ORDER.indexOf(user.known_tier)) {
+    const tier = TIER_MAP[current];
+    db.prepare(
+      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+    ).run(
+      userId,
+      'tier_up',
+      `🎉 Chúc mừng! Bạn đã thăng hạng ${tier.name}`,
+      `Bạn vừa lên hạng ${tier.name} — mỗi tháng bạn nhận ${tier.cards} thẻ giảm ${tier.percent}% cho 1 sản phẩm. Bấm để xem thẻ và đặc quyền hạng của bạn.`,
+      '/hang-cua-toi'
+    );
+    db.prepare('UPDATE users SET known_tier = ? WHERE id = ?').run(current, userId);
+    return true;
+  }
+  return false;
+}
+
 // Che tên cho bảng xếp hạng: "Nguyễn Văn An" -> "Nguyễn Văn A***" (không lộ thông tin cá nhân)
 function maskName(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -77,4 +107,4 @@ function maskName(name) {
   return [...parts.slice(0, -1), last.slice(0, 1) + '***'].join(' ');
 }
 
-module.exports = { TIERS, TIER_MAP, TIER_ORDER, computeTier, userStats, tierInfo, maskName };
+module.exports = { TIERS, TIER_MAP, TIER_ORDER, computeTier, userStats, tierInfo, maskName, checkTierUpgrade };

@@ -6,7 +6,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
-const { TIERS, TIER_MAP, computeTier, userStats, tierInfo, maskName } = require('../lib/tiers');
+const { TIERS, TIER_MAP, computeTier, userStats, tierInfo, maskName, checkTierUpgrade } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -82,6 +82,9 @@ function topUpForUser(userId, period) {
 // GET /api/loyalty/me — khách xem hạng, tiến trình thăng hạng và thẻ của mình
 router.get('/me', auth, (req, res) => {
   sweepExpired();
+  // Lớp phủ kiểm tra thăng hạng: mọi đường lên hạng (kể cả COD) đều được phát hiện
+  // khi khách mở trang hạng / vào thanh toán (đều gọi API này).
+  try { checkTierUpgrade(req.user.id); } catch (e) { /* bỏ qua lỗi phụ */ }
   const period = currentPeriod();
   issueForUser(req.user.id, period);
   const info = tierInfo(req.user.id);

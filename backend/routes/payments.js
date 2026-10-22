@@ -5,6 +5,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
+const { checkTierUpgrade } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -147,6 +148,14 @@ router.put('/:id/verify', auth, staffOnly, (req, res) => {
   try { paymentId = apply(); }
   catch (e) { return res.status(400).json({ error: e.message }); }
   if (!paymentId) return res.status(404).json({ error: 'Không tìm thấy thanh toán' });
+  // Duyệt thanh toán thành công có thể làm khách thăng hạng -> kiểm tra + báo chuông
+  if (action === 'verified') {
+    try {
+      const pay = db.prepare('SELECT order_id FROM payments WHERE id = ?').get(paymentId);
+      const ord = pay && db.prepare('SELECT user_id FROM orders WHERE id = ?').get(pay.order_id);
+      if (ord && ord.user_id) checkTierUpgrade(ord.user_id);
+    } catch (e) { /* thông báo thăng hạng lỗi không được làm hỏng việc duyệt thanh toán */ }
+  }
   res.json({ payment: getPaymentFull(paymentId) });
 });
 

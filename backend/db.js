@@ -460,6 +460,9 @@ addColumnIfMissing('announcements', 'image_pos_y', 'image_pos_y INTEGER NOT NULL
 addColumnIfMissing('orders', 'shipping_fee', 'shipping_fee INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'discount_total', 'discount_total INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('orders', 'shipping_method_id', 'shipping_method_id INTEGER REFERENCES shipping_methods(id) ON DELETE SET NULL');
+// Hạng cao nhất hệ thống đã ghi nhận cho khách (để phát hiện THĂNG HẠNG và báo chuông).
+// NULL = khách cũ chưa đồng bộ lần nào; khách mới đăng ký được gán sẵn 'potential'.
+addColumnIfMissing('users', 'known_tier', 'known_tier TEXT DEFAULT NULL');
 
 // --- Hậu mãi vào chat: ảnh minh họa cho đổi/trả, lý do + ảnh cho bảo hành,
 //     và thẻ yêu cầu (kind/ref) trong tin nhắn chat ---
