@@ -65,18 +65,18 @@ function eventWithTypes(event, userId) {
 
 // Sinh danh sách loại thẻ ngẫu nhiên: loại đầu hiếm nhất (% cao nhất, hạn ngắn nhất),
 // càng về sau % càng thấp, hạn càng dài — độ hiếm giảm dần theo % và số ngày.
-function randomTypes(count, perTypeQty) {
+// Số thẻ của từng loại CŨNG ngẫu nhiên (tối đa 10): thẻ càng hiếm càng ít thẻ.
+function randomTypes(count) {
   const n = Math.max(1, Math.min(20, parseInt(count) || 10));
-  const qty = Math.max(1, parseInt(perTypeQty) || 10);
   const types = [];
   for (let i = 0; i < n; i++) {
     const ratio = n === 1 ? 0 : i / (n - 1); // 0 = hiếm nhất, 1 = thường nhất
     const percent = Math.max(5, Math.round(MAX_PERCENT - ratio * (MAX_PERCENT - 5)));
-    let days;
-    if (percent >= 18) days = 1 + Math.floor(Math.random() * 2);       // 1-2 ngày
-    else if (percent >= 14) days = 2 + Math.floor(Math.random() * 2);  // 2-3 ngày
-    else if (percent >= 10) days = 3 + Math.floor(Math.random() * 3);  // 3-5 ngày
-    else days = 5 + Math.floor(Math.random() * 3);                      // 5-7 ngày
+    let days; let qty;
+    if (percent >= 18) { days = 1 + Math.floor(Math.random() * 2); qty = 1 + Math.floor(Math.random() * 3); }        // 1-2 ngày · 1-3 thẻ
+    else if (percent >= 14) { days = 2 + Math.floor(Math.random() * 2); qty = 2 + Math.floor(Math.random() * 4); }   // 2-3 ngày · 2-5 thẻ
+    else if (percent >= 10) { days = 3 + Math.floor(Math.random() * 3); qty = 3 + Math.floor(Math.random() * 5); }   // 3-5 ngày · 3-7 thẻ
+    else { days = 5 + Math.floor(Math.random() * 3); qty = 5 + Math.floor(Math.random() * 6); }                       // 5-7 ngày · 5-10 thẻ
     const label = percent >= 18 ? 'Cực hiếm' : percent >= 14 ? 'Hiếm' : percent >= 10 ? 'May mắn' : 'Thường';
     types.push({ label, percent, valid_days: Math.min(MAX_DAYS, days), quantity: qty });
   }
@@ -162,10 +162,11 @@ router.get('/admin', auth, adminOnly, (req, res) => {
   res.json({ events: rows.map((ev) => eventWithTypes(ev, null)) });
 });
 
-// POST /api/hunt-events/admin/random-preview { count, per_type_qty } — xem trước bộ thẻ random
+// POST /api/hunt-events/admin/random-preview { count } — xem trước bộ thẻ random
+// (số thẻ từng loại cũng random theo độ hiếm, tối đa 10)
 router.post('/admin/random-preview', auth, adminOnly, (req, res) => {
-  const { count, per_type_qty } = req.body || {};
-  res.json({ types: randomTypes(count, per_type_qty) });
+  const { count } = req.body || {};
+  res.json({ types: randomTypes(count) });
 });
 
 // POST /api/hunt-events/admin — tạo + phát hành sự kiện
@@ -180,7 +181,7 @@ router.post('/admin', auth, adminOnly, (req, res) => {
 
   let types;
   if (mode === 'random') {
-    types = randomTypes(req.body.type_count, req.body.per_type_qty);
+    types = randomTypes(req.body.type_count);
   } else {
     types = Array.isArray(req.body.types) ? req.body.types : [];
     if (!types.length) return res.status(400).json({ error: 'Sự kiện phải có ít nhất 1 loại thẻ' });

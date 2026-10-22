@@ -63,7 +63,6 @@ export default function HuntEventsTab() {
   const [mode, setMode] = useState('manual');
   const [rows, setRows] = useState([newRow('May mắn', 10, 3, 10)]);
   const [randCount, setRandCount] = useState(10);
-  const [randQty, setRandQty] = useState(10);
   const [preview, setPreview] = useState(null); // bộ thẻ random đã sinh thử -> sẽ phát hành đúng bộ này
 
   const load = () => req('/api/hunt-events/admin').then((d) => setEvents(d.events || [])).catch((e) => setErr(e.message));
@@ -77,7 +76,7 @@ export default function HuntEventsTab() {
     try {
       const d = await req('/api/hunt-events/admin/random-preview', {
         method: 'POST',
-        body: { count: Number(randCount) || 10, per_type_qty: Number(randQty) || 10 },
+        body: { count: Number(randCount) || 10 },
       });
       setPreview(d.types || []);
     } catch (e) { setErr(e.message); }
@@ -92,7 +91,7 @@ export default function HuntEventsTab() {
       // Đã sinh thử -> phát hành đúng bộ thẻ đã xem; chưa sinh -> để hệ thống tự random
       payload = preview
         ? { name, starts_at: startsAt, ends_at: endsAt, mode: 'manual', types: preview }
-        : { name, starts_at: startsAt, ends_at: endsAt, mode: 'random', type_count: Number(randCount) || 10, per_type_qty: Number(randQty) || 10 };
+        : { name, starts_at: startsAt, ends_at: endsAt, mode: 'random', type_count: Number(randCount) || 10 };
     } else {
       payload = {
         name, starts_at: startsAt, ends_at: endsAt, mode: 'manual',
@@ -206,11 +205,8 @@ export default function HuntEventsTab() {
                 <FieldLabel required tip="Hệ thống sinh ngần này loại thẻ khác nhau. Loại đầu hiếm nhất (giảm 20%, hạn ngắn), càng về sau càng thường.">Số loại thẻ</FieldLabel>
                 <input style={inputStyle} type="number" min="1" max="20" value={randCount} onChange={(e) => { setRandCount(e.target.value); setPreview(null); }} />
               </div>
-              <div>
-                <FieldLabel required tip="Mỗi loại có ngần này thẻ cho khách săn. Ví dụ 10 loại × 10 thẻ = 100 thẻ.">Số thẻ mỗi loại</FieldLabel>
-                <input style={inputStyle} type="number" min="1" value={randQty} onChange={(e) => { setRandQty(e.target.value); setPreview(null); }} />
-              </div>
             </div>
+            <p className="muted" style={{ margin: '10px 0 0', fontSize: '.9rem' }}>Số thẻ của mỗi loại cũng được sinh ngẫu nhiên: thẻ càng hiếm càng ít thẻ, tối đa 10 thẻ/loại. Bấm Sinh thử để xem trước cả bộ.</p>
             <button className="btn btn-small" style={{ marginTop: 12 }} onClick={genPreview}>🎲 Sinh thử bộ thẻ</button>
             {preview && (
               <div style={{ marginTop: 10, fontSize: '.92rem' }}>
