@@ -94,7 +94,7 @@
 .metal-art {
   position: relative; z-index: 1; width: 36%; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.34), transparent 74%);
+  background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.14), transparent 74%);
   /* Viền mỏng quanh ô hình, màu theo viền của từng hạng */
   border-right: 1.5px solid color-mix(in srgb, var(--frame, #fff) 70%, transparent);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--frame, #fff) 45%, transparent);
@@ -107,9 +107,9 @@
 .beast-bronze img { transform: scale(1.03); }
 .beast-silver img { transform: scale(0.97) translateY(1.5%); }
 /* Kỳ Lân nét mảnh trên nền pastel: quầng tối đậm sau lưng cho nổi hình */
-.metal-diamond .metal-art { background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.66), transparent 74%); }
+.metal-diamond .metal-art { background: radial-gradient(85% 80% at 50% 50%, rgba(18,14,9,.45), transparent 74%); }
 /* Bạch Hổ trắng trên nền bạc sáng: quầng tối sau lưng + viền chữ rất mỏng để không bị chìm */
-.metal-silver .metal-art { background: radial-gradient(88% 84% at 50% 50%, rgba(18,14,9,.85), rgba(18,14,9,.45) 62%, transparent 82%); }
+.metal-silver .metal-art { background: radial-gradient(88% 84% at 50% 50%, rgba(18,14,9,.55), rgba(18,14,9,.28) 62%, transparent 82%); }
 .metal-silver .metal-beast { -webkit-text-stroke: .4px rgba(20,14,8,.4); }
 
 .metal-info {
