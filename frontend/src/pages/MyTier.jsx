@@ -48,7 +48,6 @@ function DiscountCard({ card, t }) {
       <div className="mytier-card-main">
         <code className="mytier-card-code">{card.code}</code>
         {card.source === 'hunt' && <span className="mytier-card-hunt">{t('tier.huntBadge')}</span>}
-        <div className="mytier-card-note">{t('tier.cardForOne')}</div>
         <div className="mytier-card-expiry">{t('tier.cardIssued', { date: fmtDay(card.issued_at) })}</div>
         <div className="mytier-card-expiry">{t('tier.cardExpiry', { date: fmtDay(card.expires_at) })}</div>
       </div>

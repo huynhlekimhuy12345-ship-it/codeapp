@@ -412,9 +412,8 @@ export default {
     huntSoldOut: '已抢完',
     huntLogin: '登录参与',
     huntLeft: '剩余 {left}/{total} 张',
-    huntValid: '自开抢起 {days} 天内有效',
+    huntValid: '有效期 {days} 天 — 截止 {date}',
     huntReceived: '🎉 您已获得 {percent}% 优惠卡！已存入“我的等级”页面。',
-    huntOneItem: '适用于订单中最贵的一件商品',
   },
   collection: {
     kicker: '手工作品集',
@@ -513,7 +512,6 @@ export default {
     maxTier: '您已是最高等级 💎',
     cardsTitle: '{year}年{month}月优惠卡',
     cardsEmpty: '本月暂无优惠卡。',
-    cardForOne: '适用于订单中最贵的一件商品',
     cardExpiry: '有效期至：{date}',
     cardIssued: '发行日期：{date}',
     huntBadge: '🎯 抢购卡',
@@ -568,6 +566,5 @@ export default {
     noCard: '不使用优惠卡',
     oneDiscountOnly: '每单只能使用一种优惠',
     cardDiscount: '等级卡优惠',
-    appliesToPriciest: '适用于最贵的一件商品',
   },
 };

@@ -298,7 +298,6 @@ export default function Checkout() {
                     <span className="card-code">{c.code}</span>
                     {' • '}{c.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${c.tier}`)}
                     {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
-                    <span className="muted"> • {t('tier.appliesToPriciest')}</span>
                   </span>
                   <span className="card-off">−{c.percent}%</span>
                   {selectedCard?.id === c.id && <span className="checkout-card-check">✓</span>}

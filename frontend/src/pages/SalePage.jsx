@@ -65,6 +65,15 @@ function SaleProductItem({ p }) {
   );
 }
 
+/* Ngày hết hạn của thẻ săn: cuối ngày (giờ mở săn + số ngày hạn) — khớp cách tính ở máy chủ */
+function huntExpiryText(startStr, days) {
+  const d = new Date(String(startStr || '').replace(' ', 'T'));
+  if (isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + days);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
 /* ---------- Săn thẻ: từng sự kiện có đồng hồ đếm ngược riêng ---------- */
 function HuntEventBlock({ ev, user, onClaimed }) {
   const { t } = useLang();
@@ -125,8 +134,7 @@ function HuntEventBlock({ ev, user, onClaimed }) {
               <div className="ht-off">-{type.percent}%</div>
               <div className="ht-label">{type.label}</div>
               <ul>
-                <li>{t('sale.huntOneItem')}</li>
-                <li>{t('sale.huntValid', { days: type.valid_days })}</li>
+                <li>{t('sale.huntValid', { days: type.valid_days, date: huntExpiryText(ev.starts_at, type.valid_days) })}</li>
                 <li><b>{t('sale.huntLeft', { left: type.remaining, total: type.quantity })}</b></li>
               </ul>
               <div className="ht-bar"><span style={{ width: `${type.quantity ? (type.remaining / type.quantity) * 100 : 0}%` }} /></div>

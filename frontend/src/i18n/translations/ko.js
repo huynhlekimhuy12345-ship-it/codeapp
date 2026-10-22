@@ -412,9 +412,8 @@ export default {
     huntSoldOut: '소진됨',
     huntLogin: '로그인하고 참여',
     huntLeft: '{left}/{total}장 남음',
-    huntValid: '시작 시점부터 {days}일간 유효',
+    huntValid: '{days}일간 유효 — {date}까지',
     huntReceived: '🎉 {percent}% 할인 카드를 받았습니다! 내 등급 페이지에서 확인하세요.',
-    huntOneItem: '주문에서 가장 비싼 상품 1개에 적용',
   },
   collection: {
     kicker: '수제 컬렉션',
@@ -513,7 +512,6 @@ export default {
     maxTier: '최고 등급입니다 💎',
     cardsTitle: '{year}년 {month}월 할인 카드',
     cardsEmpty: '이번 달 할인 카드가 없습니다.',
-    cardForOne: '주문에서 가장 비싼 상품 1개에 적용',
     cardExpiry: '만료일: {date}',
     cardIssued: '발행: {date}',
     huntBadge: '🎯 쟁취 카드',
@@ -568,6 +566,5 @@ export default {
     noCard: '카드 사용 안 함',
     oneDiscountOnly: '주문당 하나의 혜택만 사용할 수 있습니다',
     cardDiscount: '등급 카드 할인',
-    appliesToPriciest: '가장 비싼 상품 1개에 적용',
   },
 };

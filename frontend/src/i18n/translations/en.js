@@ -412,9 +412,8 @@ export default {
     huntSoldOut: 'Out of cards',
     huntLogin: 'Log in to hunt',
     huntLeft: '{left}/{total} cards left',
-    huntValid: 'Valid {days} days from the hunt start',
+    huntValid: 'Valid for {days} days — until {date}',
     huntReceived: '🎉 You received a {percent}% off card! It is now in your My Tier page.',
-    huntOneItem: 'Applies to the most expensive item in the order',
   },
   collection: {
     kicker: 'Handcrafted collection',
@@ -513,7 +512,6 @@ export default {
     maxTier: 'You are at the highest tier 💎',
     cardsTitle: 'Discount cards for {month}/{year}',
     cardsEmpty: 'You have no discount cards this month.',
-    cardForOne: 'Off one item — the most expensive in your order',
     cardExpiry: 'Expires: {date}',
     cardIssued: 'Issued: {date}',
     huntBadge: '🎯 Hunt card',
@@ -568,6 +566,5 @@ export default {
     noCard: 'No card',
     oneDiscountOnly: 'Only one offer can be used per order',
     cardDiscount: 'Tier card discount',
-    appliesToPriciest: 'applies to the most expensive item',
   },
 };

@@ -412,9 +412,8 @@ export default {
     huntSoldOut: 'Đã hết thẻ',
     huntLogin: 'Đăng nhập để săn',
     huntLeft: 'Còn {left}/{total} thẻ',
-    huntValid: 'Hạn dùng {days} ngày kể từ giờ mở săn',
+    huntValid: 'Hạn dùng {days} ngày — đến hết {date}',
     huntReceived: '🎉 Bạn đã nhận thẻ giảm {percent}%! Thẻ đã có trong trang Hạng của tôi.',
-    huntOneItem: 'Giảm cho 1 sản phẩm đắt nhất trong đơn',
   },
   collection: {
     kicker: 'Bộ sưu tập thủ công',
@@ -513,7 +512,6 @@ export default {
     maxTier: 'Bạn đang ở hạng cao nhất 💎',
     cardsTitle: 'Thẻ giảm giá tháng {month}/{year}',
     cardsEmpty: 'Tháng này bạn chưa có thẻ giảm giá nào.',
-    cardForOne: 'Giảm cho 1 sản phẩm — món đắt nhất trong đơn',
     cardExpiry: 'Hạn dùng: {date}',
     cardIssued: 'Phát hành: {date}',
     huntBadge: '🎯 Thẻ săn sale',
@@ -568,6 +566,5 @@ export default {
     noCard: 'Không dùng thẻ',
     oneDiscountOnly: 'Chỉ dùng 1 loại ưu đãi cho mỗi đơn',
     cardDiscount: 'Thẻ hạng giảm',
-    appliesToPriciest: 'cho 1 sản phẩm đắt nhất',
   },
 };
