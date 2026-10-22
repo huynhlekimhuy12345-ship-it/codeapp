@@ -123,24 +123,18 @@
   margin-top: 8px; font-size: 1.3rem; font-weight: 800; letter-spacing: .02em;
   color: #f5eedd; text-shadow: 0 1px 3px rgba(25,18,10,.55);
 }
-/* Tên thánh thú: bạch kim lì một màu, không lấp lánh */
+/* Tên thánh thú: chữ thư pháp Dancing Script, màu riêng từng thú, tông rõ dễ đọc trên nền thẻ */
 .metal-beast {
-  margin-top: 4px; font-size: 1.16rem; font-weight: 800; letter-spacing: .12em;
-  text-transform: uppercase; line-height: 1.15;
-  color: #aee6ff;
-  -webkit-text-stroke: 1px rgba(25,17,10,.9);
-  text-shadow:
-    1.5px 0 0 rgba(25,17,10,.9), -1.5px 0 0 rgba(25,17,10,.9),
-    0 1.5px 0 rgba(25,17,10,.9), 0 -1.5px 0 rgba(25,17,10,.9),
-    1px 1px 0 rgba(25,17,10,.9), -1px -1px 0 rgba(25,17,10,.9),
-    1px -1px 0 rgba(25,17,10,.9), -1px 1px 0 rgba(25,17,10,.9),
-    0 3px 7px rgba(15,10,5,.45);
+  margin-top: 2px; font-family: 'Dancing Script', cursive;
+  font-size: 1.78rem; font-weight: 700; letter-spacing: .03em;
+  line-height: 1.15; padding-right: .1em;
+  color: #cdeffb; text-shadow: 0 1px 2px rgba(20,14,8,.45), 0 0 10px rgba(20,14,8,.18);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.metal-bronze .metal-beast { color: #8fd4ff; }
-.metal-silver .metal-beast { color: #ffffff; }
-.metal-gold .metal-beast { color: #ff8a66; }
-.metal-diamond .metal-beast { color: #d9b8ff; }
+.metal-bronze .metal-beast { color: #3f9d1e; }
+.metal-silver .metal-beast { color: #46586a; text-shadow: 0 1px 0 rgba(255,255,255,.5), 0 1px 3px rgba(30,25,18,.25); }
+.metal-gold .metal-beast { color: #cd351d; }
+.metal-diamond .metal-beast { color: #7e3fc4; }
 .metal-bottom { display: flex; margin-top: auto; }
 .metal-holder {
   font-size: .8rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
