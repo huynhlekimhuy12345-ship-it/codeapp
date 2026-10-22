@@ -11,7 +11,9 @@
   font-size: 1.05rem; pointer-events: none; opacity: 0.8;
 }
 
-/* Popup lịch react-datepicker — theme tối */
+/* Popup lịch react-datepicker — theme tối.
+   Bố cục flex: cột giờ nằm NGANG HÀNG phía trên cùng lịch (bản gốc dùng float,
+   khi tổng bề ngang vượt popup thì cột giờ bị rớt xuống dưới, trông rất xấu). */
 .dt-calendar {
   background: #2b1d10 !important;
   border: 1px solid rgba(232, 181, 106, 0.35) !important;
@@ -19,6 +21,28 @@
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55) !important;
   font-family: inherit !important;
   color: var(--cream) !important;
+  display: flex !important;
+  align-items: stretch;
+}
+.dt-calendar .react-datepicker__month-container {
+  float: none !important;
+}
+.dt-calendar .react-datepicker__time-container {
+  float: none !important;
+  width: 98px !important;
+  display: flex !important;
+  flex-direction: column;
+}
+.dt-calendar .react-datepicker__time,
+.dt-calendar .react-datepicker__time-box {
+  flex: 1 1 auto;
+  display: flex !important;
+  flex-direction: column;
+  width: 100% !important;
+}
+.dt-calendar .react-datepicker__time-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 .dt-calendar .react-datepicker__header {
   background: #3a2412 !important;
