@@ -131,7 +131,7 @@ a.tier-badge { text-decoration: none; }
   background: linear-gradient(180deg, transparent, rgba(12,9,6,.52) 62%);
 }
 .beast-card-tier { font-size: 1.02rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 2px 9px rgba(0,0,0,.65); }
-.beast-card-beast { margin-top: 1px; font-family: 'Dancing Script', cursive; font-size: 1.32rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15; color: #cdeffb; text-shadow: 0 1px 6px rgba(0,0,0,.65), 0 0 12px rgba(0,0,0,.35); }
+.beast-card-beast { margin-top: 1px; font-family: 'Dancing Script', cursive; font-size: 1.54rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15; color: #cdeffb; text-shadow: 0 1px 6px rgba(0,0,0,.65), 0 0 12px rgba(0,0,0,.35); }
 .beast-bronze .beast-card-beast { color: #7ed957; }
 .beast-silver .beast-card-beast { color: #eef4fa; }
 .beast-gold .beast-card-beast { color: #ff8a66; }
