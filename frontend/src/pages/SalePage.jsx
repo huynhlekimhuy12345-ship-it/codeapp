@@ -65,8 +65,95 @@ function SaleProductItem({ p }) {
   );
 }
 
+/* ---------- Săn thẻ: từng sự kiện có đồng hồ đếm ngược riêng ---------- */
+function HuntEventBlock({ ev, user, onClaimed }) {
+  const { t } = useLang();
+  const name = useTranslatedText(ev.name || '');
+  const target = ev.phase === 'live' ? ev.ends_at : ev.starts_at;
+  const cd = useCountdown(String(target || '').replace(' ', 'T'));
+  const pad = (n) => String(n).padStart(2, '0');
+  const [busyId, setBusyId] = useState(null);
+  const [notice, setNotice] = useState({}); // { [typeId]: {ok, text} }
+
+  const claim = async (type) => {
+    setBusyId(type.id);
+    setNotice((n) => ({ ...n, [type.id]: null }));
+    try {
+      const r = await fetch(`/api/hunt-events/${ev.id}/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ type_id: type.id }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error');
+      setNotice((n) => ({ ...n, [type.id]: { ok: true, text: t('sale.huntReceived', { percent: type.percent }) } }));
+      if (onClaimed) onClaimed();
+    } catch (e) {
+      setNotice((n) => ({ ...n, [type.id]: { ok: false, text: e.message } }));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="hunt-event">
+      <div className="hunt-head">
+        <h3>{name}</h3>
+        <span className={`hunt-phase ${ev.phase}`}>
+          {ev.phase === 'live' ? t('sale.huntLive') : t('sale.huntUpcoming')}
+        </span>
+      </div>
+      <div className="hunt-count">
+        {[
+          [pad(cd.d), t('sale.days')],
+          [pad(cd.h), t('sale.hours')],
+          [pad(cd.m), t('sale.minutes')],
+          [pad(cd.s), t('sale.seconds')],
+        ].map(([n, l]) => (
+          <div className="cd-cell small" key={l}>
+            <div className="cd-num">{n}</div>
+            <div className="cd-lbl">{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="hunt-types">
+        {ev.types.map((type) => {
+          const soldOut = type.remaining <= 0;
+          const mine = type.claimed_by_me;
+          return (
+            <div className={`hunt-type ${soldOut ? 'soldout' : ''} ${mine ? 'mine' : ''}`} key={type.id}>
+              <div className="ht-off">-{type.percent}%</div>
+              <div className="ht-label">{type.label}</div>
+              <ul>
+                <li>{t('sale.huntOneItem')}</li>
+                <li>{t('sale.huntValid', { days: type.valid_days })}</li>
+                <li><b>{t('sale.huntLeft', { left: type.remaining, total: type.quantity })}</b></li>
+              </ul>
+              <div className="ht-bar"><span style={{ width: `${type.quantity ? (type.remaining / type.quantity) * 100 : 0}%` }} /></div>
+              {!user ? (
+                <Link className="btn btn-primary btn-small" to="/dang-nhap">{t('sale.huntLogin')}</Link>
+              ) : (
+                <button
+                  className="btn btn-primary btn-small"
+                  disabled={ev.phase !== 'live' || soldOut || mine || busyId === type.id}
+                  onClick={() => claim(type)}
+                >
+                  {mine ? t('sale.huntSaved') : soldOut ? t('sale.huntSoldOut') : ev.phase !== 'live' ? t('sale.huntUpcoming') : busyId === type.id ? '...' : t('sale.huntSave')}
+                </button>
+              )}
+              {notice[type.id] && (
+                <p className={`ht-note ${notice[type.id].ok ? 'ok' : 'err'}`}>{notice[type.id].text}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function SalePage() {
-  const { addToCart } = useStore();
+  const { addToCart, user } = useStore();
   const { t } = useLang();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
@@ -74,6 +161,15 @@ export default function SalePage() {
   const [vouchers, setVouchers] = useState([]);
   const [products, setProducts] = useState([]);
   const [copied, setCopied] = useState('');
+  const [huntEvents, setHuntEvents] = useState([]);
+
+  const loadHunts = () => {
+    const token = localStorage.getItem('token');
+    return fetch('/api/hunt-events/active', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then((r) => r.json())
+      .then((d) => setHuntEvents(d.events || []))
+      .catch(() => {});
+  };
 
   useEffect(() => {
     fetch('/api/promo-events/active')
@@ -86,7 +182,11 @@ export default function SalePage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+    loadHunts();
+    const id = setInterval(loadHunts, 30000); // cập nhật số thẻ còn lại mỗi 30 giây
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const target = event ? (status === 'live' ? event.end_at : event.start_at) : null;
   const cd = useCountdown(target);
@@ -120,7 +220,7 @@ export default function SalePage() {
     );
   }
 
-  if (!event) {
+  if (!event && huntEvents.length === 0) {
     return (
       <div className="container page sale-page">
         <div className="sale-empty">
@@ -134,6 +234,7 @@ export default function SalePage() {
 
   return (
     <div className="sale-page">
+      {event && (
       <header className="sale-hero">
         <div className="container">
           <span className="sale-kicker">
@@ -163,8 +264,18 @@ export default function SalePage() {
           </p>
         </div>
       </header>
+      )}
 
       <main className="container">
+        {!!huntEvents.length && (
+          <section className="sale-section">
+            <h2>{t('sale.huntTitle')}</h2>
+            <p className="sale-desc">{t('sale.huntDesc')}</p>
+            {huntEvents.map((ev) => (
+              <HuntEventBlock key={ev.id} ev={ev} user={user} onClaimed={loadHunts} />
+            ))}
+          </section>
+        )}
         {!!vouchers.length && (
           <section className="sale-section">
             <h2>{t('sale.voucherTitle', { name: eventName })}</h2>

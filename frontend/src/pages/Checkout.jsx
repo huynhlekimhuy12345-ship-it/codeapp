@@ -59,11 +59,15 @@ export default function Checkout() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Nạp thẻ discount dùng được của khách (chưa dùng, thuộc kỳ hiện tại)
+  // Nạp thẻ discount dùng được của khách: mọi thẻ CHƯA DÙNG và CÒN HẠN
+  // (thẻ tháng + thẻ săn sale), thẻ sắp hết hạn hiện trước.
   useEffect(() => {
     api.getMyTier()
       .then((d) => {
-        setMyCards((d.cards || []).filter((c) => c.status === 'unused' && c.period === d.period));
+        const now = Date.now();
+        setMyCards((d.cards || [])
+          .filter((c) => c.status === 'unused' && c.expires_at && new Date(String(c.expires_at).replace(' ', 'T')).getTime() > now)
+          .sort((a, b) => String(a.expires_at).localeCompare(String(b.expires_at))));
       })
       .catch(() => {});
   }, []);
@@ -289,10 +293,10 @@ export default function Checkout() {
                   onClick={() => pickCard(c)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(c); } }}
                 >
-                  <span aria-hidden="true">🎟️</span>
+                  <span aria-hidden="true">{c.source === 'hunt' ? '🎯' : '🎟️'}</span>
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span className="card-code">{c.code}</span>
-                    {' • '}{t(`tier.name.${c.tier}`)}
+                    {' • '}{c.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${c.tier}`)}
                     {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
                     <span className="muted"> • {t('tier.appliesToPriciest')}</span>
                   </span>

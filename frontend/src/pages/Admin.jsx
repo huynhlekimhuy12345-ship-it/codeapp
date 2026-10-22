@@ -10,6 +10,7 @@ import ShippingTab from './admin/ShippingTab';
 import AftersalesTab from './admin/AftersalesTab';
 import VouchersTab from './admin/VouchersTab';
 import PromoEventsTab from './admin/PromoEventsTab';
+import HuntEventsTab from './admin/HuntEventsTab';
 import NewsTab from './admin/NewsTab';
 import CustomerChatTab from './admin/CustomerChatTab';
 import InternalChatTab from './admin/InternalChatTab';
@@ -918,6 +919,7 @@ const NAV = [
   { key: 'aftersales', icon: '🛠️', label: 'Bảo hành' },
   { key: 'vouchers', icon: '🎟️', label: 'Voucher' },
   { key: 'promos', icon: '🎉', label: 'Sự kiện' },
+  { key: 'hunt', icon: '🎯', label: 'Săn thẻ' },
   { key: 'news', icon: '📰', label: 'Tin tức', badge: 'MỚI' },
   { key: 'reviews', icon: '⭐', label: 'Đánh giá' },
   { key: 'reports', icon: '📊', label: 'Thống kê' },
@@ -1240,8 +1242,9 @@ export default function Admin() {
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useStore();
   // Sale thấy toàn bộ tab, kể cả "Người dùng" (xem hạng + thẻ của khách);
-  // thao tác đổi vai trò tài khoản vẫn chỉ Admin (UsersTab tự ẩn nút với sale)
-  const visibleNav = NAV;
+  // thao tác đổi vai trò tài khoản vẫn chỉ Admin (UsersTab tự ẩn nút với sale).
+  // NGOẠI LỆ: tab "Săn thẻ" chỉ Admin — quyền phát hành sự kiện săn thẻ chỉ thuộc Admin.
+  const visibleNav = NAV.filter((n) => n.key !== 'hunt' || user?.role === 'admin');
   return (
     <div className="container page">
       <h1 className="page-title">Bảng quản trị</h1>
@@ -1286,6 +1289,7 @@ export default function Admin() {
           {tab === 'aftersales' && <AftersalesTab />}
           {tab === 'vouchers' && <VouchersTab />}
           {tab === 'promos' && <PromoEventsTab />}
+          {tab === 'hunt' && user?.role === 'admin' && <HuntEventsTab />}
           {tab === 'news' && <NewsTab />}
           {tab === 'reviews' && <ReviewsTab />}
           {tab === 'reports' && <ReportsTab />}

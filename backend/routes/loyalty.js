@@ -26,11 +26,17 @@ function genCode(tierKey, period) {
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `BI99-${tierKey.toUpperCase()}-${period.replace('-', '')}-${rand}`;
 }
-// Thẻ quá hạn mà còn 'unused' -> chuyển 'expired'
+// Thẻ quá hạn mà còn 'unused' -> chuyển 'expired'.
+// So bằng giờ địa phương của tiến trình (JS): SQLite localtime có thể lệch trên một số máy.
+function nowStr() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
 function sweepExpired() {
   db.prepare(
-    "UPDATE discount_cards SET status = 'expired' WHERE status = 'unused' AND expires_at < datetime('now','localtime')"
-  ).run();
+    "UPDATE discount_cards SET status = 'expired' WHERE status = 'unused' AND expires_at < ?"
+  ).run(nowStr());
 }
 // Cấu hình thẻ của 1 khách theo hạng hiện tại
 function cardConfigFor(userId) {
@@ -80,7 +86,7 @@ router.get('/me', auth, (req, res) => {
   issueForUser(req.user.id, period);
   const info = tierInfo(req.user.id);
   const cards = db.prepare(
-    `SELECT id, code, percent, tier, period, status, issued_at, expires_at, used_order_id
+    `SELECT id, code, percent, tier, period, status, issued_at, expires_at, used_order_id, source, hunt_event_id, hunt_type_id
      FROM discount_cards WHERE user_id = ? ORDER BY period DESC, id`
   ).all(req.user.id);
   res.json({ period, tier: info.tier, stats: info.stats, next: info.next, cards, tiers: TIERS });
@@ -133,18 +139,40 @@ router.get('/admin/stats', auth, staffOnly, (req, res) => {
   });
 });
 
-// POST /api/loyalty/admin/issue { period? } — phát hành thẻ kỳ cho mọi khách chưa có
+// Thông báo chuông cho khách khi nhận thẻ tháng mới (phát hành / đặt lại).
+// Lỗi thông báo không làm hỏng việc phát hành.
+function notifyNewCards(userId, count, period, isReset) {
+  if (!count || count <= 0) return;
+  const cfg = cardConfigFor(userId);
+  const [y, m] = period.split('-');
+  try {
+    db.prepare(
+      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+    ).run(
+      userId, 'tier_card',
+      `🎟️ Bạn nhận được ${count} thẻ discount tháng ${m}/${y}`,
+      `${isReset ? 'Shop vừa đặt lại thẻ tháng này. ' : ''}Bạn có ${count} thẻ giảm ${cfg.percent}% cho 1 sản phẩm (món đắt nhất trong đơn), hạn dùng đến cuối tháng ${m}/${y}. Xem thẻ trong trang Hạng của tôi.`,
+      '/hang-cua-toi'
+    );
+  } catch (e) { /* bỏ qua lỗi thông báo */ }
+}
+
+// POST /api/loyalty/admin/issue { period? } — phát hành thẻ kỳ: BÙ ĐỦ hạn mức theo hạng
+// cho mọi khách (đã có 1 thẻ mà hạn mức 2 thì phát thêm 1), khách nhận thẻ mới được báo chuông.
 router.post('/admin/issue', auth, staffOnly, (req, res) => {
   const period = validPeriod((req.body || {}).period);
   const customers = db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
   let issued = 0;
   let touched = 0;
-  db.transaction(() => {
+  const perUser = db.transaction(() => {
+    const out = [];
     for (const c of customers) {
-      const n = issueForUser(c.id, period);
-      if (n > 0) { issued += n; touched++; }
+      const n = topUpForUser(c.id, period);
+      if (n > 0) { issued += n; touched++; out.push([c.id, n]); }
     }
+    return out;
   })();
+  for (const [uid, n] of perUser) notifyNewCards(uid, n, period, false);
   res.json({ period, issued_cards: issued, customers: touched });
 });
 
@@ -154,13 +182,18 @@ router.post('/admin/reset', auth, staffOnly, (req, res) => {
   const period = validPeriod((req.body || {}).period);
   const customers = db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
   let issued = 0;
+  const perUser = [];
   const removed = db.transaction(() => {
     const del = db.prepare(
       "DELETE FROM discount_cards WHERE period = ? AND status IN ('unused','expired')"
     ).run(period);
-    for (const c of customers) issued += topUpForUser(c.id, period);
+    for (const c of customers) {
+      const n = topUpForUser(c.id, period);
+      if (n > 0) { issued += n; perUser.push([c.id, n]); }
+    }
     return del.changes;
   })();
+  for (const [uid, n] of perUser) notifyNewCards(uid, n, period, true);
   res.json({ period, removed_cards: removed, issued_cards: issued });
 });
 

@@ -241,6 +241,27 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- Sự kiện săn thẻ trên trang Khuyến mãi (chỉ Admin tạo/phát hành)
+  CREATE TABLE IF NOT EXISTS hunt_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL DEFAULT '',
+    starts_at TEXT NOT NULL,
+    ends_at TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','closed')),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Từng loại thẻ trong một sự kiện săn: % giảm + hạn dùng (ngày) + số lượng phát hành
+  CREATE TABLE IF NOT EXISTS hunt_card_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL REFERENCES hunt_events(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT '',
+    percent INTEGER NOT NULL DEFAULT 0,
+    valid_days INTEGER NOT NULL DEFAULT 1,
+    quantity INTEGER NOT NULL DEFAULT 0
+  );
+
   -- Chi tiết từng món trong một yêu cầu đổi/trả (snapshot tại thời điểm khách gửi)
   CREATE TABLE IF NOT EXISTS return_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -489,6 +510,30 @@ addColumnIfMissing('returns', 'received_at', 'received_at TEXT');
     db.exec('PRAGMA foreign_keys = ON');
   }
 })();
+
+// --- Thẻ săn sale: nguồn thẻ trong discount_cards (monthly = thẻ tháng, hunt = thẻ săn) ---
+addColumnIfMissing('discount_cards', 'source', "source TEXT NOT NULL DEFAULT 'monthly'");
+addColumnIfMissing('discount_cards', 'hunt_event_id', 'hunt_event_id INTEGER');
+addColumnIfMissing('discount_cards', 'hunt_type_id', 'hunt_type_id INTEGER');
+db.exec('CREATE INDEX IF NOT EXISTS idx_discount_cards_hunt_type ON discount_cards(hunt_type_id)');
+db.exec(`CREATE TABLE IF NOT EXISTS hunt_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL DEFAULT '',
+  starts_at TEXT NOT NULL,
+  ends_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','closed')),
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS hunt_card_types (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id INTEGER NOT NULL REFERENCES hunt_events(id) ON DELETE CASCADE,
+  label TEXT NOT NULL DEFAULT '',
+  percent INTEGER NOT NULL DEFAULT 0,
+  valid_days INTEGER NOT NULL DEFAULT 1,
+  quantity INTEGER NOT NULL DEFAULT 0
+)`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_hunt_types_event ON hunt_card_types(event_id)');
 
 // Bảng chi tiết món đổi/trả cho DB cũ (DB mới đã tạo ở khối CREATE TABLE phía trên)
 db.exec(`CREATE TABLE IF NOT EXISTS return_items (

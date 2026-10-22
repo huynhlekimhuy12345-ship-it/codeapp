@@ -199,9 +199,12 @@ router.post('/', auth, (req, res) => {
     let cardProductId = null;
     const cardCode = cardCodeEarly.toUpperCase();
     if (cardCode) {
+      // So hạn thẻ bằng giờ địa phương của tiến trình (JS) thay cho SQLite localtime
+      // (SQLite localtime có thể lệch giờ hệ thống trên một số máy).
+      const nowJs = (() => { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; })();
       cardRow = db.prepare(
-        "SELECT * FROM discount_cards WHERE code = ? AND user_id = ? AND status = 'unused' AND expires_at >= datetime('now','localtime')"
-      ).get(cardCode, req.user.id);
+        "SELECT * FROM discount_cards WHERE code = ? AND user_id = ? AND status = 'unused' AND expires_at >= ?"
+      ).get(cardCode, req.user.id, nowJs);
       if (!cardRow) throw new Error('Thẻ discount không hợp lệ, đã dùng hoặc đã hết hạn');
       const top = lines.reduce((a, b) => (b.price > (a ? a.price : 0) ? b : a), null);
       discount_total = Math.floor((top.price * cardRow.percent) / 100);

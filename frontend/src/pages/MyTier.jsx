@@ -47,7 +47,9 @@ function DiscountCard({ card, t }) {
       <div className="mytier-card-off">−{card.percent}%</div>
       <div className="mytier-card-main">
         <code className="mytier-card-code">{card.code}</code>
+        {card.source === 'hunt' && <span className="mytier-card-hunt">{t('tier.huntBadge')}</span>}
         <div className="mytier-card-note">{t('tier.cardForOne')}</div>
+        <div className="mytier-card-expiry">{t('tier.cardIssued', { date: fmtDay(card.issued_at) })}</div>
         <div className="mytier-card-expiry">{t('tier.cardExpiry', { date: fmtDay(card.expires_at) })}</div>
       </div>
       <span className={`mytier-status st-${card.status}`}>{t(`tier.${STATUS_KEY[card.status]}`)}</span>
@@ -91,8 +93,11 @@ export default function MyTier() {
   const sortedTiers = [...(data.tiers || [])]
     .sort((a, b) => TIER_ORDER.indexOf(a.key) - TIER_ORDER.indexOf(b.key));
   const [year, month] = String(period || '').split('-');
-  const thisMonthCards = (data.cards || []).filter((c) => c.period === period);
-  const pastCards = (data.cards || []).filter((c) => c.period !== period);
+  const monthlyCards = (data.cards || []).filter((c) => c.source !== 'hunt');
+  const huntCards = (data.cards || []).filter((c) => c.source === 'hunt')
+    .sort((a, b) => (a.status === 'unused' ? 0 : 1) - (b.status === 'unused' ? 0 : 1) || a.id - b.id);
+  const thisMonthCards = monthlyCards.filter((c) => c.period === period);
+  const pastCards = monthlyCards.filter((c) => c.period !== period);
   const myRank = board?.me?.rank;
   const inTop = (board?.top || []).some((r) => r.is_me);
 
@@ -182,6 +187,15 @@ export default function MyTier() {
         <div className="mytier-cards-grid">
           {thisMonthCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
         </div>
+      )}
+
+      {huntCards.length > 0 && (
+        <>
+          <h2 className="mytier-section-title">{t('tier.huntCardsTitle')}</h2>
+          <div className="mytier-cards-grid">
+            {huntCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
+          </div>
+        </>
       )}
 
       {pastCards.length > 0 && (

@@ -43,6 +43,7 @@ app.use('/api/announcements', require('./routes/announcements')); // thông báo
 app.use('/api/chat', require('./routes/chat')); // nhắn tin khách hàng + nội bộ
 app.use('/api/notifications', require('./routes/notifications')); // thông báo riêng từng tài khoản (chuông)
 app.use('/api/loyalty', require('./routes/loyalty')); // hạng khách hàng + thẻ discount theo tháng
+app.use('/api/hunt-events', require('./routes/hunt-events')); // sự kiện săn thẻ ở trang Khuyến mãi (chỉ Admin tạo)
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

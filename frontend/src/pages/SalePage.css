@@ -119,6 +119,45 @@
 .sale-empty h2 { margin-bottom: 10px; }
 .sale-empty p { color: var(--muted); margin-bottom: 24px; }
 
+/* ---------- Săn thẻ ---------- */
+.hunt-event {
+  border: 1px solid rgba(242, 197, 124, 0.35);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 22px;
+  background: linear-gradient(160deg, rgba(242, 197, 124, 0.07), rgba(0, 0, 0, 0.15));
+}
+.hunt-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hunt-head h3 { margin: 0; font-size: 1.25rem; color: var(--cream); }
+.hunt-phase { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.hunt-phase.live { background: #a93226; color: #ffe9bd; }
+.hunt-phase.upcoming { background: rgba(242, 197, 124, 0.2); color: #f2c57c; }
+.hunt-count { display: flex; gap: 8px; margin: 14px 0 18px; }
+.hunt-count .cd-cell.small { min-width: 62px; padding: 8px 6px; }
+.hunt-count .cd-cell.small .cd-num { font-size: 1.2rem; }
+.hunt-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.hunt-type {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.hunt-type.mine { border-color: rgba(120, 220, 140, 0.55); }
+.hunt-type.soldout { opacity: 0.55; }
+.ht-off { font-size: 1.7rem; font-weight: 800; color: #f2c57c; }
+.ht-label { font-weight: 700; color: var(--cream); }
+.hunt-type ul { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; color: #c9b489; line-height: 1.7; }
+.hunt-type ul b { color: #e8d9bd; }
+.ht-bar { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.ht-bar span { display: block; height: 100%; background: linear-gradient(90deg, #f2c57c, #d43d2a); }
+.ht-note { margin: 0; font-size: 0.85rem; line-height: 1.5; }
+.ht-note.ok { color: #8fe3a0; }
+.ht-note.err { color: #ff9d8a; }
+.hunt-type .btn { margin-top: auto; text-align: center; }
+
 @media (max-width: 380px) {
   .sale-countdown { gap: 8px; }
   .cd-cell { min-width: 0; flex: 1; padding: 10px 4px; }
