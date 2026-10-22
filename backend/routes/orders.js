@@ -3,6 +3,7 @@ const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
 const { validateVoucher } = require('./vouchers');
+const { settleInfo, checkTierUpgrade, tierInfo } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -305,7 +306,32 @@ router.get('/', auth, (req, res) => {
      FROM orders o LEFT JOIN users u ON u.id = o.user_id
      ${where} ORDER BY o.created_at DESC`
   ).all(...params);
+  // Khách xem đơn của mình: kèm thông tin chốt điểm hạng (ngày giao, hạn đổi/trả, đã ghi điểm chưa)
+  if (req.user.role === 'customer') {
+    for (const o of orders) Object.assign(o, settleInfo(o));
+  }
   res.json({ orders });
+});
+
+// POST /api/orders/:id/confirm-satisfied — khách xác nhận hài lòng với đơn đã giao:
+// đơn được ghi điểm hạng NGAY (có thể thăng hạng -> báo chuông) và khóa đổi/trả vĩnh viễn.
+router.post('/:id/confirm-satisfied', auth, (req, res) => {
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+  if (order.user_id !== req.user.id)
+    return res.status(403).json({ error: 'Bạn không có quyền với đơn hàng này' });
+  if (order.status !== 'delivered')
+    return res.status(400).json({ error: 'Chỉ đơn hàng đã giao mới xác nhận hài lòng được' });
+  if (order.satisfied_at) return res.json({ ok: true, already: true, tier: tierInfo(req.user.id).tier });
+  const open = db.prepare(
+    "SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')"
+  ).get(order.id);
+  if (open)
+    return res.status(409).json({ error: 'Đơn đang có yêu cầu đổi/trả đang được xử lý, chưa thể xác nhận hài lòng' });
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  db.prepare('UPDATE orders SET satisfied_at = ? WHERE id = ?').run(now, order.id);
+  const upgraded = checkTierUpgrade(req.user.id);
+  res.json({ ok: true, upgraded, tier: tierInfo(req.user.id).tier });
 });
 
 // GET /api/orders/new-count — nhân viên: số đơn mới kể từ lần cuối mở tab Đơn hàng

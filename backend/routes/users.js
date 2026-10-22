@@ -2,7 +2,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, adminOnly, staffOnly } = require('../middleware/auth');
-const { computeTier, TIER_MAP } = require('../lib/tiers');
+const { computeTier, TIER_MAP, SETTLED_SQL } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -29,12 +29,19 @@ router.put('/me', auth, (req, res) => {
   res.json({ user });
 });
 
-// GET /api/users — admin/sale xem danh sách, kèm số đơn/tổng chi và hạng của từng khách
+// GET /api/users — admin/sale xem danh sách, kèm số đơn/tổng chi và hạng của từng khách.
+// Số đơn/tổng chi tính theo ĐIỂM HẠNG (chỉ đơn verified + đã chốt điểm, trừ tiền đã hoàn)
+// để hạng hiển thị ở admin khớp đúng hạng thật của khách (lib/tiers.userStats).
 router.get('/', auth, staffOnly, (req, res) => {
   const rows = db.prepare(`
     SELECT u.id, u.name, u.email, u.phone, u.role, u.created_at,
-      COALESCE(SUM(CASE WHEN o.payment_status = 'verified' AND o.status != 'cancelled' THEN 1 ELSE 0 END), 0) AS order_count,
-      COALESCE(SUM(CASE WHEN o.payment_status = 'verified' AND o.status != 'cancelled' THEN o.total ELSE 0 END), 0) AS total_spent
+      COALESCE(SUM(CASE WHEN o.payment_status = 'verified' AND o.status != 'cancelled' AND ${SETTLED_SQL} THEN 1 ELSE 0 END), 0) AS order_count,
+      COALESCE(SUM(CASE WHEN o.payment_status = 'verified' AND o.status != 'cancelled' AND ${SETTLED_SQL} THEN o.total ELSE 0 END), 0)
+        - COALESCE((
+            SELECT SUM(r.refund_amount) FROM returns r JOIN orders o ON o.id = r.order_id
+            WHERE o.user_id = u.id AND r.status = 'completed'
+              AND o.payment_status = 'verified' AND o.status != 'cancelled' AND ${SETTLED_SQL}
+          ), 0) AS total_spent
     FROM users u
     LEFT JOIN orders o ON o.user_id = u.id
     GROUP BY u.id
@@ -63,7 +70,7 @@ router.put('/:id/role', auth, adminOnly, (req, res) => {
 });
 
 // GET /api/users/top-customers — admin/sale: top khách hàng tiềm năng theo tổng tiền đã mua
-// Chỉ tính đơn đã xác nhận thanh toán (payment_status='verified') và chưa hủy — khớp cách tính doanh thu.
+// Tính theo ĐIỂM HẠNG: chỉ đơn verified, chưa hủy và ĐÃ CHỐT ĐIỂM (khớp userStats trong lib/tiers).
 router.get('/top-customers', auth, staffOnly, (req, res) => {
   const rows = db.prepare(`
     SELECT u.id, u.name, u.email, u.phone,
@@ -73,6 +80,7 @@ router.get('/top-customers', auth, staffOnly, (req, res) => {
     FROM users u
     JOIN orders o ON o.user_id = u.id
       AND o.payment_status = 'verified' AND o.status != 'cancelled'
+      AND ${SETTLED_SQL}
     WHERE u.role = 'customer'
     GROUP BY u.id
     ORDER BY total_spent DESC, order_count DESC

@@ -29,11 +29,64 @@ function computeTier(orderCount, totalSpent) {
   return 'potential';
 }
 
+// --- Ghi điểm hạng: đơn CHỈ được tính điểm khi đã "chốt" (quy tắc chủ shop duyệt 2026-10-22) ---
+//   1) Khách bấm xác nhận hài lòng (orders.satisfied_at), hoặc
+//   2) Đã qua 7 ngày kể từ ngày GIAO HÀNG thành công và không có yêu cầu đổi/trả đang xử lý.
+// Doanh thu/báo cáo KHÔNG dùng điều kiện này (vẫn tính theo thanh toán như cũ).
+const SETTLE_DAYS = 7;
+const SETTLED_SQL = `(
+  o.satisfied_at IS NOT NULL
+  OR (
+    o.status = 'delivered'
+    AND COALESCE(
+      (SELECT MAX(h.created_at) FROM order_status_history h WHERE h.order_id = o.id AND h.to_status = 'delivered'),
+      o.created_at
+    ) <= datetime('now', '-${SETTLE_DAYS} days')
+    AND NOT EXISTS (
+      SELECT 1 FROM returns r WHERE r.order_id = o.id AND r.status IN ('requested', 'approved', 'received')
+    )
+  )
+)`;
+
+// Ngày giao hàng thành công của 1 đơn (từ lịch sử trạng thái; null nếu chưa giao/không có mốc)
+function deliveredAtOf(orderId) {
+  const r = db.prepare(
+    "SELECT MAX(created_at) AS d FROM order_status_history WHERE order_id = ? AND to_status = 'delivered'"
+  ).get(orderId);
+  return r && r.d ? r.d : null;
+}
+
+// Chuỗi giờ DB 'YYYY-MM-DD HH:MM:SS' (UTC) -> Date
+function parseDbTime(s) {
+  if (!s) return null;
+  const str = String(s);
+  return new Date(str.replace(' ', 'T') + (str.endsWith('Z') ? '' : 'Z'));
+}
+
+// Thông tin chốt điểm của 1 đơn (cho trang Đơn hàng của khách hiển thị trạng thái)
+function settleInfo(order) {
+  const delivered_at = deliveredAtOf(order.id);
+  const base = delivered_at || (order.status === 'delivered' ? order.created_at : null);
+  let points_settled = false;
+  if (order.satisfied_at) points_settled = true;
+  else if (order.status === 'delivered' && base) {
+    const open = db.prepare(
+      "SELECT 1 FROM returns WHERE order_id = ? AND status IN ('requested', 'approved', 'received')"
+    ).get(order.id);
+    if (!open && Date.now() - parseDbTime(base).getTime() >= SETTLE_DAYS * 24 * 3600 * 1000) points_settled = true;
+  }
+  const return_deadline = base
+    ? new Date(parseDbTime(base).getTime() + SETTLE_DAYS * 24 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ')
+    : null;
+  return { delivered_at, return_deadline, points_settled };
+}
+
 function userStats(userId) {
   const r = db.prepare(`
-    SELECT COUNT(*) AS order_count, COALESCE(SUM(total), 0) AS total_spent, MAX(created_at) AS last_order_at
-    FROM orders
-    WHERE user_id = ? AND payment_status = 'verified' AND status != 'cancelled'
+    SELECT COUNT(*) AS order_count, COALESCE(SUM(total), 0) AS total_spent, MAX(o.created_at) AS last_order_at
+    FROM orders o
+    WHERE o.user_id = ? AND o.payment_status = 'verified' AND o.status != 'cancelled'
+      AND ${SETTLED_SQL}
   `).get(userId);
   // Tổng chi thực = tổng đơn đã thanh toán - tiền đã hoàn từ đổi/trả hoàn tất
   // (đơn hoàn toàn bộ đã sang 'refunded' nên không còn trong tổng trên, không trừ 2 lần)
@@ -42,6 +95,7 @@ function userStats(userId) {
     FROM returns r JOIN orders o ON o.id = r.order_id
     WHERE o.user_id = ? AND r.status = 'completed'
       AND o.payment_status = 'verified' AND o.status != 'cancelled'
+      AND ${SETTLED_SQL}
   `).get(userId).v;
   return {
     order_count: r.order_count,
@@ -107,4 +161,4 @@ function maskName(name) {
   return [...parts.slice(0, -1), last.slice(0, 1) + '***'].join(' ');
 }
 
-module.exports = { TIERS, TIER_MAP, TIER_ORDER, computeTier, userStats, tierInfo, maskName, checkTierUpgrade };
+module.exports = { TIERS, TIER_MAP, TIER_ORDER, computeTier, userStats, tierInfo, maskName, checkTierUpgrade, SETTLE_DAYS, SETTLED_SQL, deliveredAtOf, parseDbTime, settleInfo };

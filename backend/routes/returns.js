@@ -8,6 +8,7 @@ const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
 const { validateImages, parseImages } = require('../lib/images');
+const { deliveredAtOf, parseDbTime, SETTLE_DAYS } = require('../lib/tiers');
 const { postAftersalesCard, postChatNotice } = require('../lib/chatCard');
 
 const router = express.Router();
@@ -114,6 +115,15 @@ router.post('/', auth, (req, res) => {
 
   if (order.status !== 'delivered')
     return res.status(403).json({ error: 'Chỉ đơn hàng đã giao mới được yêu cầu đổi/trả' });
+
+  // Đơn đã xác nhận hài lòng: khóa đổi/trả vĩnh viễn (đơn đã ghi điểm hạng)
+  if (order.satisfied_at)
+    return res.status(400).json({ error: 'Bạn đã xác nhận hài lòng với đơn này nên không thể đổi/trả nữa' });
+
+  // Chỉ đổi/trả trong vòng 7 ngày kể từ ngày giao hàng
+  const deliveredBase = deliveredAtOf(order.id) || order.created_at;
+  if (deliveredBase && Date.now() - parseDbTime(deliveredBase).getTime() > SETTLE_DAYS * 24 * 3600 * 1000)
+    return res.status(400).json({ error: `Đã quá ${SETTLE_DAYS} ngày kể từ ngày giao hàng, đơn không còn được đổi/trả` });
 
   const existing = db
     .prepare(`SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')`)

@@ -6,7 +6,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
-const { TIERS, TIER_MAP, computeTier, userStats, tierInfo, maskName, checkTierUpgrade } = require('../lib/tiers');
+const { TIERS, TIER_MAP, computeTier, userStats, tierInfo, maskName, checkTierUpgrade, SETTLED_SQL } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -101,6 +101,7 @@ router.get('/leaderboard', auth, (req, res) => {
     SELECT u.id, u.name, COUNT(o.id) AS order_count, COALESCE(SUM(o.total), 0) AS total_spent
     FROM users u
     JOIN orders o ON o.user_id = u.id AND o.payment_status = 'verified' AND o.status != 'cancelled'
+      AND ${SETTLED_SQL}
     WHERE u.role = 'customer'
     GROUP BY u.id
     ORDER BY total_spent DESC, order_count DESC

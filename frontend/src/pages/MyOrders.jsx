@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
-import { api, fmtVND, fmtDate } from '../api';
+import { api, fmtVND, fmtDate, fmtDay } from '../api';
 import { useLang } from '../i18n/LanguageContext';
 import { useProductName } from '../i18n/TranslatedProduct';
 import { fileToCompressedDataUrl } from '../utils/image';
@@ -214,6 +214,8 @@ export default function MyOrders() {
   // Hủy đơn: đơn đang chọn + lý do nhập trong dialog
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
+  // Xác nhận hài lòng: đơn đang chọn trong dialog (ghi điểm ngay + khóa đổi/trả)
+  const [satisfiedTarget, setSatisfiedTarget] = useState(null);
   // Yêu cầu đổi/trả: đơn đang chọn + hình thức (đổi/trả) + lý do + ảnh minh họa
   const [returnTarget, setReturnTarget] = useState(null);
   const [returnType, setReturnType] = useState('return');
@@ -243,6 +245,17 @@ export default function MyOrders() {
   }, []);
 
   // Khách tự hủy đơn đang chờ xác nhận → PUT /api/orders/:id/cancel
+  // Khách xác nhận hài lòng -> đơn ghi điểm ngay (có thể thăng hạng), khóa đổi/trả
+  const doConfirmSatisfied = async () => {
+    try {
+      const r = await api.confirmSatisfied(satisfiedTarget.id);
+      setSatisfiedTarget(null);
+      if (r && r.upgraded && r.tier) showToast(t('myOrders.tierUpToast', { tier: t(`tier.name.${r.tier.key}`) }));
+      else showToast(t('myOrders.satisfiedDone'));
+      load();
+    } catch (e) { showToast(e.message, true); }
+  };
+
   const doCancel = async () => {
     if (!cancelReason.trim()) { showToast(t('myOrders.needCancelReason'), true); return; }
     try {
@@ -331,13 +344,27 @@ export default function MyOrders() {
                 {t('myOrders.cancelOrder')}
               </button>
             )}
-            {/* Đơn đã giao: các nút hậu mãi đổi/trả + bảo hành */}
+            {/* Đơn đã giao: xác nhận hài lòng (ghi điểm ngay + khóa đổi/trả) + hậu mãi */}
             {o.status === 'delivered' && (
               <>
-                <button className="btn btn-small btn-outline"
-                  onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); setReturnImages([]); setReturnPick([]); }}>
-                  {t('myOrders.requestReturn')}
-                </button>
+                {o.satisfied_at ? (
+                  <span style={{ alignSelf: 'center', color: 'var(--green)', fontWeight: 700, fontSize: '.9rem' }}>{t('myOrders.satisfiedBadge')}</span>
+                ) : (
+                  <>
+                    <button className="btn btn-small btn-primary"
+                      onClick={() => setSatisfiedTarget(o)}>
+                      {t('myOrders.confirmSatisfied')}
+                    </button>
+                    {o.return_deadline && new Date(String(o.return_deadline).replace(' ', 'T') + 'Z').getTime() > Date.now() ? (
+                      <button className="btn btn-small btn-outline"
+                        onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); setReturnImages([]); setReturnPick([]); }}>
+                        {t('myOrders.requestReturn')}
+                      </button>
+                    ) : (
+                      <span style={{ alignSelf: 'center', color: 'var(--muted)', fontSize: '.88rem' }}>{t('myOrders.returnExpired')}</span>
+                    )}
+                  </>
+                )}
                 <button className="btn btn-small btn-outline"
                   onClick={() => { setWarrantyTarget(o); setWarrantyReason(''); setWarrantyImages([]); }}>
                   {t('myOrders.requestWarranty')}
@@ -345,6 +372,16 @@ export default function MyOrders() {
               </>
             )}
           </div>
+          {/* Trạng thái ghi điểm hạng của đơn đã thanh toán + đã giao */}
+          {o.status === 'delivered' && o.payment_status === 'verified' && (
+            o.points_settled || o.satisfied_at ? (
+              <p style={{ margin: '8px 0 0', color: 'var(--green)', fontSize: '.9rem' }}>{t('myOrders.pointsSettled')}</p>
+            ) : o.return_deadline ? (
+              <p className="muted" style={{ margin: '8px 0 0', fontSize: '.9rem' }}>
+                {t('myOrders.pointsPending', { date: fmtDay(String(o.return_deadline).replace(' ', 'T') + 'Z') })}
+              </p>
+            ) : null
+          )}
           {openId === o.id && <div style={{ marginTop: 14 }}><OrderDetail id={o.id} /></div>}
         </div>
       ))}
@@ -369,6 +406,22 @@ export default function MyOrders() {
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setCancelTarget(null)}>{t('myOrders.close')}</button>
               <button className="btn btn-danger" onClick={doCancel}>{t('myOrders.confirmCancel')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog xác nhận hài lòng: ghi điểm ngay, đổi lại khóa đổi/trả */}
+      {satisfiedTarget && (
+        <div className="modal-backdrop" onClick={() => setSatisfiedTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('myOrders.satisfiedTitle', { id: satisfiedTarget.id })}</h3>
+            <p style={{ color: 'var(--muted)', fontSize: '.95rem' }}>
+              {t('myOrders.satisfiedDesc')}
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setSatisfiedTarget(null)}>{t('myOrders.close')}</button>
+              <button className="btn btn-primary" onClick={doConfirmSatisfied}>{t('myOrders.satisfiedConfirmBtn')}</button>
             </div>
           </div>
         </div>
