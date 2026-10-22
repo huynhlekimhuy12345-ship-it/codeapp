@@ -143,9 +143,9 @@
   color: #cdeffb; text-shadow: 0 1px 3px rgba(20,14,8,.65), 0 0 12px rgba(20,14,8,.4);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.metal-bronze .metal-beast { color: #7ed957; }
+.metal-bronze .metal-beast { color: #5cbf30; }
 .metal-silver .metal-beast { color: #eef4fa; }
-.metal-gold .metal-beast { color: #ff8a66; }
+.metal-gold .metal-beast { color: #ff6a3d; }
 .metal-diamond .metal-beast { color: #d3a6ff; }
 .metal-bottom { display: flex; margin-top: auto; }
 .metal-holder {

@@ -142,9 +142,9 @@ a.tier-badge { text-decoration: none; }
   color: rgba(255,255,255,.92); text-shadow: 0 1px 5px rgba(0,0,0,.6); text-transform: uppercase;
 }
 .beast-card-beast { margin-top: 1px; font-family: 'Dancing Script', cursive; font-size: 1.54rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15; color: #cdeffb; text-shadow: 0 1px 6px rgba(0,0,0,.65), 0 0 12px rgba(0,0,0,.35); }
-.beast-bronze .beast-card-beast { color: #7ed957; }
+.beast-bronze .beast-card-beast { color: #5cbf30; }
 .beast-silver .beast-card-beast { color: #eef4fa; }
-.beast-gold .beast-card-beast { color: #ff8a66; }
+.beast-gold .beast-card-beast { color: #ff6a3d; }
 .beast-diamond .beast-card-beast { color: #d3a6ff; }
 .beast-card-threshold { margin-top: 6px; font-size: .78rem; line-height: 1.4; color: rgba(255,255,255,.92); text-shadow: 0 1px 5px rgba(0,0,0,.6); min-height: 2.2em; }
 .beast-card-you {
