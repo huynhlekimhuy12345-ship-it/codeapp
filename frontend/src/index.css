@@ -960,6 +960,13 @@ select.select-dark {
 .checkout-card-option .card-code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-weight: 700; letter-spacing: .5px; }
 .checkout-card-option .card-off { font-weight: 800; color: var(--amber-light); white-space: nowrap; }
 .checkout-card-check { margin-left: auto; color: var(--amber-light); font-weight: 800; font-size: 1.05rem; }
+/* Danh sách thẻ ở thanh toán: mặc định thu gọn 1 hàng, bấm mở ra trong khung nhỏ cuộn dọc */
+.checkout-cards-toggle { margin-bottom: 0; }
+.checkout-cards-arrow { color: var(--amber-light); font-weight: 800; }
+.checkout-cards-list {
+  margin-top: 8px; max-height: 232px; overflow-y: auto; padding-right: 4px;
+}
+.checkout-cards-list .checkout-card-option:last-of-type { margin-bottom: 0; }
 
 /* --- Sản phẩm bên trong từng danh mục (tab Danh mục) --- */
 .cat-products-row td { background: rgba(232,181,106,.05); }

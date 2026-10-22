@@ -563,6 +563,7 @@ export default {
     yourPositionNone: '아직 순위가 없습니다 — 첫 주문으로 리더보드에 올라보세요!',
     loading: '로딩 중...',
     myCards: '내 할인 카드',
+    chooseCard: '카드 선택',
     noCard: '카드 사용 안 함',
     oneDiscountOnly: '주문당 하나의 혜택만 사용할 수 있습니다',
     cardDiscount: '등급 카드 할인',

@@ -563,6 +563,7 @@ export default {
     yourPositionNone: 'You are not ranked yet — place your first order to join the board!',
     loading: 'Loading...',
     myCards: 'Your discount cards',
+    chooseCard: 'Pick a card',
     noCard: 'No card',
     oneDiscountOnly: 'Only one offer can be used per order',
     cardDiscount: 'Tier card discount',

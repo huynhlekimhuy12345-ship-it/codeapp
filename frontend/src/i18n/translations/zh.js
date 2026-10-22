@@ -563,6 +563,7 @@ export default {
     yourPositionNone: '您尚未上榜 — 下第一单即可加入排行榜！',
     loading: '加载中...',
     myCards: '您的优惠卡',
+    chooseCard: '选择卡片',
     noCard: '不使用优惠卡',
     oneDiscountOnly: '每单只能使用一种优惠',
     cardDiscount: '等级卡优惠',

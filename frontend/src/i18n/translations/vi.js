@@ -563,6 +563,7 @@ export default {
     yourPositionNone: 'Bạn chưa có vị trí xếp hạng — đặt đơn đầu tiên để lên bảng nhé!',
     loading: 'Đang tải...',
     myCards: 'Thẻ giảm giá của bạn',
+    chooseCard: 'Chọn thẻ',
     noCard: 'Không dùng thẻ',
     oneDiscountOnly: 'Chỉ dùng 1 loại ưu đãi cho mỗi đơn',
     cardDiscount: 'Thẻ hạng giảm',

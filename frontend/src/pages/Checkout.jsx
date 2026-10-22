@@ -49,6 +49,7 @@ export default function Checkout() {
   // Thẻ discount theo hạng của khách (chọn thay vì nhập mã; loại trừ lẫn nhau với voucher)
   const [myCards, setMyCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [cardsOpen, setCardsOpen] = useState(false); // danh sách thẻ thu gọn — bấm mới mở ra
   // Thanh toán
   const [paymentMethod, setPaymentMethod] = useState('cod');
   // Đặt đơn xong (chế độ xem sau khi đặt — hiển thị hướng dẫn chuyển khoản nếu bank)
@@ -91,12 +92,14 @@ export default function Checkout() {
   const discount = voucher?.valid ? voucher.discount : cardDiscount;
   const grandTotal = Math.max(0, orderTotal + shipFee - discount);
 
-  // Chọn/bỏ chọn thẻ: chọn thẻ thì xóa trạng thái voucher (chỉ dùng 1 loại ưu đãi)
+  // Chọn/bỏ chọn thẻ: chọn thẻ thì xóa trạng thái voucher (chỉ dùng 1 loại ưu đãi).
+  // Chọn xong thì thu gọn danh sách lại cho gọn trang.
   const pickCard = (c) => {
     if (selectedCard?.id === c.id) { setSelectedCard(null); return; }
     setSelectedCard(c);
     setVoucher(null);
     setVoucherMsg('');
+    setCardsOpen(false);
   };
 
   const applyVoucher = async () => {
@@ -271,40 +274,73 @@ export default function Checkout() {
 
           {myCards.length > 0 && (
             <div className="checkout-cards">
-              <div className="checkout-cards-title">🎟️ {t('tier.myCards')}</div>
+              {/* Hàng tóm tắt luôn gọn 1 dòng — bấm vào mới mở danh sách thẻ ra chọn */}
               <div
-                className={`checkout-card-option${!selectedCard ? ' selected' : ''}`}
-                role="radio"
-                aria-checked={!selectedCard}
+                className={`checkout-card-option checkout-cards-toggle${selectedCard ? ' selected' : ''}`}
+                role="button"
+                aria-expanded={cardsOpen}
                 tabIndex={0}
-                onClick={() => setSelectedCard(null)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCard(null); } }}
+                onClick={() => setCardsOpen((o) => !o)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCardsOpen((o) => !o); } }}
               >
-                <span>{t('tier.noCard')}</span>
-                {!selectedCard && <span className="checkout-card-check">✓</span>}
+                {selectedCard ? (
+                  <>
+                    <span aria-hidden="true">{selectedCard.source === 'hunt' ? '🎯' : '🎟️'}</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span className="card-code">{selectedCard.code}</span>
+                      {' • '}{selectedCard.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${selectedCard.tier}`)}
+                      {' • '}{t('tier.cardExpiry', { date: fmtDay(selectedCard.expires_at) })}
+                    </span>
+                    <span className="card-off">−{selectedCard.percent}%</span>
+                    <span className="checkout-card-check">✓</span>
+                  </>
+                ) : (
+                  <>
+                    <span aria-hidden="true">🎟️</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>{t('tier.myCards')} ({myCards.length})</span>
+                    <span className="muted" style={{ fontSize: '.9rem' }}>{t('tier.chooseCard')}</span>
+                  </>
+                )}
+                <span className="checkout-cards-arrow" aria-hidden="true">{cardsOpen ? '▴' : '▾'}</span>
               </div>
-              {myCards.map((c) => (
-                <div
-                  key={c.id}
-                  className={`checkout-card-option${selectedCard?.id === c.id ? ' selected' : ''}`}
-                  role="radio"
-                  aria-checked={selectedCard?.id === c.id}
-                  tabIndex={0}
-                  onClick={() => pickCard(c)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(c); } }}
-                >
-                  <span aria-hidden="true">{c.source === 'hunt' ? '🎯' : '🎟️'}</span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span className="card-code">{c.code}</span>
-                    {' • '}{c.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${c.tier}`)}
-                    {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
-                  </span>
-                  <span className="card-off">−{c.percent}%</span>
-                  {selectedCard?.id === c.id && <span className="checkout-card-check">✓</span>}
+
+              {cardsOpen && (
+                <div className="checkout-cards-list">
+                  <div
+                    className={`checkout-card-option${!selectedCard ? ' selected' : ''}`}
+                    role="radio"
+                    aria-checked={!selectedCard}
+                    tabIndex={0}
+                    onClick={() => { setSelectedCard(null); setCardsOpen(false); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCard(null); setCardsOpen(false); } }}
+                  >
+                    <span>{t('tier.noCard')}</span>
+                    {!selectedCard && <span className="checkout-card-check">✓</span>}
+                  </div>
+                  {myCards.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`checkout-card-option${selectedCard?.id === c.id ? ' selected' : ''}`}
+                      role="radio"
+                      aria-checked={selectedCard?.id === c.id}
+                      tabIndex={0}
+                      onClick={() => pickCard(c)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(c); } }}
+                    >
+                      <span aria-hidden="true">{c.source === 'hunt' ? '🎯' : '🎟️'}</span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span className="card-code">{c.code}</span>
+                        {' • '}{c.source === 'hunt' ? t('tier.huntBadge') : t(`tier.name.${c.tier}`)}
+                        {' • '}{t('tier.cardExpiry', { date: fmtDay(c.expires_at) })}
+                      </span>
+                      <span className="card-off">−{c.percent}%</span>
+                      {selectedCard?.id === c.id && <span className="checkout-card-check">✓</span>}
+                    </div>
+                  ))}
+                  {selectedCard && (
+                    <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>{t('tier.oneDiscountOnly')}</p>
+                  )}
                 </div>
-              ))}
-              {selectedCard && (
-                <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>{t('tier.oneDiscountOnly')}</p>
               )}
             </div>
           )}
