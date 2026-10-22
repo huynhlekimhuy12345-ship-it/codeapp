@@ -22,6 +22,7 @@ import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
+import Notifications from './pages/Notifications';
 import MyTier from './pages/MyTier';
 import TierGuide from './pages/TierGuide';
 import ProfilePage from './pages/ProfilePage';
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="/dang-ky" element={<Register />} />
           <Route path="/thanh-toan" element={<RequireAuth><Checkout /></RequireAuth>} />
           <Route path="/don-hang" element={<RequireAuth><MyOrders /></RequireAuth>} />
+          <Route path="/thong-bao" element={<RequireAuth><Notifications /></RequireAuth>} />
           <Route path="/hang-cua-toi" element={<RequireAuth><MyTier /></RequireAuth>} />
           <Route path="/ho-so" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/admin" element={<RequireStaff><Admin /></RequireStaff>} />

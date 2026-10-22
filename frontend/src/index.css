@@ -292,7 +292,27 @@ h1, h2, h3, .logo, .hero-title {
   color: var(--amber-light); font-size: 0.95rem;
 }
 .bell-head .link-more { font-size: 0.82rem; background: none; border: none; cursor: pointer; }
+.bell-viewall {
+  display: block; padding: 9px 12px; margin: 2px 0 4px;
+  color: var(--amber-light); font-weight: 700; font-size: 0.92rem; text-decoration: none;
+  border-bottom: 1px solid rgba(232, 181, 106, 0.15);
+}
+.bell-viewall:hover { text-decoration: underline; }
 .bell-empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+
+/* --- Trang Tất cả thông báo: thẻ lớn, chữ dễ đọc, nội dung đầy đủ --- */
+.notif-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--panel, rgba(43,29,16,.72)); border: 1px solid rgba(232,181,106,.22);
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 14px;
+}
+.notif-card.unread { border-color: rgba(232,181,106,.55); background: rgba(232,181,106,.06); }
+.notif-card-icon { font-size: 1.5rem; line-height: 1.2; }
+.notif-card-body { flex: 1; min-width: 0; }
+.notif-card-body strong { display: block; font-size: 1.06rem; color: var(--cream); margin-bottom: 4px; }
+.notif-card-body p { margin: 0 0 8px; font-size: .98rem; line-height: 1.55; color: var(--text); white-space: pre-line; }
+.notif-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.notif-card-foot small { color: var(--muted); font-size: .86rem; }
 .bell-item {
   display: flex; gap: 10px; padding: 12px; border-radius: 8px; position: relative;
 }
@@ -610,7 +630,7 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 }
 .order-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 .order-head strong { font-size: 1.05rem; color: var(--cream); }
-.status { padding: 5px 13px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; }
+.status { display: inline-block; white-space: nowrap; padding: 5px 13px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; }
 .status.pending { background: rgba(232,181,106,.16); color: var(--amber-light); border: 1px solid rgba(232,181,106,.35); }
 .status.confirmed { background: rgba(127,182,232,.14); color: var(--blue); border: 1px solid rgba(127,182,232,.35); }
 .status.shipping { background: rgba(183,156,240,.14); color: var(--purple); border: 1px solid rgba(183,156,240,.35); }

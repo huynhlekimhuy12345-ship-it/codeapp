@@ -66,7 +66,7 @@ export const api = {
   getOrders: (status) => request(`/api/orders${status ? '?status=' + status : ''}`, { auth: true }),
   getNewOrderCount: () => request('/api/orders/new-count', { auth: true }),
   markOrdersSeen: () => request('/api/orders/mark-seen', { method: 'POST', auth: true }),
-  getNotifications: () => request('/api/notifications', { auth: true }),
+  getNotifications: (all) => request(`/api/notifications${all ? '?all=1' : ''}`, { auth: true }),
   markNotificationsRead: () => request('/api/notifications/read', { method: 'POST', auth: true }),
   getOrder: (id) => request(`/api/orders/${id}`, { auth: true }),
   updateOrderStatus: (id, status, reason) =>
@@ -138,6 +138,7 @@ export const api = {
 
   // Đơn hàng (mở rộng)
   cancelOrder: (id, reason) => request(`/api/orders/${id}/cancel`, { method: 'PUT', body: { reason }, auth: true }),
+  confirmSatisfied: (id) => request(`/api/orders/${id}/confirm-satisfied`, { method: 'POST', auth: true }),
   updateShippingInfo: (id, info) => request(`/api/orders/${id}/shipping-info`, { method: 'PUT', body: info, auth: true }),
 
   // Tồn kho & NCC (admin)

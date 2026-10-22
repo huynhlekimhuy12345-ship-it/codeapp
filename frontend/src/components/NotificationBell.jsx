@@ -179,6 +179,9 @@ export default function NotificationBell() {
               <button className="link-more" onClick={markAll}>{t('bell.markRead')}</button>
             )}
           </div>
+          <Link to="/thong-bao" className="bell-viewall" onClick={() => setOpen(false)}>
+            📬 {t('bell.viewAll')} →
+          </Link>
           {chatAccept && (
             <div className="bell-item unread" style={{ cursor: 'pointer' }} onClick={openChatFromBell}>
               <span className="bell-dot" aria-hidden="true" />

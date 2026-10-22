@@ -6,11 +6,13 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /api/notifications — 30 thông báo mới nhất của chính mình + số chưa đọc
+// GET /api/notifications — 30 thông báo mới nhất của chính mình + số chưa đọc.
+// ?all=1 -> tối đa 200 (cho trang "Tất cả thông báo").
 router.get('/', auth, (req, res) => {
+  const limit = req.query.all ? 200 : 30;
   const notifications = db.prepare(
-    'SELECT id, type, title, content, link, is_read, created_at FROM user_notifications WHERE user_id = ? ORDER BY id DESC LIMIT 30'
-  ).all(req.user.id);
+    'SELECT id, type, title, content, link, is_read, created_at FROM user_notifications WHERE user_id = ? ORDER BY id DESC LIMIT ?'
+  ).all(req.user.id, limit);
   const unread = db.prepare(
     'SELECT COUNT(*) AS c FROM user_notifications WHERE user_id = ? AND is_read = 0'
   ).get(req.user.id).c;
