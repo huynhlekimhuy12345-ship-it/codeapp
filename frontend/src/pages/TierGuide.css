@@ -101,11 +101,7 @@
 }
 .metal-art img {
   max-width: 96%; max-height: 98%; object-fit: contain;
-  /* Viền đen mỏng nhẹ bám theo từng nét vẽ cho hình sắc và thanh thoát */
-  filter:
-    drop-shadow(.6px 0 0 rgba(12,8,4,.38)) drop-shadow(-.6px 0 0 rgba(12,8,4,.38))
-    drop-shadow(0 .6px 0 rgba(12,8,4,.38)) drop-shadow(0 -.6px 0 rgba(12,8,4,.38))
-    drop-shadow(0 3px 7px rgba(0,0,0,.30));
+  filter: drop-shadow(0 3px 7px rgba(0,0,0,.30));
 }
 /* Rồng và hổ dáng cao hẹp: phóng vừa khít khung, đã kiểm không mất bộ phận */
 .beast-bronze img { transform: scale(1.03); }
