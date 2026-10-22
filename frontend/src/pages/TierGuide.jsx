@@ -31,14 +31,14 @@ const THRESHOLDS = {
 // bên phải là tên hạng màu sáng + tên thánh thú bạch kim lì + tên thành viên; bấm thẻ xem đặc quyền.
 // Rê chuột nghiêng 3D nhẹ + vệt sáng chạy theo vị trí trỏ.
 const BEAST_IMG = {
-  potential: '/images/beasts/potential.webp',
-  bronze: '/images/beasts/bronze.webp',
-  silver: '/images/beasts/silver.webp',
-  gold: '/images/beasts/gold.webp',
-  diamond: '/images/beasts/diamond.webp',
+  potential: '/images/beasts-guide/potential.webp',
+  bronze: '/images/beasts-guide/bronze.webp',
+  silver: '/images/beasts-guide/silver.webp',
+  gold: '/images/beasts-guide/gold.webp',
+  diamond: '/images/beasts-guide/diamond.webp',
 };
 
-function MetalCard({ tierKey, name, beastName, memberName, status, statusLabel, selected, onSelect }) {
+function MetalCard({ tierKey, name, beastName, memberName, memberLabel, status, statusLabel, selected, onSelect }) {
   const ref = useRef(null);
   const onMove = (e) => {
     const el = ref.current;
@@ -70,6 +70,7 @@ function MetalCard({ tierKey, name, beastName, memberName, status, statusLabel, 
       <span className="metal-shine" aria-hidden />
       <span className={`metal-art beast-${tierKey}`} aria-hidden>
         <img src={BEAST_IMG[tierKey]} alt="" />
+        <span className="metal-member">{memberLabel}</span>
       </span>
       <span className="metal-info">
         <span className="metal-top">
@@ -205,6 +206,7 @@ export default function TierGuide() {
                 name={tierName(tr.key)}
                 beastName={t(`tier.beast.${tr.key}`)}
                 memberName={user?.name || t('tier.memberGuest')}
+                memberLabel={t('tier.memberLabel')}
                 status={st}
                 statusLabel={st ? t(st === 'current' ? 'tier.statusCurrent' : st === 'achieved' ? 'tier.statusAchieved' : 'tier.statusLocked') : null}
                 selected={selKey === tr.key}

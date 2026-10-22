@@ -9,13 +9,13 @@ const STATUS_KEY = { unused: 'statusUnused', used: 'statusUsed', expired: 'statu
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 const TIER_ORDER = ['potential', 'bronze', 'silver', 'gold', 'diamond'];
 
-// Thánh thú bạch kim cho từng hạng (ảnh ở public/images/beasts)
+// Thánh thú TÔ MÀU theo màu tên thú cho thẻ thành viên (ảnh ở public/images/beasts-member)
 const BEAST_IMG = {
-  potential: '/images/beasts/potential.webp',
-  bronze: '/images/beasts/bronze.webp',
-  silver: '/images/beasts/silver.webp',
-  gold: '/images/beasts/gold.webp',
-  diamond: '/images/beasts/diamond.webp',
+  potential: '/images/beasts-member/potential.webp',
+  bronze: '/images/beasts-member/bronze.webp',
+  silver: '/images/beasts-member/silver.webp',
+  gold: '/images/beasts-member/gold.webp',
+  diamond: '/images/beasts-member/diamond.webp',
 };
 
 // Mốc lên hạng (khớp mốc backend): Đồng từ 2 đơn, Bạc 5tr, Vàng 10tr, Kim cương 20tr
@@ -161,6 +161,7 @@ export default function MyTier() {
           >
             <img className="beast-card-art" src={BEAST_IMG[tr.key]} alt={t(`tier.beast.${tr.key}`)} loading="lazy" />
             <span className="beast-card-brand">BI99</span>
+            <span className="beast-card-member">{t('tier.memberLabel')}</span>
             <span className="beast-card-info">
               <span className="beast-card-tier">{tierName(tr.key)}</span>
               <span className="beast-card-beast">{t(`tier.beast.${tr.key}`)}</span>

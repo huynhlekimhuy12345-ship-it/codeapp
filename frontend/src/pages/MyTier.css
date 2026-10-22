@@ -126,8 +126,8 @@ a.tier-badge { text-decoration: none; }
 .beast-silver .beast-card-art { transform: scale(1.17) translateY(2.5%); }
 .beast-card-brand {
   position: absolute; top: 10px; left: 12px; z-index: 2;
-  font-size: .64rem; letter-spacing: .42em; color: rgba(255,255,255,.95);
-  text-shadow: 0 1px 4px rgba(0,0,0,.55);
+  font-size: .8rem; font-weight: 800; letter-spacing: .34em; color: rgba(255,255,255,.98);
+  text-shadow: 0 1px 5px rgba(0,0,0,.65), 0 0 10px rgba(0,0,0,.3);
 }
 .beast-card-info {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
@@ -135,7 +135,12 @@ a.tier-badge { text-decoration: none; }
   padding: 26px 8px 13px;
   background: linear-gradient(180deg, transparent, rgba(12,9,6,.52) 62%);
 }
-.beast-card-tier { font-size: 1.02rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 2px 9px rgba(0,0,0,.65); }
+.beast-card-tier { font-size: 1.02rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 2px 9px rgba(0,0,0,.65); -webkit-text-stroke: .6px rgba(15,10,5,.65); }
+.beast-card-member {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%); z-index: 2;
+  writing-mode: vertical-rl; font-size: .62rem; font-weight: 700; letter-spacing: .34em;
+  color: rgba(255,255,255,.92); text-shadow: 0 1px 5px rgba(0,0,0,.6); text-transform: uppercase;
+}
 .beast-card-beast { margin-top: 1px; font-family: 'Dancing Script', cursive; font-size: 1.54rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15; color: #cdeffb; text-shadow: 0 1px 6px rgba(0,0,0,.65), 0 0 12px rgba(0,0,0,.35); }
 .beast-bronze .beast-card-beast { color: #7ed957; }
 .beast-silver .beast-card-beast { color: #eef4fa; }
