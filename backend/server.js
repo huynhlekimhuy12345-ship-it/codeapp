@@ -55,9 +55,22 @@ app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩ
 app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
 app.use('/api/announcements', require('./routes/announcements')); // thông báo / tin tức
 app.use('/api/chat', require('./routes/chat')); // nhắn tin khách hàng + nội bộ
-const _notificationsRoute = require('./routes/notifications');
-console.log('[debug] notifications typeof:', typeof _notificationsRoute, 'keys:', _notificationsRoute && typeof _notificationsRoute === 'object' ? Object.keys(_notificationsRoute) : '');
-app.use('/api/notifications', _notificationsRoute && _notificationsRoute.default ? _notificationsRoute.default : _notificationsRoute); // thông báo riêng từng tài khoản (chuông)
+// Thông báo riêng từng tài khoản (chuông) — nạp cách ly: nếu file route export
+// lỗi trên môi trường deploy thì bỏ qua route này chứ không để sập cả backend.
+let _notificationsRoute = null;
+try {
+  const _mod = require('./routes/notifications');
+  _notificationsRoute = (typeof _mod === 'function')
+    ? _mod
+    : (_mod && (_mod.default || _mod.router)) || null;
+} catch (e) {
+  console.error('[notifications] không nạp được route:', e.message);
+}
+if (typeof _notificationsRoute === 'function') {
+  app.use('/api/notifications', _notificationsRoute); // chuông thông báo
+} else {
+  console.error('[notifications] bỏ qua route chuông: export không phải router');
+}
 app.use('/api/loyalty', require('./routes/loyalty')); // hạng khách hàng + thẻ discount theo tháng
 app.use('/api/hunt-events', require('./routes/hunt-events')); // sự kiện săn thẻ ở trang Khuyến mãi (chỉ Admin tạo)
 
