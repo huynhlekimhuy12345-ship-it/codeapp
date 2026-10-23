@@ -543,6 +543,8 @@ export default {
     guideIntro: 'Shop and accumulate to rank up — higher tiers earn more discount cards every month at deeper rates. Tiers are based on paid orders.',
     viewMine: 'View my tier',
     viewPerks: 'View perks & how to rank up',
+    viewCards: 'View cards',
+    cardsSummary: '{unused} unused · {total} cards in total',
     guestCta: 'Log in to track your tier and receive monthly discount cards.',
     guestLogin: 'Log in',
     guestRegister: 'Register',

@@ -36,7 +36,8 @@
 }
 .as-open:hover { text-decoration: underline; }
 .as-lightbox {
-  position: fixed; inset: 0; z-index: 400; background: rgba(5, 3, 2, 0.88);
+  position: fixed; inset: 0; z-index: 400; background: rgba(5, 3, 2, 0.82);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center; cursor: zoom-out; padding: 24px;
 }
 .as-lightbox img {

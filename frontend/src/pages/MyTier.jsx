@@ -61,11 +61,19 @@ export default function MyTier() {
   const [data, setData] = useState(null);
   const [board, setBoard] = useState(null);
   const [error, setError] = useState('');
+  const [showCards, setShowCards] = useState(false);
 
   useEffect(() => {
     api.getMyTier().then(setData).catch((e) => setError(e.message));
     api.getLeaderboard().then(setBoard).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!showCards) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setShowCards(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showCards]);
 
   const tierName = (key) => t(`tier.name.${key}`);
 
@@ -179,39 +187,64 @@ export default function MyTier() {
         <Link to="/phan-hang" className="btn btn-outline">🏆 {t('tier.viewPerks')} →</Link>
       </div>
 
-      {/* --- Thẻ giảm giá tháng này --- */}
-      <h2 className="mytier-section-title">{t('tier.cardsTitle', { month, year })}</h2>
-      {thisMonthCards.length === 0 ? (
-        <p className="muted">{t('tier.cardsEmpty')}</p>
-      ) : (
-        <div className="mytier-cards-grid">
-          {thisMonthCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
+      {/* --- Thẻ giảm giá: chỉ hiện tóm tắt gọn; toàn bộ thẻ nằm trong trang nhỏ --- */}
+      <div className="mytier-cards-summary">
+        <div>
+          <h2 className="mytier-cards-summary-title">🎫 {t('tier.cardsTitle', { month, year })}</h2>
+          <p className="muted">
+            {t('tier.cardsSummary', {
+              unused: (data.cards || []).filter((c) => c.status === 'unused').length,
+              total: (data.cards || []).length,
+            })}
+          </p>
         </div>
-      )}
+        <button type="button" className="btn" onClick={() => setShowCards(true)}>
+          🎫 {t('tier.viewCards')}
+        </button>
+      </div>
 
-      {huntCards.length > 0 && (
-        <>
-          <h2 className="mytier-section-title">{t('tier.huntCardsTitle')}</h2>
-          <div className="mytier-cards-grid">
-            {huntCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
-          </div>
-        </>
-      )}
+      {showCards && (
+        <div className="modal-backdrop" onClick={() => setShowCards(false)}>
+          <div className="modal modal-lg" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>🎫 {t('tier.cardsTitle', { month, year })}</h3>
+              <button type="button" className="modal-close" aria-label="Đóng" onClick={() => setShowCards(false)}>✕</button>
+            </div>
 
-      {pastCards.length > 0 && (
-        <>
-          <h3 className="mytier-sub-title">{t('tier.pastCardsTitle')}</h3>
-          <div className="mytier-past-list">
-            {pastCards.map((c) => (
-              <div key={c.id} className="mytier-past-row">
-                <code>{c.code}</code>
-                <span>−{c.percent}%</span>
-                <span className="muted">{c.period}</span>
-                <span className={`mytier-status st-${c.status}`}>{t(`tier.${STATUS_KEY[c.status]}`)}</span>
+            {thisMonthCards.length === 0 ? (
+              <p className="muted">{t('tier.cardsEmpty')}</p>
+            ) : (
+              <div className="mytier-cards-grid">
+                {thisMonthCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
               </div>
-            ))}
+            )}
+
+            {huntCards.length > 0 && (
+              <>
+                <h3 className="mytier-sub-title" style={{ marginTop: 22 }}>{t('tier.huntCardsTitle')}</h3>
+                <div className="mytier-cards-grid">
+                  {huntCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
+                </div>
+              </>
+            )}
+
+            {pastCards.length > 0 && (
+              <>
+                <h3 className="mytier-sub-title" style={{ marginTop: 22 }}>{t('tier.pastCardsTitle')}</h3>
+                <div className="mytier-past-list">
+                  {pastCards.map((c) => (
+                    <div key={c.id} className="mytier-past-row">
+                      <code>{c.code}</code>
+                      <span>−{c.percent}%</span>
+                      <span className="muted">{c.period}</span>
+                      <span className={`mytier-status st-${c.status}`}>{t(`tier.${STATUS_KEY[c.status]}`)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        </>
+        </div>
       )}
 
       {/* --- Bảng xếp hạng --- */}

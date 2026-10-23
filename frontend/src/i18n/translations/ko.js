@@ -543,6 +543,8 @@ export default {
     guideIntro: '쇼핑하며 누적하면 등급이 오릅니다 — 등급이 높을수록 매달 할인 카드가 많아지고 할인율도 커집니다. 등급은 결제 완료 주문 기준입니다.',
     viewMine: '내 등급 보기',
     viewPerks: '혜택 및 등급 올리는 방법 보기',
+    viewCards: '카드 보기',
+    cardsSummary: '미사용 {unused}장 · 총 {total}장',
     guestCta: '로그인하고 내 등급을 확인하며 매달 할인 카드를 받으세요.',
     guestLogin: '로그인',
     guestRegister: '회원가입',

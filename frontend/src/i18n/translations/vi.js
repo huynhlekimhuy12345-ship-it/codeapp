@@ -543,6 +543,8 @@ export default {
     guideIntro: 'Mua sắm tích lũy để thăng hạng — hạng càng cao, thẻ discount mỗi tháng càng nhiều và giảm càng sâu. Hạng được tính từ các đơn đã thanh toán.',
     viewMine: 'Xem hạng của tôi',
     viewPerks: 'Xem đặc quyền & cách thăng hạng',
+    viewCards: 'Xem thẻ',
+    cardsSummary: '{unused} thẻ chưa dùng · tổng {total} thẻ',
     guestCta: 'Đăng nhập để theo dõi hạng của bạn và nhận thẻ discount mỗi tháng.',
     guestLogin: 'Đăng nhập',
     guestRegister: 'Đăng ký',

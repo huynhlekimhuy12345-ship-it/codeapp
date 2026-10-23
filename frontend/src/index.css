@@ -735,6 +735,19 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: var(--shadow);
 }
 .modal h3 { margin-bottom: 18px; color: var(--cream); }
+.modal.modal-lg { max-width: 760px; }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 16px;
+}
+.modal-head h3 { margin-bottom: 0; }
+.modal-close {
+  background: rgba(232,181,106,.1); color: var(--cream); flex: 0 0 auto;
+  border: 1px solid rgba(232,181,106,.35); border-radius: 8px;
+  width: 32px; height: 32px; cursor: pointer; font-size: .95rem; line-height: 1;
+}
+.modal-close:hover { border-color: var(--amber); }
+.modal .mytier-section-title:first-child { margin-top: 0; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 
 /* --- Footer --- */
@@ -987,6 +1000,7 @@ select.select-dark {
 .card-picker-overlay {
   position: fixed; inset: 0; z-index: 1200;
   background: rgba(8, 5, 3, .68);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
 }
@@ -1033,3 +1047,6 @@ select.select-dark {
   z-index: 60;
 }
 .tip-star:hover::after, .tip-star:focus::after { opacity: 1; }
+
+/* Trong trang nhỏ, thẻ giảm giá xếp 1 cột full chiều ngang: mã thẻ nằm trọn 1 dòng, dễ đọc */
+.modal .mytier-cards-grid { grid-template-columns: 1fr; }

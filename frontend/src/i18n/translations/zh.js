@@ -543,6 +543,8 @@ export default {
     guideIntro: '累计购物升级 — 等级越高，每月折扣卡越多、折扣越深。等级按已付款订单计算。',
     viewMine: '查看我的等级',
     viewPerks: '查看特权与升级方法',
+    viewCards: '查看卡片',
+    cardsSummary: '{unused} 张未使用 · 共 {total} 张卡',
     guestCta: '登录以跟踪您的等级并领取每月折扣卡。',
     guestLogin: '登录',
     guestRegister: '注册',
