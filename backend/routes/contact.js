@@ -22,46 +22,54 @@ function contactRateLimit(req, res, next) {
 }
 
 // POST /api/contact — công khai: khách gửi tin nhắn từ trang Liên hệ
-router.post('/', contactRateLimit, (req, res) => {
-  const { name, phone, email, content, content_vi } = req.body || {};
-  if (!name || !String(name).trim() || !content || !String(content).trim())
-    return res.status(400).json({ error: 'Vui lòng điền Họ tên và Nội dung tin nhắn' });
-  const wordCount = String(content).trim().split(/\s+/).length;
-  if (wordCount > 300)
-    return res.status(400).json({ error: 'Nội dung tin nhắn tối đa 300 từ' });
-  const now = new Date().toISOString();
-  const translated = String(content_vi || '').trim().slice(0, 10000);
-  const info = db.prepare(
-    'INSERT INTO contact_messages (name, phone, email, content, content_vi, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(name.trim(), String(phone || '').trim(), String(email || '').trim(), content.trim(), translated, now);
-  res.status(201).json({ id: info.lastInsertRowid });
+router.post('/', contactRateLimit, async (req, res) => {
+  try {
+    const { name, phone, email, content, content_vi } = req.body || {};
+    if (!name || !String(name).trim() || !content || !String(content).trim())
+      return res.status(400).json({ error: 'Vui lòng điền Họ tên và Nội dung tin nhắn' });
+    const wordCount = String(content).trim().split(/\s+/).length;
+    if (wordCount > 300)
+      return res.status(400).json({ error: 'Nội dung tin nhắn tối đa 300 từ' });
+    const now = new Date().toISOString();
+    const translated = String(content_vi || '').trim().slice(0, 10000);
+    const info = await db.prepare(
+      'INSERT INTO contact_messages (name, phone, email, content, content_vi, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(name.trim(), String(phone || '').trim(), String(email || '').trim(), content.trim(), translated, now);
+    res.status(201).json({ id: info.lastInsertRowid });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/contact?limit= — admin: danh sách tin nhắn, mới nhất trước
-router.get('/', auth, staffOnly, (req, res) => {
-  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
-  const messages = db
-    .prepare('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT ?')
-    .all(limit)
-    .map((m) => ({ ...m, is_read: m.is_read === 1 }));
-  res.json({ messages });
+router.get('/', auth, staffOnly, async (req, res) => {
+  try {
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+    const messages = (await db
+      .prepare('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT ?')
+      .all(limit))
+      .map((m) => ({ ...m, is_read: m.is_read === 1 }));
+    res.json({ messages });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/contact/:id/read — admin: đánh dấu đã đọc / chưa đọc
-router.put('/:id/read', auth, staffOnly, (req, res) => {
-  const isRead = req.body && req.body.is_read === false ? 0 : 1;
-  const info = db
-    .prepare('UPDATE contact_messages SET is_read = ? WHERE id = ?')
-    .run(isRead, req.params.id);
-  if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy tin nhắn' });
-  res.json({ ok: true });
+router.put('/:id/read', auth, staffOnly, async (req, res) => {
+  try {
+    const isRead = req.body && req.body.is_read === false ? 0 : 1;
+    const info = await db
+      .prepare('UPDATE contact_messages SET is_read = ? WHERE id = ?')
+      .run(isRead, req.params.id);
+    if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy tin nhắn' });
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // DELETE /api/contact/:id — admin
-router.delete('/:id', auth, staffOnly, (req, res) => {
-  const info = db.prepare('DELETE FROM contact_messages WHERE id = ?').run(req.params.id);
-  if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy tin nhắn' });
-  res.json({ ok: true });
+router.delete('/:id', auth, staffOnly, async (req, res) => {
+  try {
+    const info = await db.prepare('DELETE FROM contact_messages WHERE id = ?').run(req.params.id);
+    if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy tin nhắn' });
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;

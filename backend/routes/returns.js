@@ -17,10 +17,10 @@ const router = express.Router();
 const withImages = (row) => (row ? { ...row, images: parseImages(row.images) } : row);
 
 // Nạp chi tiết món cho một danh sách yêu cầu
-function attachItems(rows) {
+async function attachItems(rows) {
   if (!rows.length) return rows;
   const ids = rows.map((r) => r.id);
-  const items = db
+  const items = await db
     .prepare(`SELECT * FROM return_items WHERE return_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`)
     .all(...ids);
   const byReturn = {};
@@ -28,9 +28,9 @@ function attachItems(rows) {
   return rows.map((r) => ({ ...r, items: byReturn[r.id] || [] }));
 }
 
-const getReturnFull = (id) => {
-  const ret = db.prepare('SELECT * FROM returns WHERE id = ?').get(id);
-  return ret ? attachItems([withImages(ret)])[0] : null;
+const getReturnFull = async (id) => {
+  const ret = await db.prepare('SELECT * FROM returns WHERE id = ?').get(id);
+  return ret ? (await attachItems([withImages(ret)]))[0] : null;
 };
 
 // Trạng thái còn "đang xử lý" — đơn đã có yêu cầu này thì không tạo thêm được
@@ -46,8 +46,8 @@ const ACTION_FLOW = {
 };
 
 // Lấy đơn hàng, đồng thời kiểm tra quyền: chủ đơn hoặc nhân viên
-function getOrderForUser(orderId, user) {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+async function getOrderForUser(orderId, user) {
+  const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
   if (!order) return { error: 404, message: 'Không tìm thấy đơn hàng' };
   if (!['admin', 'sale'].includes(user.role) && order.user_id !== user.id)
     return { error: 403, message: 'Bạn không có quyền với đơn hàng này' };
@@ -56,35 +56,35 @@ function getOrderForUser(orderId, user) {
 
 // Thông báo cho khách khi yêu cầu đổi/trả đổi trạng thái: chuông + tin nhắn chat.
 // Lỗi thông báo không bao giờ làm hỏng thao tác chính.
-function notifyCustomer(order, ret, title, content, senderId) {
+async function notifyCustomer(order, ret, title, content, senderId) {
   if (!order.user_id) return;
   try {
-    db.prepare(
+    await db.prepare(
       'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
     ).run(order.user_id, 'return', title, content, '/don-hang');
   } catch (e) { /* bỏ qua lỗi thông báo */ }
   try {
-    postChatNotice(order.user_id, senderId, content);
+    await postChatNotice(order.user_id, senderId, content);
   } catch (e) { /* bỏ qua lỗi thông báo */ }
 }
 
 // Cộng kho cho các món được chọn nhập lại + ghi nhật ký kho.
 // restock: [{ id: return_item_id, qty }] — qty bị chặn ở số lượng chưa nhập.
-function applyRestock(ret, restock) {
+async function applyRestock(ret, restock) {
   if (!Array.isArray(restock)) return;
   for (const entry of restock) {
-    const item = db.prepare('SELECT * FROM return_items WHERE id = ? AND return_id = ?')
+    const item = await db.prepare('SELECT * FROM return_items WHERE id = ? AND return_id = ?')
       .get(parseInt(entry.id), ret.id);
     if (!item) continue;
     const qty = Math.max(0, Math.min(parseInt(entry.qty) || 0, item.quantity - item.restocked_qty));
     if (qty <= 0) continue;
     if (item.variant_id) {
-      db.prepare('UPDATE product_variants SET stock = stock + ? WHERE id = ?').run(qty, item.variant_id);
+      await db.prepare('UPDATE product_variants SET stock = stock + ? WHERE id = ?').run(qty, item.variant_id);
     } else if (item.product_id) {
-      db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(qty, item.product_id);
+      await db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(qty, item.product_id);
     }
-    db.prepare('UPDATE return_items SET restocked_qty = restocked_qty + ? WHERE id = ?').run(qty, item.id);
-    db.logStockMovement({
+    await db.prepare('UPDATE return_items SET restocked_qty = restocked_qty + ? WHERE id = ?').run(qty, item.id);
+    await db.logStockMovement({
       product_id: item.product_id,
       variant_id: item.variant_id,
       type: 'IN',
@@ -99,122 +99,128 @@ function applyRestock(ret, restock) {
 // POST /api/returns — khách tạo yêu cầu đổi/trả (chỉ cho đơn ĐÃ GIAO của mình)
 // Bắt buộc: lý do + ít nhất 1 ảnh minh họa. items: [{order_item_id, quantity}] —
 // không gửi items thì hiểu là đổi/trả toàn bộ số lượng còn lại của đơn.
-router.post('/', auth, (req, res) => {
-  const { order_id, type, reason, images, items } = req.body || {};
-  if (!order_id)
-    return res.status(400).json({ error: 'Thiếu order_id' });
-  if (!['return', 'exchange'].includes(type))
-    return res.status(400).json({ error: 'type phải là "return" (trả) hoặc "exchange" (đổi)' });
-  if (!(reason || '').trim())
-    return res.status(400).json({ error: 'Vui lòng ghi rõ lý do đổi/trả' });
-  const img = validateImages(images);
-  if (img.error) return res.status(400).json({ error: img.error });
+router.post('/', auth, async (req, res) => {
+  try {
+    const { order_id, type, reason, images, items } = req.body || {};
+    if (!order_id)
+      return res.status(400).json({ error: 'Thiếu order_id' });
+    if (!['return', 'exchange'].includes(type))
+      return res.status(400).json({ error: 'type phải là "return" (trả) hoặc "exchange" (đổi)' });
+    if (!(reason || '').trim())
+      return res.status(400).json({ error: 'Vui lòng ghi rõ lý do đổi/trả' });
+    const img = validateImages(images);
+    if (img.error) return res.status(400).json({ error: img.error });
 
-  const { order, error, message } = getOrderForUser(order_id, req.user);
-  if (error) return res.status(error).json({ error: message });
+    const { order, error, message } = await getOrderForUser(order_id, req.user);
+    if (error) return res.status(error).json({ error: message });
 
-  if (order.status !== 'delivered')
-    return res.status(403).json({ error: 'Chỉ đơn hàng đã giao mới được yêu cầu đổi/trả' });
+    if (order.status !== 'delivered')
+      return res.status(403).json({ error: 'Chỉ đơn hàng đã giao mới được yêu cầu đổi/trả' });
 
-  // Đơn đã xác nhận hài lòng: khóa đổi/trả vĩnh viễn (đơn đã ghi điểm hạng)
-  if (order.satisfied_at)
-    return res.status(400).json({ error: 'Bạn đã xác nhận hài lòng với đơn này nên không thể đổi/trả nữa' });
+    // Đơn đã xác nhận hài lòng: khóa đổi/trả vĩnh viễn (đơn đã ghi điểm hạng)
+    if (order.satisfied_at)
+      return res.status(400).json({ error: 'Bạn đã xác nhận hài lòng với đơn này nên không thể đổi/trả nữa' });
 
-  // Chỉ đổi/trả trong vòng 7 ngày kể từ ngày giao hàng
-  const deliveredBase = deliveredAtOf(order.id) || order.created_at;
-  if (deliveredBase && Date.now() - parseDbTime(deliveredBase).getTime() > SETTLE_DAYS * 24 * 3600 * 1000)
-    return res.status(400).json({ error: `Đã quá ${SETTLE_DAYS} ngày kể từ ngày giao hàng, đơn không còn được đổi/trả` });
+    // Chỉ đổi/trả trong vòng 7 ngày kể từ ngày giao hàng
+    const deliveredBase = (await deliveredAtOf(order.id)) || order.created_at;
+    if (deliveredBase && Date.now() - parseDbTime(deliveredBase).getTime() > SETTLE_DAYS * 24 * 3600 * 1000)
+      return res.status(400).json({ error: `Đã quá ${SETTLE_DAYS} ngày kể từ ngày giao hàng, đơn không còn được đổi/trả` });
 
-  const existing = db
-    .prepare(`SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')`)
-    .get(order.id);
-  if (existing)
-    return res.status(409).json({ error: 'Đơn này đã có yêu cầu đổi/trả đang được xử lý' });
+    const existing = await db
+      .prepare(`SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')`)
+      .get(order.id);
+    if (existing)
+      return res.status(409).json({ error: 'Đơn này đã có yêu cầu đổi/trả đang được xử lý' });
 
-  // Số lượng từng món còn được đổi/trả = đã mua - đã hoàn tất đổi/trả trước đó
-  const orderItems = db.prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id').all(order.id);
-  const returnedBefore = db.prepare(
-    `SELECT ri.order_item_id AS oid, COALESCE(SUM(ri.quantity), 0) AS q
-     FROM return_items ri JOIN returns r ON r.id = ri.return_id
-     WHERE r.order_id = ? AND r.status = 'completed' GROUP BY ri.order_item_id`
-  ).all(order.id);
-  const returnedMap = Object.fromEntries(returnedBefore.map((x) => [x.oid, x.q]));
+    // Số lượng từng món còn được đổi/trả = đã mua - đã hoàn tất đổi/trả trước đó
+    const orderItems = await db.prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id').all(order.id);
+    const returnedBefore = await db.prepare(
+      `SELECT ri.order_item_id AS oid, COALESCE(SUM(ri.quantity), 0) AS q
+       FROM return_items ri JOIN returns r ON r.id = ri.return_id
+       WHERE r.order_id = ? AND r.status = 'completed' GROUP BY ri.order_item_id`
+    ).all(order.id);
+    const returnedMap = Object.fromEntries(returnedBefore.map((x) => [x.oid, x.q]));
 
-  let chosen;
-  if (Array.isArray(items) && items.length) {
-    chosen = [];
-    for (const entry of items) {
-      const oi = orderItems.find((x) => x.id === parseInt(entry.order_item_id));
-      if (!oi) return res.status(400).json({ error: 'Sản phẩm không thuộc đơn hàng này' });
-      const remain = oi.quantity - (returnedMap[oi.id] || 0);
-      const qty = parseInt(entry.quantity);
-      if (!qty || qty < 1 || qty > remain)
-        return res.status(400).json({ error: `Số lượng đổi/trả của "${oi.product_name}" phải từ 1 đến ${remain}` });
-      chosen.push({ oi, qty });
+    let chosen;
+    if (Array.isArray(items) && items.length) {
+      chosen = [];
+      for (const entry of items) {
+        const oi = orderItems.find((x) => x.id === parseInt(entry.order_item_id));
+        if (!oi) return res.status(400).json({ error: 'Sản phẩm không thuộc đơn hàng này' });
+        const remain = oi.quantity - (returnedMap[oi.id] || 0);
+        const qty = parseInt(entry.quantity);
+        if (!qty || qty < 1 || qty > remain)
+          return res.status(400).json({ error: `Số lượng đổi/trả của "${oi.product_name}" phải từ 1 đến ${remain}` });
+        chosen.push({ oi, qty });
+      }
+    } else {
+      chosen = orderItems
+        .map((oi) => ({ oi, qty: oi.quantity - (returnedMap[oi.id] || 0) }))
+        .filter((c) => c.qty > 0);
     }
-  } else {
-    chosen = orderItems
-      .map((oi) => ({ oi, qty: oi.quantity - (returnedMap[oi.id] || 0) }))
-      .filter((c) => c.qty > 0);
-  }
-  if (!chosen.length)
-    return res.status(400).json({ error: 'Không còn sản phẩm nào để đổi/trả trong đơn này' });
+    if (!chosen.length)
+      return res.status(400).json({ error: 'Không còn sản phẩm nào để đổi/trả trong đơn này' });
 
-  const createTx = db.transaction(() => {
-    const info = db
-      .prepare('INSERT INTO returns (order_id, type, reason, images) VALUES (?, ?, ?, ?)')
-      .run(order.id, type, reason.trim(), img.value);
-    const retId = info.lastInsertRowid;
-    const insItem = db.prepare(
-      `INSERT INTO return_items (return_id, order_item_id, product_id, variant_id, product_name, variant_sku, price, quantity)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-    for (const { oi, qty } of chosen) {
-      insItem.run(retId, oi.id, oi.product_id, oi.variant_id, oi.product_name, oi.variant_sku || '', oi.price, qty);
-    }
-    return retId;
-  });
-  const ret = getReturnFull(createTx());
-
-  // Đăng thẻ yêu cầu vào chat của khách (nối tiếp cuộc đang có, hoặc tạo cuộc chờ mới).
-  if (order.user_id) {
-    const label = type === 'exchange' ? '🔄 Yêu cầu đổi hàng' : '↩️ Yêu cầu trả hàng';
-    const itemText = ret.items.map((i) => `${i.product_name} ×${i.quantity}`).join(', ');
-    postAftersalesCard(order.user_id, {
-      refType: 'return',
-      refId: ret.id,
-      content: `${label} — Đơn #${order.id}: ${itemText}. Lý do: ${reason.trim().slice(0, 160)}`,
+    const createTx = db.transaction(async () => {
+      const info = await db
+        .prepare('INSERT INTO returns (order_id, type, reason, images) VALUES (?, ?, ?, ?)')
+        .run(order.id, type, reason.trim(), img.value);
+      const retId = info.lastInsertRowid;
+      const insItem = db.prepare(
+        `INSERT INTO return_items (return_id, order_item_id, product_id, variant_id, product_name, variant_sku, price, quantity)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      for (const { oi, qty } of chosen) {
+        await insItem.run(retId, oi.id, oi.product_id, oi.variant_id, oi.product_name, oi.variant_sku || '', oi.price, qty);
+      }
+      return retId;
     });
-  }
+    const ret = await getReturnFull(await createTx());
 
-  res.status(201).json({ return: ret });
+    // Đăng thẻ yêu cầu vào chat của khách (nối tiếp cuộc đang có, hoặc tạo cuộc chờ mới).
+    if (order.user_id) {
+      const label = type === 'exchange' ? '🔄 Yêu cầu đổi hàng' : '↩️ Yêu cầu trả hàng';
+      const itemText = ret.items.map((i) => `${i.product_name} ×${i.quantity}`).join(', ');
+      await postAftersalesCard(order.user_id, {
+        refType: 'return',
+        refId: ret.id,
+        content: `${label} — Đơn #${order.id}: ${itemText}. Lý do: ${reason.trim().slice(0, 160)}`,
+      });
+    }
+
+    res.status(201).json({ return: ret });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/returns — khách xem yêu cầu của mình, nhân viên xem tất cả (?status= để lọc)
-router.get('/', auth, (req, res) => {
-  const { status } = req.query;
-  const conds = [];
-  const params = [];
-  if (req.user.role === 'customer') { conds.push('o.user_id = ?'); params.push(req.user.id); }
-  if (status) { conds.push('r.status = ?'); params.push(status); }
-  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
-  const list = db
-    .prepare(
-      `SELECT r.*, o.customer_name, o.total AS order_total
-       FROM returns r JOIN orders o ON o.id = r.order_id
-       ${where} ORDER BY r.id DESC`
-    )
-    .all(...params);
-  res.json({ returns: attachItems(list.map(withImages)) });
+router.get('/', auth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const conds = [];
+    const params = [];
+    if (req.user.role === 'customer') { conds.push('o.user_id = ?'); params.push(req.user.id); }
+    if (status) { conds.push('r.status = ?'); params.push(status); }
+    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    const list = await db
+      .prepare(
+        `SELECT r.*, o.customer_name, o.total AS order_total
+         FROM returns r JOIN orders o ON o.id = r.order_id
+         ${where} ORDER BY r.id DESC`
+      )
+      .all(...params);
+    res.json({ returns: await attachItems(list.map(withImages)) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/returns/:id — chủ đơn hoặc nhân viên
-router.get('/:id', auth, (req, res) => {
-  const ret = db.prepare('SELECT * FROM returns WHERE id = ?').get(req.params.id);
-  if (!ret) return res.status(404).json({ error: 'Không tìm thấy yêu cầu' });
-  const { error, message } = getOrderForUser(ret.order_id, req.user);
-  if (error) return res.status(error).json({ error: message });
-  res.json({ return: getReturnFull(ret.id) });
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const ret = await db.prepare('SELECT * FROM returns WHERE id = ?').get(req.params.id);
+    if (!ret) return res.status(404).json({ error: 'Không tìm thấy yêu cầu' });
+    const { error, message } = await getOrderForUser(ret.order_id, req.user);
+    if (error) return res.status(error).json({ error: message });
+    res.json({ return: await getReturnFull(ret.id) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/returns/:id — nhân viên duyệt / từ chối / nhận hàng / hoàn thành
@@ -223,7 +229,7 @@ router.get('/:id', auth, (req, res) => {
 //   rejected: { reason } (bắt buộc)       -> từ chối kèm lý do
 //   received: { note, restock: [{id, qty}] } -> đã nhận lại hàng + nhập kho các món còn tốt
 //   completed: { refund_amount?, restock? }  -> hoàn tất; refund mặc định = tổng giá trị món trả
-router.put('/:id', auth, staffOnly, (req, res) => {
+router.put('/:id', auth, staffOnly, async (req, res) => {
   const { action, refund_amount, reason, note, restock } = req.body || {};
   if (!['approved', 'rejected', 'received', 'completed'].includes(action))
     return res.status(400).json({ error: 'action phải là approved / rejected / received / completed' });
@@ -232,41 +238,41 @@ router.put('/:id', auth, staffOnly, (req, res) => {
 
   let result;
   try {
-    result = db.transaction(() => {
-      const ret = db.prepare('SELECT * FROM returns WHERE id = ?').get(req.params.id);
+    result = await db.transaction(async () => {
+      const ret = await db.prepare('SELECT * FROM returns WHERE id = ?').get(req.params.id);
       if (!ret) return null;
       if (!(ACTION_FLOW[ret.status] || []).includes(action))
         throw new Error(`Không thể chuyển yêu cầu từ "${ret.status}" sang "${action}"`);
-      const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(ret.order_id);
+      const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(ret.order_id);
 
       if (action === 'approved') {
-        db.prepare("UPDATE returns SET status = 'approved' WHERE id = ?").run(ret.id);
+        await db.prepare("UPDATE returns SET status = 'approved' WHERE id = ?").run(ret.id);
       } else if (action === 'rejected') {
-        db.prepare("UPDATE returns SET status = 'rejected', reject_reason = ? WHERE id = ?")
+        await db.prepare("UPDATE returns SET status = 'rejected', reject_reason = ? WHERE id = ?")
           .run(reason.trim().slice(0, 500), ret.id);
       } else if (action === 'received') {
         const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-        db.prepare("UPDATE returns SET status = 'received', received_note = ?, received_at = ? WHERE id = ?")
+        await db.prepare("UPDATE returns SET status = 'received', received_note = ?, received_at = ? WHERE id = ?")
           .run(String(note || '').trim().slice(0, 500), now, ret.id);
-        applyRestock(ret, restock);
+        await applyRestock(ret, restock);
       } else if (action === 'completed') {
-        applyRestock(ret, restock);
-        const items = db.prepare('SELECT price, quantity FROM return_items WHERE return_id = ?').all(ret.id);
+        await applyRestock(ret, restock);
+        const items = await db.prepare('SELECT price, quantity FROM return_items WHERE return_id = ?').all(ret.id);
         const suggested = items.reduce((s, i) => s + i.price * i.quantity, 0);
         const refund = refund_amount === undefined || refund_amount === null
           ? suggested
           : parseInt(refund_amount) || 0;
         if (refund < 0 || refund > order.total)
           throw new Error(`Số tiền hoàn phải từ 0 đến ${order.total.toLocaleString('vi-VN')} ₫ (tổng đơn)`);
-        db.prepare("UPDATE returns SET status = 'completed', refund_amount = ? WHERE id = ?")
+        await db.prepare("UPDATE returns SET status = 'completed', refund_amount = ? WHERE id = ?")
           .run(refund, ret.id);
         if (refund > 0) {
-          const payment = db.prepare('SELECT * FROM payments WHERE order_id = ?').get(ret.order_id);
+          const payment = await db.prepare('SELECT * FROM payments WHERE order_id = ?').get(ret.order_id);
           if (payment && refund >= order.total) {
             // Hoàn toàn bộ: đánh dấu đã hoàn tiền ở cả sổ thanh toán lẫn đơn hàng,
             // thống kê doanh thu và hạng khách tự loại đơn này ra.
-            db.prepare("UPDATE payments SET status = 'refunded' WHERE id = ?").run(payment.id);
-            db.prepare("UPDATE orders SET payment_status = 'refunded' WHERE id = ?").run(order.id);
+            await db.prepare("UPDATE payments SET status = 'refunded' WHERE id = ?").run(payment.id);
+            await db.prepare("UPDATE orders SET payment_status = 'refunded' WHERE id = ?").run(order.id);
           }
           // Hoàn một phần: giữ nguyên trạng thái; doanh thu/tổng chi được trừ đúng
           // số tiền hoàn ở tầng thống kê (reports) và phân hạng (tiers).
@@ -280,20 +286,20 @@ router.put('/:id', auth, staffOnly, (req, res) => {
   if (!result) return res.status(404).json({ error: 'Không tìm thấy yêu cầu' });
 
   const { ret, order } = result;
-  const fresh = getReturnFull(ret.id);
+  const fresh = await getReturnFull(ret.id);
   const typeLabel = ret.type === 'exchange' ? 'đổi hàng' : 'trả hàng';
   if (action === 'approved') {
-    notifyCustomer(order, fresh,
+    await notifyCustomer(order, fresh,
       `✅ Yêu cầu ${typeLabel} đơn #${ret.order_id} đã được chấp nhận`,
       `✅ Shop đã chấp nhận yêu cầu ${typeLabel} cho đơn #${ret.order_id}. Bạn vui lòng đóng gói và gửi hàng về shop giúp shop nhé. Shop sẽ thông báo ngay khi nhận được hàng.`,
       req.user.id);
   } else if (action === 'rejected') {
-    notifyCustomer(order, fresh,
+    await notifyCustomer(order, fresh,
       `❌ Yêu cầu ${typeLabel} đơn #${ret.order_id} bị từ chối`,
       `❌ Shop rất tiếc, yêu cầu ${typeLabel} cho đơn #${ret.order_id} chưa được chấp nhận. Lý do: ${fresh.reject_reason}. Bạn cần hỗ trợ thêm cứ nhắn cho shop nhé.`,
       req.user.id);
   } else if (action === 'received') {
-    notifyCustomer(order, fresh,
+    await notifyCustomer(order, fresh,
       `📥 Shop đã nhận lại hàng của đơn #${ret.order_id}`,
       `📥 Shop đã nhận lại hàng của đơn #${ret.order_id}${fresh.received_note ? `. Tình trạng hàng nhận lại: ${fresh.received_note}` : ''}. Shop đang hoàn tất thủ tục cho bạn.`,
       req.user.id);
@@ -301,7 +307,7 @@ router.put('/:id', auth, staffOnly, (req, res) => {
     const refundText = fresh.refund_amount > 0
       ? ` Số tiền hoàn lại cho bạn: ${fresh.refund_amount.toLocaleString('vi-VN')} ₫.`
       : '';
-    notifyCustomer(order, fresh,
+    await notifyCustomer(order, fresh,
       `↩️ Yêu cầu ${typeLabel} đơn #${ret.order_id} đã hoàn tất`,
       `↩️ Yêu cầu ${typeLabel} cho đơn #${ret.order_id} đã xử lý xong.${refundText} Cảm ơn bạn đã tin tưởng BI99!`,
       req.user.id);

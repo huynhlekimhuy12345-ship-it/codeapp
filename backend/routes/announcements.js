@@ -36,83 +36,95 @@ function row(r) {
 }
 
 // GET /api/announcements/active — tin đang bật, mới nhất trước (public, không cần đăng nhập)
-router.get('/active', (req, res) => {
-  const rows = db.prepare(
-    `SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.is_active = 1 ORDER BY a.id DESC LIMIT 20`
-  ).all();
-  res.json({ announcements: rows.map(row) });
+router.get('/active', async (req, res) => {
+  try {
+    const rows = await db.prepare(
+      `SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.is_active = 1 ORDER BY a.id DESC LIMIT 20`
+    ).all();
+    res.json({ announcements: rows.map(row) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/announcements — toàn bộ tin (mới nhất trước), chỉ staff
-router.get('/', auth, staffOnly, (req, res) => {
-  const rows = db.prepare(`SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by ORDER BY a.id DESC`).all();
-  res.json({ announcements: rows.map(row) });
+router.get('/', auth, staffOnly, async (req, res) => {
+  try {
+    const rows = await db.prepare(`SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by ORDER BY a.id DESC`).all();
+    res.json({ announcements: rows.map(row) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/announcements — tạo tin mới, chỉ staff
-router.post('/', auth, staffOnly, (req, res) => {
-  const { title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active } = req.body || {};
-  if (!(title || '').trim()) return res.status(400).json({ error: 'Thiếu tiêu đề thông báo' });
-  if (!(content || '').trim()) return res.status(400).json({ error: 'Thiếu nội dung thông báo' });
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  const r = db.prepare(
-    `INSERT INTO announcements (title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    title.trim(), content.trim(), (badge || '').trim(), (cta_text || '').trim(), (cta_link || '').trim(),
-    (image_url || '').trim(), (image_caption || '').trim(),
-    clampZoom(image_zoom, 1), clampPos(image_pos_x, 50), clampPos(image_pos_y, 50),
-    show_on_banner === false ? 0 : 1, send_notification === false ? 0 : 1, is_active === false ? 0 : 1,
-    req.user ? req.user.id : null, now, now
-  );
-  res.status(201).json({ announcement: row(db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(r.lastInsertRowid)) });
+router.post('/', auth, staffOnly, async (req, res) => {
+  try {
+    const { title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active } = req.body || {};
+    if (!(title || '').trim()) return res.status(400).json({ error: 'Thiếu tiêu đề thông báo' });
+    if (!(content || '').trim()) return res.status(400).json({ error: 'Thiếu nội dung thông báo' });
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const r = await db.prepare(
+      `INSERT INTO announcements (title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      title.trim(), content.trim(), (badge || '').trim(), (cta_text || '').trim(), (cta_link || '').trim(),
+      (image_url || '').trim(), (image_caption || '').trim(),
+      clampZoom(image_zoom, 1), clampPos(image_pos_x, 50), clampPos(image_pos_y, 50),
+      show_on_banner === false ? 0 : 1, send_notification === false ? 0 : 1, is_active === false ? 0 : 1,
+      req.user ? req.user.id : null, now, now
+    );
+    res.status(201).json({ announcement: row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(r.lastInsertRowid)) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/announcements/:id — sửa tin, chỉ staff
-router.put('/:id', auth, staffOnly, (req, res) => {
-  const cur = db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
-  if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
-  const { title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active } = req.body || {};
-  if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Tiêu đề không được để trống' });
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  db.prepare(
-    `UPDATE announcements SET title = ?, content = ?, badge = ?, cta_text = ?, cta_link = ?,
-     image_url = ?, image_caption = ?, image_zoom = ?, image_pos_x = ?, image_pos_y = ?,
-     show_on_banner = ?, send_notification = ?, is_active = ?, updated_at = ? WHERE id = ?`
-  ).run(
-    title !== undefined ? String(title).trim() : cur.title,
-    content !== undefined ? String(content).trim() : cur.content,
-    badge !== undefined ? String(badge).trim() : cur.badge,
-    cta_text !== undefined ? String(cta_text).trim() : cur.cta_text,
-    cta_link !== undefined ? String(cta_link).trim() : cur.cta_link,
-    image_url !== undefined ? String(image_url).trim() : (cur.image_url || ''),
-    image_caption !== undefined ? String(image_caption).trim() : (cur.image_caption || ''),
-    clampZoom(image_zoom, cur.image_zoom != null ? Number(cur.image_zoom) : 1),
-    clampPos(image_pos_x, cur.image_pos_x != null ? Number(cur.image_pos_x) : 50),
-    clampPos(image_pos_y, cur.image_pos_y != null ? Number(cur.image_pos_y) : 50),
-    show_on_banner !== undefined ? (show_on_banner ? 1 : 0) : cur.show_on_banner,
-    send_notification !== undefined ? (send_notification ? 1 : 0) : cur.send_notification,
-    is_active !== undefined ? (is_active ? 1 : 0) : cur.is_active,
-    now, req.params.id
-  );
-  res.json({ announcement: row(db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
+router.put('/:id', auth, staffOnly, async (req, res) => {
+  try {
+    const cur = await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
+    if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
+    const { title, content, badge, cta_text, cta_link, image_url, image_caption, image_zoom, image_pos_x, image_pos_y, show_on_banner, send_notification, is_active } = req.body || {};
+    if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Tiêu đề không được để trống' });
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    await db.prepare(
+      `UPDATE announcements SET title = ?, content = ?, badge = ?, cta_text = ?, cta_link = ?,
+       image_url = ?, image_caption = ?, image_zoom = ?, image_pos_x = ?, image_pos_y = ?,
+       show_on_banner = ?, send_notification = ?, is_active = ?, updated_at = ? WHERE id = ?`
+    ).run(
+      title !== undefined ? String(title).trim() : cur.title,
+      content !== undefined ? String(content).trim() : cur.content,
+      badge !== undefined ? String(badge).trim() : cur.badge,
+      cta_text !== undefined ? String(cta_text).trim() : cur.cta_text,
+      cta_link !== undefined ? String(cta_link).trim() : cur.cta_link,
+      image_url !== undefined ? String(image_url).trim() : (cur.image_url || ''),
+      image_caption !== undefined ? String(image_caption).trim() : (cur.image_caption || ''),
+      clampZoom(image_zoom, cur.image_zoom != null ? Number(cur.image_zoom) : 1),
+      clampPos(image_pos_x, cur.image_pos_x != null ? Number(cur.image_pos_x) : 50),
+      clampPos(image_pos_y, cur.image_pos_y != null ? Number(cur.image_pos_y) : 50),
+      show_on_banner !== undefined ? (show_on_banner ? 1 : 0) : cur.show_on_banner,
+      send_notification !== undefined ? (send_notification ? 1 : 0) : cur.send_notification,
+      is_active !== undefined ? (is_active ? 1 : 0) : cur.is_active,
+      now, req.params.id
+    );
+    res.json({ announcement: row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/announcements/:id/toggle — bật/tắt hiển thị, chỉ staff
-router.put('/:id/toggle', auth, staffOnly, (req, res) => {
-  const cur = db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
-  if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  db.prepare(`UPDATE announcements SET is_active = ?, updated_at = ? WHERE id = ?`)
-    .run(cur.is_active ? 0 : 1, now, req.params.id);
-  res.json({ announcement: row(db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
+router.put('/:id/toggle', auth, staffOnly, async (req, res) => {
+  try {
+    const cur = await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id);
+    if (!cur) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    await db.prepare(`UPDATE announcements SET is_active = ?, updated_at = ? WHERE id = ?`)
+      .run(cur.is_active ? 0 : 1, now, req.params.id);
+    res.json({ announcement: row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // DELETE /api/announcements/:id — xóa tin, chỉ staff
-router.delete('/:id', auth, staffOnly, (req, res) => {
-  const r = db.prepare('DELETE FROM announcements WHERE id = ?').run(req.params.id);
-  if (!r.changes) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
-  res.json({ ok: true });
+router.delete('/:id', auth, staffOnly, async (req, res) => {
+  try {
+    const r = await db.prepare('DELETE FROM announcements WHERE id = ?').run(req.params.id);
+    if (!r.changes) return res.status(404).json({ error: 'Không tìm thấy thông báo' });
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;

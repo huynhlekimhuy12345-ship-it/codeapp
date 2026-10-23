@@ -82,9 +82,9 @@ function validatePayload(body, isCreate) {
 //       'NOT_FOUND' | 'INACTIVE' | 'EXPIRED' | 'MIN_ORDER' | 'LIMIT_REACHED'
 // discount = percent ? floor(total*value/100) : min(value, total)
 // Nhận db qua tham số để W3 gọi được TRONG transaction đặt đơn.
-function validateVoucher(dbConn, code, orderTotal) {
+async function validateVoucher(dbConn, code, orderTotal) {
   const total = parseInt(orderTotal) || 0;
-  const v = dbConn.prepare('SELECT * FROM vouchers WHERE code = ?').get(normCode(code));
+  const v = await dbConn.prepare('SELECT * FROM vouchers WHERE code = ?').get(normCode(code));
   if (!v) return { valid: false, reason: 'NOT_FOUND' };
   if (!v.is_active) return { valid: false, reason: 'INACTIVE' };
   if (v.expiry && new Date(v.expiry).getTime() <= Date.now())
@@ -107,73 +107,83 @@ const REASON_MSG = {
 };
 
 // GET /api/vouchers — admin: danh sách, lọc ?is_active=1|0
-router.get('/', auth, staffOnly, (req, res) => {
-  const conds = [];
-  const params = [];
-  if (req.query.is_active !== undefined && req.query.is_active !== '') {
-    conds.push('is_active = ?');
-    params.push(req.query.is_active ? 1 : 0);
-  }
-  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
-  const vouchers = db
-    .prepare(`SELECT * FROM vouchers ${where} ORDER BY id DESC`)
-    .all(...params);
-  res.json({ vouchers });
+router.get('/', auth, staffOnly, async (req, res) => {
+  try {
+    const conds = [];
+    const params = [];
+    if (req.query.is_active !== undefined && req.query.is_active !== '') {
+      conds.push('is_active = ?');
+      params.push(req.query.is_active ? 1 : 0);
+    }
+    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    const vouchers = await db
+      .prepare(`SELECT * FROM vouchers ${where} ORDER BY id DESC`)
+      .all(...params);
+    res.json({ vouchers });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/vouchers — admin: tạo mới
-router.post('/', auth, staffOnly, (req, res) => {
-  const { ok, error, clean } = validatePayload(req.body || {}, true);
-  if (!ok) return res.status(400).json({ error });
-  const exists = db.prepare('SELECT id FROM vouchers WHERE code = ?').get(clean.code);
-  if (exists) return res.status(409).json({ error: 'Mã voucher đã tồn tại' });
-  const info = db
-    .prepare(
-      `INSERT INTO vouchers (code, type, value, min_order, expiry, usage_limit, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(clean.code, clean.type, clean.value, clean.min_order, clean.expiry, clean.usage_limit, clean.is_active ?? 1);
-  res.status(201).json({ voucher: db.prepare('SELECT * FROM vouchers WHERE id = ?').get(info.lastInsertRowid) });
+router.post('/', auth, staffOnly, async (req, res) => {
+  try {
+    const { ok, error, clean } = validatePayload(req.body || {}, true);
+    if (!ok) return res.status(400).json({ error });
+    const exists = await db.prepare('SELECT id FROM vouchers WHERE code = ?').get(clean.code);
+    if (exists) return res.status(409).json({ error: 'Mã voucher đã tồn tại' });
+    const info = await db
+      .prepare(
+        `INSERT INTO vouchers (code, type, value, min_order, expiry, usage_limit, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(clean.code, clean.type, clean.value, clean.min_order, clean.expiry, clean.usage_limit, clean.is_active ?? 1);
+    res.status(201).json({ voucher: await db.prepare('SELECT * FROM vouchers WHERE id = ?').get(info.lastInsertRowid) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/vouchers/:id — admin: sửa value/min_order/expiry/usage_limit/is_active
-router.put('/:id', auth, staffOnly, (req, res) => {
-  const v = db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id);
-  if (!v) return res.status(404).json({ error: 'Không tìm thấy voucher' });
-  const { ok, error, clean } = validatePayload(req.body || {}, false);
-  if (!ok) return res.status(400).json({ error });
-  // Percent không cho quá 100 kể cả khi sửa (type lấy từ bản ghi hiện có)
-  if (clean.value !== undefined && v.type === 'percent' && (clean.value < 1 || clean.value > 100))
-    return res.status(400).json({ error: 'Voucher phần trăm chỉ được từ 1 đến 100' });
-  const sets = [];
-  const params = [];
-  for (const k of ['value', 'min_order', 'expiry', 'usage_limit', 'is_active']) {
-    if (clean[k] !== undefined) { sets.push(`${k} = ?`); params.push(clean[k]); }
-  }
-  if (!sets.length) return res.status(400).json({ error: 'Không có trường nào để cập nhật' });
-  params.push(req.params.id);
-  db.prepare(`UPDATE vouchers SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-  res.json({ voucher: db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id) });
+router.put('/:id', auth, staffOnly, async (req, res) => {
+  try {
+    const v = await db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'Không tìm thấy voucher' });
+    const { ok, error, clean } = validatePayload(req.body || {}, false);
+    if (!ok) return res.status(400).json({ error });
+    // Percent không cho quá 100 kể cả khi sửa (type lấy từ bản ghi hiện có)
+    if (clean.value !== undefined && v.type === 'percent' && (clean.value < 1 || clean.value > 100))
+      return res.status(400).json({ error: 'Voucher phần trăm chỉ được từ 1 đến 100' });
+    const sets = [];
+    const params = [];
+    for (const k of ['value', 'min_order', 'expiry', 'usage_limit', 'is_active']) {
+      if (clean[k] !== undefined) { sets.push(`${k} = ?`); params.push(clean[k]); }
+    }
+    if (!sets.length) return res.status(400).json({ error: 'Không có trường nào để cập nhật' });
+    params.push(req.params.id);
+    await db.prepare(`UPDATE vouchers SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    res.json({ voucher: await db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // DELETE /api/vouchers/:id — admin: chỉ tắt nếu đã có lượt dùng, không xóa cứng
-router.delete('/:id', auth, staffOnly, (req, res) => {
-  const v = db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id);
-  if (!v) return res.status(404).json({ error: 'Không tìm thấy voucher' });
-  if (v.used_count > 0)
-    return res.status(409).json({ error: 'Voucher đã được dùng, chỉ có thể tắt (is_active = 0)' });
-  db.prepare('DELETE FROM vouchers WHERE id = ?').run(req.params.id);
-  res.json({ message: 'Đã xóa voucher' });
+router.delete('/:id', auth, staffOnly, async (req, res) => {
+  try {
+    const v = await db.prepare('SELECT * FROM vouchers WHERE id = ?').get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'Không tìm thấy voucher' });
+    if (v.used_count > 0)
+      return res.status(409).json({ error: 'Voucher đã được dùng, chỉ có thể tắt (is_active = 0)' });
+    await db.prepare('DELETE FROM vouchers WHERE id = ?').run(req.params.id);
+    res.json({ message: 'Đã xóa voucher' });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/vouchers/validate — customer dùng ở checkout (preview, không trừ lượt)
-router.post('/validate', auth, (req, res) => {
-  const { code, order_total } = req.body || {};
-  if (!code) return res.status(400).json({ error: 'Thiếu mã voucher' });
-  const r = validateVoucher(db, code, order_total);
-  if (!r.valid)
-    return res.json({ valid: false, reason: r.reason, message: REASON_MSG[r.reason] });
-  res.json({ valid: true, discount: r.discount, final_total: r.final_total });
+router.post('/validate', auth, async (req, res) => {
+  try {
+    const { code, order_total } = req.body || {};
+    if (!code) return res.status(400).json({ error: 'Thiếu mã voucher' });
+    const r = await validateVoucher(db, code, order_total);
+    if (!r.valid)
+      return res.json({ valid: false, reason: r.reason, message: REASON_MSG[r.reason] });
+    res.json({ valid: true, discount: r.discount, final_total: r.final_total });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;

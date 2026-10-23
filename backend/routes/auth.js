@@ -74,47 +74,53 @@ function registerRateLimit(req, res, next) {
 }
 
 // POST /api/auth/register
-router.post('/register', registerRateLimit, (req, res) => {
-  const { name, email, password } = req.body || {};
-  if (!name || !email || !password)
-    return res.status(400).json({ error: 'Vui lòng nhập đầy đủ họ tên, email, mật khẩu' });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))
-    return res.status(400).json({ error: 'Email không đúng định dạng' });
-  if (password.length < 8)
-    return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 8 ký tự' });
+router.post('/register', registerRateLimit, async (req, res) => {
+  try {
+    const { name, email, password } = req.body || {};
+    if (!name || !email || !password)
+      return res.status(400).json({ error: 'Vui lòng nhập đầy đủ họ tên, email, mật khẩu' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))
+      return res.status(400).json({ error: 'Email không đúng định dạng' });
+    if (password.length < 8)
+      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 8 ký tự' });
 
-  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
-  if (exists) return res.status(400).json({ error: 'Email đã được đăng ký' });
+    const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
+    if (exists) return res.status(400).json({ error: 'Email đã được đăng ký' });
 
-  const hash = bcrypt.hashSync(password, 10);
-  const info = db.prepare(
-    "INSERT INTO users (name, email, password_hash, known_tier) VALUES (?, ?, ?, 'potential')"
-  ).run(name.trim(), email.trim().toLowerCase(), hash);
-  const user = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json({ user, token: signToken(user) });
+    const hash = bcrypt.hashSync(password, 10);
+    const info = await db.prepare(
+      "INSERT INTO users (name, email, password_hash, known_tier) VALUES (?, ?, ?, 'potential')"
+    ).run(name.trim(), email.trim().toLowerCase(), hash);
+    const user = await db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json({ user, token: signToken(user) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/auth/login
-router.post('/login', loginRateLimit, (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password)
-    return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
+router.post('/login', loginRateLimit, async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password)
+      return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim().toLowerCase());
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-    recordLoginFailure(req);
-    return res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
-  }
+    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim().toLowerCase());
+    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      recordLoginFailure(req);
+      return res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
+    }
 
-  const safe = { id: user.id, name: user.name, email: user.email, role: user.role, created_at: user.created_at };
-  res.json({ user: safe, token: signToken(safe) });
+    const safe = { id: user.id, name: user.name, email: user.email, role: user.role, created_at: user.created_at };
+    res.json({ user: safe, token: signToken(safe) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/auth/me
-router.get('/me', auth, (req, res) => {
-  const user = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(req.user.id);
-  if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-  res.json({ user });
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    res.json({ user });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;

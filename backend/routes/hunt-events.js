@@ -40,12 +40,12 @@ function typeExpiry(event, type) {
   return `${y}-${m}-${d} 23:59:59`;
 }
 
-function claimedCount(typeId) {
-  return db.prepare('SELECT COUNT(*) AS c FROM discount_cards WHERE hunt_type_id = ?').get(typeId).c;
+async function claimedCount(typeId) {
+  return (await db.prepare('SELECT COUNT(*) AS c FROM discount_cards WHERE hunt_type_id = ?').get(typeId)).c;
 }
 
-function eventWithTypes(event, userId) {
-  const types = db.prepare('SELECT * FROM hunt_card_types WHERE event_id = ? ORDER BY percent DESC, id').all(event.id);
+async function eventWithTypes(event, userId) {
+  const types = await db.prepare('SELECT * FROM hunt_card_types WHERE event_id = ? ORDER BY percent DESC, id').all(event.id);
   const now = nowLocal();
   const phase = event.status !== 'active' ? 'closed'
     : now < event.starts_at ? 'upcoming'
@@ -53,13 +53,13 @@ function eventWithTypes(event, userId) {
   return {
     ...event,
     phase,
-    types: types.map((tp) => {
-      const claimed = claimedCount(tp.id);
+    types: await Promise.all(types.map(async (tp) => {
+      const claimed = await claimedCount(tp.id);
       const mine = userId
-        ? !!db.prepare('SELECT 1 FROM discount_cards WHERE hunt_type_id = ? AND user_id = ?').get(tp.id, userId)
+        ? !!(await db.prepare('SELECT 1 FROM discount_cards WHERE hunt_type_id = ? AND user_id = ?').get(tp.id, userId))
         : false;
       return { ...tp, claimed, remaining: Math.max(0, tp.quantity - claimed), claimed_by_me: mine };
-    }),
+    })),
   };
 }
 
@@ -99,194 +99,208 @@ function randomTypes(count) {
 
 // GET /api/hunt-events/active — sự kiện đang mở/ sắp mở cho trang Khuyến mãi.
 // Khách đã đăng nhập (gửi token) sẽ thấy thêm claimed_by_me của từng loại.
-router.get('/active', (req, res) => {
-  let userId = null;
-  const h = req.headers.authorization || '';
-  if (h.startsWith('Bearer ')) {
-    try {
-      const jwt = require('jsonwebtoken');
-      const { JWT_SECRET } = require('../middleware/auth');
-      userId = jwt.verify(h.slice(7), JWT_SECRET).id;
-    } catch (e) { /* khách vãng lai */ }
-  }
-  const rows = db.prepare(
-    "SELECT * FROM hunt_events WHERE status = 'active' AND ends_at >= ? ORDER BY starts_at"
-  ).all(nowLocal());
-  res.json({ events: rows.map((ev) => eventWithTypes(ev, userId)) });
+router.get('/active', async (req, res) => {
+  try {
+    let userId = null;
+    const h = req.headers.authorization || '';
+    if (h.startsWith('Bearer ')) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const { JWT_SECRET } = require('../middleware/auth');
+        userId = jwt.verify(h.slice(7), JWT_SECRET).id;
+      } catch (e) { /* khách vãng lai */ }
+    }
+    const rows = await db.prepare(
+      "SELECT * FROM hunt_events WHERE status = 'active' AND ends_at >= ? ORDER BY starts_at"
+    ).all(nowLocal());
+    res.json({ events: await Promise.all(rows.map((ev) => eventWithTypes(ev, userId))) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/hunt-events/:id/claim { type_id } — khách lưu 1 thẻ của 1 loại về tài khoản
-router.post('/:id/claim', auth, (req, res) => {
-  const typeId = parseInt((req.body || {}).type_id);
-  if (!typeId) return res.status(400).json({ error: 'Thiếu loại thẻ' });
-
-  const result = db.transaction(() => {
-    const event = db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(req.params.id);
-    if (!event || event.status !== 'active')
-      throw new Error('Sự kiện không tồn tại hoặc đã đóng');
-    const now = nowLocal();
-    if (now < event.starts_at) throw new Error('Chưa tới giờ mở săn, bạn quay lại sau nhé');
-    if (now > event.ends_at) throw new Error('Sự kiện săn thẻ đã kết thúc');
-    const type = db.prepare('SELECT * FROM hunt_card_types WHERE id = ? AND event_id = ?').get(typeId, event.id);
-    if (!type) throw new Error('Loại thẻ không thuộc sự kiện này');
-    const mine = db.prepare('SELECT 1 FROM discount_cards WHERE hunt_type_id = ? AND user_id = ?').get(type.id, req.user.id);
-    if (mine) throw new Error('Mỗi khách chỉ lưu được 1 thẻ của loại này');
-    if (claimedCount(type.id) >= type.quantity)
-      throw new Error('Loại thẻ này đã hết, bạn chọn loại khác nhé');
-
-    const expires = typeExpiry(event, type);
-    let code;
-    let tries = 0;
-    do {
-      code = `BI99-HUNT-${event.id}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-    } while (db.prepare('SELECT 1 FROM discount_cards WHERE code = ?').get(code) && ++tries < 10);
-    const info = db.prepare(
-      `INSERT INTO discount_cards (user_id, code, percent, tier, period, status, expires_at, source, hunt_event_id, hunt_type_id)
-       VALUES (?, ?, ?, 'hunt', ?, 'unused', ?, 'hunt', ?, ?)`
-    ).run(req.user.id, code, type.percent, String(event.starts_at).slice(0, 7), expires, event.id, type.id);
-    return db.prepare('SELECT * FROM discount_cards WHERE id = ?').get(info.lastInsertRowid);
-  });
-
-  let card;
+router.post('/:id/claim', auth, async (req, res) => {
   try {
-    card = result();
-  } catch (e) {
-    return res.status(400).json({ error: e.message });
-  }
+    const typeId = parseInt((req.body || {}).type_id);
+    if (!typeId) return res.status(400).json({ error: 'Thiếu loại thẻ' });
 
-  try {
-    db.prepare(
-      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
-    ).run(
-      req.user.id, 'hunt_card',
-      `🎯 Bạn đã săn được thẻ giảm ${card.percent}%!`,
-      `Thẻ ${card.code} giảm ${card.percent}% cho 1 sản phẩm (món đắt nhất trong đơn), dùng được đến ${String(card.expires_at).slice(0, 10).split('-').reverse().join('/')}. Xem thẻ trong trang Hạng của tôi.`,
-      '/hang-cua-toi'
-    );
-  } catch (e) { /* lỗi thông báo không làm hỏng việc lưu thẻ */ }
+    const result = db.transaction(async () => {
+      const event = await db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(req.params.id);
+      if (!event || event.status !== 'active')
+        throw new Error('Sự kiện không tồn tại hoặc đã đóng');
+      const now = nowLocal();
+      if (now < event.starts_at) throw new Error('Chưa tới giờ mở săn, bạn quay lại sau nhé');
+      if (now > event.ends_at) throw new Error('Sự kiện săn thẻ đã kết thúc');
+      const type = await db.prepare('SELECT * FROM hunt_card_types WHERE id = ? AND event_id = ?').get(typeId, event.id);
+      if (!type) throw new Error('Loại thẻ không thuộc sự kiện này');
+      const mine = await db.prepare('SELECT 1 FROM discount_cards WHERE hunt_type_id = ? AND user_id = ?').get(type.id, req.user.id);
+      if (mine) throw new Error('Mỗi khách chỉ lưu được 1 thẻ của loại này');
+      if (await claimedCount(type.id) >= type.quantity)
+        throw new Error('Loại thẻ này đã hết, bạn chọn loại khác nhé');
 
-  res.status(201).json({ card });
+      const expires = typeExpiry(event, type);
+      let code;
+      let tries = 0;
+      do {
+        code = `BI99-HUNT-${event.id}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      } while (await db.prepare('SELECT 1 FROM discount_cards WHERE code = ?').get(code) && ++tries < 10);
+      const info = await db.prepare(
+        `INSERT INTO discount_cards (user_id, code, percent, tier, period, status, expires_at, source, hunt_event_id, hunt_type_id)
+         VALUES (?, ?, ?, 'hunt', ?, 'unused', ?, 'hunt', ?, ?)`
+      ).run(req.user.id, code, type.percent, String(event.starts_at).slice(0, 7), expires, event.id, type.id);
+      return await db.prepare('SELECT * FROM discount_cards WHERE id = ?').get(info.lastInsertRowid);
+    });
+
+    let card;
+    try {
+      card = await result();
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+
+    try {
+      await db.prepare(
+        'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+      ).run(
+        req.user.id, 'hunt_card',
+        `🎯 Bạn đã săn được thẻ giảm ${card.percent}%!`,
+        `Thẻ ${card.code} giảm ${card.percent}% cho 1 sản phẩm (món đắt nhất trong đơn), dùng được đến ${String(card.expires_at).slice(0, 10).split('-').reverse().join('/')}. Xem thẻ trong trang Hạng của tôi.`,
+        '/hang-cua-toi'
+      );
+    } catch (e) { /* lỗi thông báo không làm hỏng việc lưu thẻ */ }
+
+    res.status(201).json({ card });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 /* ---------------- Chỉ ADMIN ---------------- */
 
 // GET /api/hunt-events/admin — mọi sự kiện + thống kê đã săn
-router.get('/admin', auth, adminOnly, (req, res) => {
-  const rows = db.prepare('SELECT * FROM hunt_events ORDER BY id DESC').all();
-  res.json({ events: rows.map((ev) => eventWithTypes(ev, null)) });
+router.get('/admin', auth, adminOnly, async (req, res) => {
+  try {
+    const rows = await db.prepare('SELECT * FROM hunt_events ORDER BY id DESC').all();
+    res.json({ events: await Promise.all(rows.map((ev) => eventWithTypes(ev, null))) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/hunt-events/admin/random-preview { count } — xem trước bộ thẻ random
 // (số thẻ từng loại cũng random theo độ hiếm, tối đa 10)
-router.post('/admin/random-preview', auth, adminOnly, (req, res) => {
-  const { count } = req.body || {};
-  res.json({ types: randomTypes(count) });
+router.post('/admin/random-preview', auth, adminOnly, async (req, res) => {
+  try {
+    const { count } = req.body || {};
+    res.json({ types: randomTypes(count) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/hunt-events/admin — tạo + phát hành sự kiện
 // body: { name, starts_at, ends_at, mode: 'manual'|'random', types?, type_count?, per_type_qty? }
-router.post('/admin', auth, adminOnly, (req, res) => {
-  const { name, mode } = req.body || {};
-  const starts = normTime(req.body && req.body.starts_at);
-  const ends = normTime(req.body && req.body.ends_at);
-  if (!(name || '').trim()) return res.status(400).json({ error: 'Nhập tên sự kiện' });
-  if (!starts || !ends) return res.status(400).json({ error: 'Giờ mở săn / giờ kết thúc không hợp lệ' });
-  if (ends <= starts) return res.status(400).json({ error: 'Giờ kết thúc phải sau giờ mở săn' });
-
-  let types;
-  if (mode === 'random') {
-    types = randomTypes(req.body.type_count);
-  } else {
-    types = Array.isArray(req.body.types) ? req.body.types : [];
-    if (!types.length) return res.status(400).json({ error: 'Sự kiện phải có ít nhất 1 loại thẻ' });
-    for (const tp of types) {
-      const p = parseInt(tp.percent);
-      const d = parseInt(tp.valid_days);
-      const q = parseInt(tp.quantity);
-      if (!p || p < 1 || p > MAX_PERCENT)
-        return res.status(400).json({ error: `% giảm của mỗi loại phải từ 1 đến ${MAX_PERCENT}%` });
-      if (!d || d < 1 || d > MAX_DAYS)
-        return res.status(400).json({ error: `Hạn dùng của mỗi loại phải từ 1 đến ${MAX_DAYS} ngày` });
-      if (!q || q < 1)
-        return res.status(400).json({ error: 'Số lượng mỗi loại phải từ 1 trở lên' });
-    }
-    types = types.map((tp) => ({
-      label: String(tp.label || 'Thẻ săn sale').slice(0, 40),
-      percent: parseInt(tp.percent),
-      valid_days: parseInt(tp.valid_days),
-      quantity: parseInt(tp.quantity),
-    }));
-  }
-
-  const id = db.transaction(() => {
-    const info = db.prepare(
-      'INSERT INTO hunt_events (name, starts_at, ends_at, created_by) VALUES (?, ?, ?, ?)'
-    ).run(name.trim(), starts, ends, req.user.id);
-    const eventId = info.lastInsertRowid;
-    const ins = db.prepare(
-      'INSERT INTO hunt_card_types (event_id, label, percent, valid_days, quantity) VALUES (?, ?, ?, ?, ?)'
-    );
-    for (const tp of types) ins.run(eventId, tp.label, tp.percent, tp.valid_days, tp.quantity);
-    return eventId;
-  })();
-
-  const event = db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(id);
-
-  // Thông báo cho MỌI khách hàng ngay khi sự kiện được phát hành (kể cả đặt trước
-  // trong tương lai): chuông kèm link sang trang Khuyến mãi để khách đếm ngược chờ
-  // mở săn; khách đang có cuộc chat mở với shop còn nhận thêm tin nhắn trong chat.
+router.post('/admin', auth, adminOnly, async (req, res) => {
   try {
-    const fmtT = (s) => `${String(s).slice(11, 16)} ngày ${String(s).slice(0, 10).split('-').reverse().join('/')}`;
-    const maxPercent = Math.max(...types.map((x) => x.percent));
-    const totalCards = types.reduce((n, x) => n + x.quantity, 0);
-    const title = `🎯 Sự kiện săn thẻ: ${event.name}`;
-    const content = `Sự kiện "${event.name}" sẽ mở săn lúc ${fmtT(event.starts_at)} — tổng ${totalCards} thẻ, giảm tới ${maxPercent}% cho 1 sản phẩm. Vào trang Khuyến mãi để đếm ngược và săn thẻ ngay khi mở!`;
-    const customers = db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
-    const insNotif = db.prepare(
-      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
-    );
-    db.transaction(() => {
-      for (const c of customers) insNotif.run(c.id, 'hunt_event', title, content, '/khuyen-mai');
-    })();
-    // Tin nhắn chat chỉ đăng cho khách ĐANG có cuộc trò chuyện mở với shop,
-    // không tự tạo cuộc mới hàng loạt để tránh rác tab chat của nhân viên.
-    const { postChatNotice } = require('../lib/chatCard');
-    for (const c of customers) {
-      const conv = db.prepare(
-        "SELECT id FROM conversations WHERE type = 'customer' AND customer_id = ? AND status IN ('waiting','active')"
-      ).get(c.id);
-      if (conv) {
-        try { postChatNotice(c.id, req.user.id, `🎯 ${content}`); } catch (e) { /* bỏ qua từng khách */ }
-      }
-    }
-  } catch (e) { /* lỗi thông báo không làm hỏng việc tạo sự kiện */ }
+    const { name, mode } = req.body || {};
+    const starts = normTime(req.body && req.body.starts_at);
+    const ends = normTime(req.body && req.body.ends_at);
+    if (!(name || '').trim()) return res.status(400).json({ error: 'Nhập tên sự kiện' });
+    if (!starts || !ends) return res.status(400).json({ error: 'Giờ mở săn / giờ kết thúc không hợp lệ' });
+    if (ends <= starts) return res.status(400).json({ error: 'Giờ kết thúc phải sau giờ mở săn' });
 
-  res.status(201).json({ event: eventWithTypes(event, null) });
+    let types;
+    if (mode === 'random') {
+      types = randomTypes(req.body.type_count);
+    } else {
+      types = Array.isArray(req.body.types) ? req.body.types : [];
+      if (!types.length) return res.status(400).json({ error: 'Sự kiện phải có ít nhất 1 loại thẻ' });
+      for (const tp of types) {
+        const p = parseInt(tp.percent);
+        const d = parseInt(tp.valid_days);
+        const q = parseInt(tp.quantity);
+        if (!p || p < 1 || p > MAX_PERCENT)
+          return res.status(400).json({ error: `% giảm của mỗi loại phải từ 1 đến ${MAX_PERCENT}%` });
+        if (!d || d < 1 || d > MAX_DAYS)
+          return res.status(400).json({ error: `Hạn dùng của mỗi loại phải từ 1 đến ${MAX_DAYS} ngày` });
+        if (!q || q < 1)
+          return res.status(400).json({ error: 'Số lượng mỗi loại phải từ 1 trở lên' });
+      }
+      types = types.map((tp) => ({
+        label: String(tp.label || 'Thẻ săn sale').slice(0, 40),
+        percent: parseInt(tp.percent),
+        valid_days: parseInt(tp.valid_days),
+        quantity: parseInt(tp.quantity),
+      }));
+    }
+
+    const id = await db.transaction(async () => {
+      const info = await db.prepare(
+        'INSERT INTO hunt_events (name, starts_at, ends_at, created_by) VALUES (?, ?, ?, ?)'
+      ).run(name.trim(), starts, ends, req.user.id);
+      const eventId = info.lastInsertRowid;
+      const ins = db.prepare(
+        'INSERT INTO hunt_card_types (event_id, label, percent, valid_days, quantity) VALUES (?, ?, ?, ?, ?)'
+      );
+      for (const tp of types) await ins.run(eventId, tp.label, tp.percent, tp.valid_days, tp.quantity);
+      return eventId;
+    })();
+
+    const event = await db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(id);
+
+    // Thông báo cho MỌI khách hàng ngay khi sự kiện được phát hành (kể cả đặt trước
+    // trong tương lai): chuông kèm link sang trang Khuyến mãi để khách đếm ngược chờ
+    // mở săn; khách đang có cuộc chat mở với shop còn nhận thêm tin nhắn trong chat.
+    try {
+      const fmtT = (s) => `${String(s).slice(11, 16)} ngày ${String(s).slice(0, 10).split('-').reverse().join('/')}`;
+      const maxPercent = Math.max(...types.map((x) => x.percent));
+      const totalCards = types.reduce((n, x) => n + x.quantity, 0);
+      const title = `🎯 Sự kiện săn thẻ: ${event.name}`;
+      const content = `Sự kiện "${event.name}" sẽ mở săn lúc ${fmtT(event.starts_at)} — tổng ${totalCards} thẻ, giảm tới ${maxPercent}% cho 1 sản phẩm. Vào trang Khuyến mãi để đếm ngược và săn thẻ ngay khi mở!`;
+      const customers = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+      const insNotif = db.prepare(
+        'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+      );
+      await db.transaction(async () => {
+        for (const c of customers) await insNotif.run(c.id, 'hunt_event', title, content, '/khuyen-mai');
+      })();
+      // Tin nhắn chat chỉ đăng cho khách ĐANG có cuộc trò chuyện mở với shop,
+      // không tự tạo cuộc mới hàng loạt để tránh rác tab chat của nhân viên.
+      const { postChatNotice } = require('../lib/chatCard');
+      for (const c of customers) {
+        const conv = await db.prepare(
+          "SELECT id FROM conversations WHERE type = 'customer' AND customer_id = ? AND status IN ('waiting','active')"
+        ).get(c.id);
+        if (conv) {
+          try { await postChatNotice(c.id, req.user.id, `🎯 ${content}`); } catch (e) { /* bỏ qua từng khách */ }
+        }
+      }
+    } catch (e) { /* lỗi thông báo không làm hỏng việc tạo sự kiện */ }
+
+    res.status(201).json({ event: await eventWithTypes(event, null) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/hunt-events/admin/:id — đóng / mở lại sự kiện
-router.put('/admin/:id', auth, adminOnly, (req, res) => {
-  const { status } = req.body || {};
-  if (!['active', 'closed'].includes(status))
-    return res.status(400).json({ error: 'status phải là active / closed' });
-  const event = db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(req.params.id);
-  if (!event) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
-  db.prepare('UPDATE hunt_events SET status = ? WHERE id = ?').run(status, event.id);
-  res.json({ event: eventWithTypes({ ...event, status }, null) });
+router.put('/admin/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    if (!['active', 'closed'].includes(status))
+      return res.status(400).json({ error: 'status phải là active / closed' });
+    const event = await db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(req.params.id);
+    if (!event) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
+    await db.prepare('UPDATE hunt_events SET status = ? WHERE id = ?').run(status, event.id);
+    res.json({ event: await eventWithTypes({ ...event, status }, null) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // DELETE /api/hunt-events/admin/:id — chỉ xóa khi chưa có khách nào lưu thẻ
-router.delete('/admin/:id', auth, adminOnly, (req, res) => {
-  const event = db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(req.params.id);
-  if (!event) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
-  const claimed = db.prepare('SELECT COUNT(*) AS c FROM discount_cards WHERE hunt_event_id = ?').get(event.id).c;
-  if (claimed > 0)
-    return res.status(400).json({ error: 'Đã có khách lưu thẻ của sự kiện này — chỉ có thể Đóng, không xóa được' });
-  db.transaction(() => {
-    db.prepare('DELETE FROM hunt_card_types WHERE event_id = ?').run(event.id);
-    db.prepare('DELETE FROM hunt_events WHERE id = ?').run(event.id);
-  })();
-  res.json({ ok: true });
+router.delete('/admin/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const event = await db.prepare('SELECT * FROM hunt_events WHERE id = ?').get(req.params.id);
+    if (!event) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
+    const claimed = (await db.prepare('SELECT COUNT(*) AS c FROM discount_cards WHERE hunt_event_id = ?').get(event.id)).c;
+    if (claimed > 0)
+      return res.status(400).json({ error: 'Đã có khách lưu thẻ của sự kiện này — chỉ có thể Đóng, không xóa được' });
+    await db.transaction(async () => {
+      await db.prepare('DELETE FROM hunt_card_types WHERE event_id = ?').run(event.id);
+      await db.prepare('DELETE FROM hunt_events WHERE id = ?').run(event.id);
+    })();
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;

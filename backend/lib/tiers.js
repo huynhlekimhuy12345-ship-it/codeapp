@@ -49,8 +49,8 @@ const SETTLED_SQL = `(
 )`;
 
 // Ngày giao hàng thành công của 1 đơn (từ lịch sử trạng thái; null nếu chưa giao/không có mốc)
-function deliveredAtOf(orderId) {
-  const r = db.prepare(
+async function deliveredAtOf(orderId) {
+  const r = await db.prepare(
     "SELECT MAX(created_at) AS d FROM order_status_history WHERE order_id = ? AND to_status = 'delivered'"
   ).get(orderId);
   return r && r.d ? r.d : null;
@@ -64,13 +64,13 @@ function parseDbTime(s) {
 }
 
 // Thông tin chốt điểm của 1 đơn (cho trang Đơn hàng của khách hiển thị trạng thái)
-function settleInfo(order) {
-  const delivered_at = deliveredAtOf(order.id);
+async function settleInfo(order) {
+  const delivered_at = await deliveredAtOf(order.id);
   const base = delivered_at || (order.status === 'delivered' ? order.created_at : null);
   let points_settled = false;
   if (order.satisfied_at) points_settled = true;
   else if (order.status === 'delivered' && base) {
-    const open = db.prepare(
+    const open = await db.prepare(
       "SELECT 1 FROM returns WHERE order_id = ? AND status IN ('requested', 'approved', 'received')"
     ).get(order.id);
     if (!open && Date.now() - parseDbTime(base).getTime() >= SETTLE_DAYS * 24 * 3600 * 1000) points_settled = true;
@@ -81,8 +81,8 @@ function settleInfo(order) {
   return { delivered_at, return_deadline, points_settled };
 }
 
-function userStats(userId) {
-  const r = db.prepare(`
+async function userStats(userId) {
+  const r = await db.prepare(`
     SELECT COUNT(*) AS order_count, COALESCE(SUM(total), 0) AS total_spent, MAX(o.created_at) AS last_order_at
     FROM orders o
     WHERE o.user_id = ? AND o.payment_status = 'verified' AND o.status != 'cancelled'
@@ -90,13 +90,13 @@ function userStats(userId) {
   `).get(userId);
   // Tổng chi thực = tổng đơn đã thanh toán - tiền đã hoàn từ đổi/trả hoàn tất
   // (đơn hoàn toàn bộ đã sang 'refunded' nên không còn trong tổng trên, không trừ 2 lần)
-  const refunded = db.prepare(`
+  const refunded = (await db.prepare(`
     SELECT COALESCE(SUM(r.refund_amount), 0) AS v
     FROM returns r JOIN orders o ON o.id = r.order_id
     WHERE o.user_id = ? AND r.status = 'completed'
       AND o.payment_status = 'verified' AND o.status != 'cancelled'
       AND ${SETTLED_SQL}
-  `).get(userId).v;
+  `).get(userId)).v;
   return {
     order_count: r.order_count,
     total_spent: Math.max(0, (r.total_spent || 0) - (refunded || 0)),
@@ -105,8 +105,8 @@ function userStats(userId) {
 }
 
 // Hạng hiện tại + khoảng còn thiếu để lên hạng kế tiếp (need.orders hoặc need.spent)
-function tierInfo(userId) {
-  const stats = userStats(userId);
+async function tierInfo(userId) {
+  const stats = await userStats(userId);
   const tierKey = computeTier(stats.order_count, stats.total_spent);
   const idx = TIER_ORDER.indexOf(tierKey);
   let next = null;
@@ -127,17 +127,17 @@ function tierInfo(userId) {
 // - Hạng mới CAO HƠN mốc: báo chuông "thăng hạng" + nâng mốc lên hạng mới.
 // - Tụt hạng (do hoàn tiền): giữ nguyên mốc — chỉ báo khi vượt đỉnh cũ, không báo lặp.
 // Trả về true nếu vừa gửi thông báo thăng hạng.
-function checkTierUpgrade(userId) {
-  const user = db.prepare('SELECT known_tier FROM users WHERE id = ?').get(userId);
+async function checkTierUpgrade(userId) {
+  const user = await db.prepare('SELECT known_tier FROM users WHERE id = ?').get(userId);
   if (!user) return false;
-  const current = tierInfo(userId).tier.key;
+  const current = (await tierInfo(userId)).tier.key;
   if (user.known_tier == null) {
-    db.prepare('UPDATE users SET known_tier = ? WHERE id = ?').run(current, userId);
+    await db.prepare('UPDATE users SET known_tier = ? WHERE id = ?').run(current, userId);
     return false;
   }
   if (TIER_ORDER.indexOf(current) > TIER_ORDER.indexOf(user.known_tier)) {
     const tier = TIER_MAP[current];
-    db.prepare(
+    await db.prepare(
       'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
     ).run(
       userId,
@@ -146,7 +146,7 @@ function checkTierUpgrade(userId) {
       `Bạn vừa lên hạng ${tier.name} — mỗi tháng bạn nhận ${tier.cards} thẻ giảm ${tier.percent}% cho 1 sản phẩm. Bấm để xem thẻ và đặc quyền hạng của bạn.`,
       '/hang-cua-toi'
     );
-    db.prepare('UPDATE users SET known_tier = ? WHERE id = ?').run(current, userId);
+    await db.prepare('UPDATE users SET known_tier = ? WHERE id = ?').run(current, userId);
     return true;
   }
   return false;

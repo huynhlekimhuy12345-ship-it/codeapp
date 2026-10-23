@@ -33,124 +33,130 @@ function nowStr() {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
-function sweepExpired() {
-  db.prepare(
+async function sweepExpired() {
+  await db.prepare(
     "UPDATE discount_cards SET status = 'expired' WHERE status = 'unused' AND expires_at < ?"
   ).run(nowStr());
 }
 // Cấu hình thẻ của 1 khách theo hạng hiện tại
-function cardConfigFor(userId) {
-  const stats = userStats(userId);
+async function cardConfigFor(userId) {
+  const stats = await userStats(userId);
   return TIER_MAP[computeTier(stats.order_count, stats.total_spent)];
 }
-function insertCard(userId, cfg, period, expires) {
+async function insertCard(userId, cfg, period, expires) {
   const ins = db.prepare(
     "INSERT INTO discount_cards (user_id, code, percent, tier, period, status, expires_at) VALUES (?, ?, ?, ?, ?, 'unused', ?)"
   );
   let code = genCode(cfg.key, period);
   let tries = 0;
-  while (db.prepare('SELECT 1 FROM discount_cards WHERE code = ?').get(code) && ++tries < 10) {
+  while (await db.prepare('SELECT 1 FROM discount_cards WHERE code = ?').get(code) && ++tries < 10) {
     code = genCode(cfg.key, period);
   }
-  ins.run(userId, code, cfg.percent, cfg.key, period, expires);
+  await ins.run(userId, code, cfg.percent, cfg.key, period, expires);
 }
 // Phát hành thẻ cho 1 khách ở 1 kỳ; đã có thẻ kỳ đó thì bỏ qua. Trả số thẻ mới tạo.
-function issueForUser(userId, period) {
-  const existing = db.prepare(
+async function issueForUser(userId, period) {
+  const existing = (await db.prepare(
     'SELECT COUNT(*) AS c FROM discount_cards WHERE user_id = ? AND period = ?'
-  ).get(userId, period).c;
+  ).get(userId, period)).c;
   if (existing > 0) return 0;
-  const cfg = cardConfigFor(userId);
+  const cfg = await cardConfigFor(userId);
   const expires = periodExpiry(period);
-  for (let i = 0; i < cfg.cards; i++) insertCard(userId, cfg, period, expires);
+  for (let i = 0; i < cfg.cards; i++) await insertCard(userId, cfg, period, expires);
   return cfg.cards;
 }
 // Bù đủ định mức thẻ của kỳ: thẻ đã dùng vẫn tính trong định mức (không cấp trùng phần đã dùng),
 // phần chưa dùng bị xóa khi đặt lại sẽ được cấp mới. Trả số thẻ mới tạo.
-function topUpForUser(userId, period) {
-  const existing = db.prepare(
+async function topUpForUser(userId, period) {
+  const existing = (await db.prepare(
     'SELECT COUNT(*) AS c FROM discount_cards WHERE user_id = ? AND period = ?'
-  ).get(userId, period).c;
-  const cfg = cardConfigFor(userId);
+  ).get(userId, period)).c;
+  const cfg = await cardConfigFor(userId);
   const missing = cfg.cards - existing;
   if (missing <= 0) return 0;
   const expires = periodExpiry(period);
-  for (let i = 0; i < missing; i++) insertCard(userId, cfg, period, expires);
+  for (let i = 0; i < missing; i++) await insertCard(userId, cfg, period, expires);
   return missing;
 }
 
 // GET /api/loyalty/me — khách xem hạng, tiến trình thăng hạng và thẻ của mình
-router.get('/me', auth, (req, res) => {
-  sweepExpired();
-  // Lớp phủ kiểm tra thăng hạng: mọi đường lên hạng (kể cả COD) đều được phát hiện
-  // khi khách mở trang hạng / vào thanh toán (đều gọi API này).
-  try { checkTierUpgrade(req.user.id); } catch (e) { /* bỏ qua lỗi phụ */ }
-  const period = currentPeriod();
-  issueForUser(req.user.id, period);
-  const info = tierInfo(req.user.id);
-  const cards = db.prepare(
-    `SELECT id, code, percent, tier, period, status, issued_at, expires_at, used_order_id, source, hunt_event_id, hunt_type_id
-     FROM discount_cards WHERE user_id = ? ORDER BY period DESC, id`
-  ).all(req.user.id);
-  res.json({ period, tier: info.tier, stats: info.stats, next: info.next, cards, tiers: TIERS });
+router.get('/me', auth, async (req, res) => {
+  try {
+    await sweepExpired();
+    // Lớp phủ kiểm tra thăng hạng: mọi đường lên hạng (kể cả COD) đều được phát hiện
+    // khi khách mở trang hạng / vào thanh toán (đều gọi API này).
+    try { await checkTierUpgrade(req.user.id); } catch (e) { /* bỏ qua lỗi phụ */ }
+    const period = currentPeriod();
+    await issueForUser(req.user.id, period);
+    const info = await tierInfo(req.user.id);
+    const cards = await db.prepare(
+      `SELECT id, code, percent, tier, period, status, issued_at, expires_at, used_order_id, source, hunt_event_id, hunt_type_id
+       FROM discount_cards WHERE user_id = ? ORDER BY period DESC, id`
+    ).all(req.user.id);
+    res.json({ period, tier: info.tier, stats: info.stats, next: info.next, cards, tiers: TIERS });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/loyalty/leaderboard — top 10 theo tổng chi, tên che một phần + vị trí của chính khách
-router.get('/leaderboard', auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT u.id, u.name, COUNT(o.id) AS order_count, COALESCE(SUM(o.total), 0) AS total_spent
-    FROM users u
-    JOIN orders o ON o.user_id = u.id AND o.payment_status = 'verified' AND o.status != 'cancelled'
-      AND ${SETTLED_SQL}
-    WHERE u.role = 'customer'
-    GROUP BY u.id
-    ORDER BY total_spent DESC, order_count DESC
-  `).all();
-  const top = rows.slice(0, 10).map((r, i) => ({
-    rank: i + 1,
-    name: maskName(r.name),
-    tier: computeTier(r.order_count, r.total_spent),
-    total_spent: r.total_spent,
-    is_me: r.id === req.user.id,
-  }));
-  const myIdx = rows.findIndex((r) => r.id === req.user.id);
-  let me;
-  if (myIdx >= 0) {
-    const r = rows[myIdx];
-    me = { rank: myIdx + 1, total_spent: r.total_spent, order_count: r.order_count, tier: computeTier(r.order_count, r.total_spent) };
-  } else {
-    const s = userStats(req.user.id);
-    me = { rank: null, total_spent: s.total_spent, order_count: s.order_count, tier: computeTier(s.order_count, s.total_spent) };
-  }
-  res.json({ top, me, total_customers: rows.length });
+router.get('/leaderboard', auth, async (req, res) => {
+  try {
+    const rows = await db.prepare(`
+      SELECT u.id, u.name, COUNT(o.id) AS order_count, COALESCE(SUM(o.total), 0) AS total_spent
+      FROM users u
+      JOIN orders o ON o.user_id = u.id AND o.payment_status = 'verified' AND o.status != 'cancelled'
+        AND ${SETTLED_SQL}
+      WHERE u.role = 'customer'
+      GROUP BY u.id
+      ORDER BY total_spent DESC, order_count DESC
+    `).all();
+    const top = rows.slice(0, 10).map((r, i) => ({
+      rank: i + 1,
+      name: maskName(r.name),
+      tier: computeTier(r.order_count, r.total_spent),
+      total_spent: r.total_spent,
+      is_me: r.id === req.user.id,
+    }));
+    const myIdx = rows.findIndex((r) => r.id === req.user.id);
+    let me;
+    if (myIdx >= 0) {
+      const r = rows[myIdx];
+      me = { rank: myIdx + 1, total_spent: r.total_spent, order_count: r.order_count, tier: computeTier(r.order_count, r.total_spent) };
+    } else {
+      const s = await userStats(req.user.id);
+      me = { rank: null, total_spent: s.total_spent, order_count: s.order_count, tier: computeTier(s.order_count, s.total_spent) };
+    }
+    res.json({ top, me, total_customers: rows.length });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/loyalty/admin/stats?period=YYYY-MM — thống kê thẻ 1 kỳ (admin/sale xem)
-router.get('/admin/stats', auth, staffOnly, (req, res) => {
-  sweepExpired();
-  const period = validPeriod(req.query.period);
-  const byStatus = db.prepare(
-    'SELECT status, COUNT(*) AS c FROM discount_cards WHERE period = ? GROUP BY status'
-  ).all(period);
-  const byTier = db.prepare(
-    'SELECT tier, COUNT(*) AS c FROM discount_cards WHERE period = ? GROUP BY tier'
-  ).all(period);
-  res.json({
-    period,
-    by_status: Object.fromEntries(byStatus.map((r) => [r.status, r.c])),
-    by_tier: byTier,
-    tiers: TIERS,
-  });
+router.get('/admin/stats', auth, staffOnly, async (req, res) => {
+  try {
+    await sweepExpired();
+    const period = validPeriod(req.query.period);
+    const byStatus = await db.prepare(
+      'SELECT status, COUNT(*) AS c FROM discount_cards WHERE period = ? GROUP BY status'
+    ).all(period);
+    const byTier = await db.prepare(
+      'SELECT tier, COUNT(*) AS c FROM discount_cards WHERE period = ? GROUP BY tier'
+    ).all(period);
+    res.json({
+      period,
+      by_status: Object.fromEntries(byStatus.map((r) => [r.status, r.c])),
+      by_tier: byTier,
+      tiers: TIERS,
+    });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // Thông báo chuông cho khách khi nhận thẻ tháng mới (phát hành / đặt lại).
 // Lỗi thông báo không làm hỏng việc phát hành.
-function notifyNewCards(userId, count, period, isReset) {
+async function notifyNewCards(userId, count, period, isReset) {
   if (!count || count <= 0) return;
-  const cfg = cardConfigFor(userId);
+  const cfg = await cardConfigFor(userId);
   const [y, m] = period.split('-');
   try {
-    db.prepare(
+    await db.prepare(
       'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
     ).run(
       userId, 'tier_card',
@@ -163,51 +169,57 @@ function notifyNewCards(userId, count, period, isReset) {
 
 // POST /api/loyalty/admin/issue { period? } — phát hành thẻ kỳ: BÙ ĐỦ hạn mức theo hạng
 // cho mọi khách (đã có 1 thẻ mà hạn mức 2 thì phát thêm 1), khách nhận thẻ mới được báo chuông.
-router.post('/admin/issue', auth, staffOnly, (req, res) => {
-  const period = validPeriod((req.body || {}).period);
-  const customers = db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
-  let issued = 0;
-  let touched = 0;
-  const perUser = db.transaction(() => {
-    const out = [];
-    for (const c of customers) {
-      const n = topUpForUser(c.id, period);
-      if (n > 0) { issued += n; touched++; out.push([c.id, n]); }
-    }
-    return out;
-  })();
-  for (const [uid, n] of perUser) notifyNewCards(uid, n, period, false);
-  res.json({ period, issued_cards: issued, customers: touched });
+router.post('/admin/issue', auth, staffOnly, async (req, res) => {
+  try {
+    const period = validPeriod((req.body || {}).period);
+    const customers = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+    let issued = 0;
+    let touched = 0;
+    const perUser = await db.transaction(async () => {
+      const out = [];
+      for (const c of customers) {
+        const n = await topUpForUser(c.id, period);
+        if (n > 0) { issued += n; touched++; out.push([c.id, n]); }
+      }
+      return out;
+    })();
+    for (const [uid, n] of perUser) await notifyNewCards(uid, n, period, false);
+    res.json({ period, issued_cards: issued, customers: touched });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/loyalty/admin/reset { period? } — xóa thẻ chưa dùng/hết hạn của kỳ rồi bù đủ định mức
 // cho từng khách (thẻ đã dùng giữ nguyên lịch sử và vẫn tính trong định mức, tránh cấp trùng)
-router.post('/admin/reset', auth, staffOnly, (req, res) => {
-  const period = validPeriod((req.body || {}).period);
-  const customers = db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
-  let issued = 0;
-  const perUser = [];
-  const removed = db.transaction(() => {
-    const del = db.prepare(
-      "DELETE FROM discount_cards WHERE period = ? AND status IN ('unused','expired')"
-    ).run(period);
-    for (const c of customers) {
-      const n = topUpForUser(c.id, period);
-      if (n > 0) { issued += n; perUser.push([c.id, n]); }
-    }
-    return del.changes;
-  })();
-  for (const [uid, n] of perUser) notifyNewCards(uid, n, period, true);
-  res.json({ period, removed_cards: removed, issued_cards: issued });
+router.post('/admin/reset', auth, staffOnly, async (req, res) => {
+  try {
+    const period = validPeriod((req.body || {}).period);
+    const customers = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+    let issued = 0;
+    const perUser = [];
+    const removed = await db.transaction(async () => {
+      const del = await db.prepare(
+        "DELETE FROM discount_cards WHERE period = ? AND status IN ('unused','expired')"
+      ).run(period);
+      for (const c of customers) {
+        const n = await topUpForUser(c.id, period);
+        if (n > 0) { issued += n; perUser.push([c.id, n]); }
+      }
+      return del.changes;
+    })();
+    for (const [uid, n] of perUser) await notifyNewCards(uid, n, period, true);
+    res.json({ period, removed_cards: removed, issued_cards: issued });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/loyalty/admin/user-cards/:userId — toàn bộ thẻ của 1 khách (admin/sale xem)
-router.get('/admin/user-cards/:userId', auth, staffOnly, (req, res) => {
-  sweepExpired();
-  const cards = db.prepare(
-    'SELECT * FROM discount_cards WHERE user_id = ? ORDER BY period DESC, id'
-  ).all(req.params.userId);
-  res.json({ cards });
+router.get('/admin/user-cards/:userId', auth, staffOnly, async (req, res) => {
+  try {
+    await sweepExpired();
+    const cards = await db.prepare(
+      'SELECT * FROM discount_cards WHERE user_id = ? ORDER BY period DESC, id'
+    ).all(req.params.userId);
+    res.json({ cards });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;

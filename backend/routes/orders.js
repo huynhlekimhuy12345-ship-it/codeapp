@@ -8,11 +8,11 @@ const { settleInfo, checkTierUpgrade, tierInfo } = require('../lib/tiers');
 const router = express.Router();
 
 // Lấy đơn hàng kèm chi tiết sản phẩm và lịch sử trạng thái
-function getOrderWithItems(id) {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+async function getOrderWithItems(id) {
+  const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
   if (!order) return null;
-  order.items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id);
-  order.history = db.prepare(
+  order.items = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id);
+  order.history = await db.prepare(
     'SELECT * FROM order_status_history WHERE order_id = ? ORDER BY id DESC'
   ).all(id);
   return order;
@@ -29,29 +29,29 @@ const STATUS_FLOW = {
 };
 
 // Ghi lịch sử trạng thái, dùng tên thật từ phiên đăng nhập (không cho giả mạo nhãn)
-function actorName(req) {
-  const row = db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id);
+async function actorName(req) {
+  const row = await db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id);
   return row ? row.name : (req.user.email || '');
 }
 
-function writeHistory(orderId, fromStatus, toStatus, req, reason = '') {
-  db.prepare(
+async function writeHistory(orderId, fromStatus, toStatus, req, reason = '') {
+  await db.prepare(
     `INSERT INTO order_status_history (order_id, from_status, to_status, actor_name, reason)
      VALUES (?, ?, ?, ?, ?)`
-  ).run(orderId, fromStatus, toStatus, actorName(req), reason || '');
+  ).run(orderId, fromStatus, toStatus, await actorName(req), reason || '');
 }
 
 // Hoàn lại tồn kho cho toàn bộ sản phẩm trong đơn
 // Item có variant_id → hoàn vào product_variants.stock, còn lại hoàn vào products.stock
-function restoreStock(orderId) {
-  const items = db.prepare(
+async function restoreStock(orderId) {
+  const items = await db.prepare(
     'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = ?'
   ).all(orderId);
   const updProduct = db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?');
   const updVariant = db.prepare('UPDATE product_variants SET stock = stock + ? WHERE id = ?');
   for (const i of items) {
-    if (i.variant_id) updVariant.run(i.quantity, i.variant_id);
-    else if (i.product_id) updProduct.run(i.quantity, i.product_id);
+    if (i.variant_id) await updVariant.run(i.quantity, i.variant_id);
+    else if (i.product_id) await updProduct.run(i.quantity, i.product_id);
   }
 }
 
@@ -72,7 +72,7 @@ const PAYMENT_LABELS = {
 //   → voucher (validate lại, tăng used_count) → phí ship (lấy từ DB)
 //   → INSERT orders/payments/shippings + lịch sử tạo đơn
 // ============================================================
-router.post('/', auth, (req, res) => {
+router.post('/', auth, async (req, res) => {
   const { customer_name, phone, address, items, shipping_method_id, voucher_code, discount_card_code, payment_method, note } = req.body || {};
 
   // Validate thông tin giao hàng
@@ -89,20 +89,20 @@ router.post('/', auth, (req, res) => {
     return res.status(400).json({ error: 'Phương thức thanh toán không hợp lệ' });
 
   // Phí ship lấy server-side từ DB theo shipping_method_id (không tin fee client gửi)
-  const method = db.prepare('SELECT * FROM shipping_methods WHERE id = ? AND is_active = 1')
+  const method = await db.prepare('SELECT * FROM shipping_methods WHERE id = ? AND is_active = 1')
     .get(shipping_method_id);
   if (!method)
     return res.status(400).json({ error: 'Phương thức vận chuyển không tồn tại hoặc đã tắt' });
   const shipping_fee = method.fee;
 
-  const createOrder = db.transaction((items) => {
+  const createOrder = db.transaction(async (items) => {
     let subtotal = 0;
     const lines = [];
 
     // 0. Giá sale sự kiện: nếu đang có sự kiện diễn ra, SP thuộc sự kiện được
     //    tính theo sale_price (server-side, không tin giá client gửi)
     const nowIso = new Date().toISOString();
-    const liveEvent = db
+    const liveEvent = await db
       .prepare(
         `SELECT id FROM promo_events WHERE is_active = 1
          AND (start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)
@@ -111,7 +111,7 @@ router.post('/', auth, (req, res) => {
       .get(nowIso, nowIso);
     const salePrices = new Map();
     if (liveEvent) {
-      for (const r of db
+      for (const r of await db
         .prepare('SELECT product_id, sale_price FROM promo_event_products WHERE event_id = ?')
         .all(liveEvent.id)) {
         salePrices.set(r.product_id, r.sale_price);
@@ -122,17 +122,17 @@ router.post('/', auth, (req, res) => {
     // (batch fetch 1 lần để tránh N+1 query)
     const pIds = [...new Set(items.map((it) => it.product_id))];
     const pRows = pIds.length
-      ? db.prepare(`SELECT * FROM products WHERE id IN (${pIds.map(() => '?').join(',')})`).all(...pIds)
+      ? await db.prepare(`SELECT * FROM products WHERE id IN (${pIds.map(() => '?').join(',')})`).all(...pIds)
       : [];
     const pById = new Map(pRows.map((r) => [r.id, r]));
     const vIds = [...new Set(items.map((it) => it.variant_id).filter(Boolean))];
     const vRows = vIds.length
-      ? db.prepare(`SELECT * FROM product_variants WHERE id IN (${vIds.map(() => '?').join(',')}) AND is_active = 1`).all(...vIds)
+      ? await db.prepare(`SELECT * FROM product_variants WHERE id IN (${vIds.map(() => '?').join(',')}) AND is_active = 1`).all(...vIds)
       : [];
     const vById = new Map(vRows.map((r) => [r.id, r]));
     const vProductIds = new Set(
       (pIds.length
-        ? db.prepare(`SELECT DISTINCT product_id FROM product_variants WHERE product_id IN (${pIds.map(() => '?').join(',')}) AND is_active = 1`).all(...pIds)
+        ? await db.prepare(`SELECT DISTINCT product_id FROM product_variants WHERE product_id IN (${pIds.map(() => '?').join(',')}) AND is_active = 1`).all(...pIds)
         : []).map((r) => r.product_id)
     );
 
@@ -180,7 +180,7 @@ router.post('/', auth, (req, res) => {
     if (code && cardCodeEarly)
       throw new Error('Chỉ dùng 1 loại ưu đãi cho mỗi đơn: mã khuyến mãi hoặc thẻ hạng khách hàng');
     if (code) {
-      const r = validateVoucher(db, code, subtotal);
+      const r = await validateVoucher(db, code, subtotal);
       if (!r.valid) {
         const msgs = {
           NOT_FOUND: 'Mã khuyến mãi không tồn tại',
@@ -203,7 +203,7 @@ router.post('/', auth, (req, res) => {
       // So hạn thẻ bằng giờ địa phương của tiến trình (JS) thay cho SQLite localtime
       // (SQLite localtime có thể lệch giờ hệ thống trên một số máy).
       const nowJs = (() => { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; })();
-      cardRow = db.prepare(
+      cardRow = await db.prepare(
         "SELECT * FROM discount_cards WHERE code = ? AND user_id = ? AND status = 'unused' AND expires_at >= ?"
       ).get(cardCode, req.user.id, nowJs);
       if (!cardRow) throw new Error('Thẻ discount không hợp lệ, đã dùng hoặc đã hết hạn');
@@ -216,7 +216,7 @@ router.post('/', auth, (req, res) => {
     const total = Math.max(0, subtotal + shipping_fee - discount_total);
 
     // 4. INSERT orders với các cột mới
-    const info = db.prepare(
+    const info = await db.prepare(
       `INSERT INTO orders (user_id, customer_name, phone, address, total,
                             payment_method, payment_status, shipping_fee, discount_total,
                             shipping_method_id)
@@ -235,24 +235,24 @@ router.post('/', auth, (req, res) => {
     const decProductStock = db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?');
     const decVariantStock = db.prepare('UPDATE product_variants SET stock = stock - ? WHERE id = ?');
     for (const l of lines) {
-      insItem.run(orderId, l.product_id, l.variant_id, l.variant_sku, l.product_name, l.quantity, l.price);
+      await insItem.run(orderId, l.product_id, l.variant_id, l.variant_sku, l.product_name, l.quantity, l.price);
       if (l.variant_id) {
-        decVariantStock.run(l.quantity, l.variant_id);
-        db.logStockMovement({ variant_id: l.variant_id, product_id: l.product_id, type: 'OUT', qty: l.quantity, ref_type: 'order', ref_id: orderId, note: 'Bán hàng — đơn #' + orderId });
+        await decVariantStock.run(l.quantity, l.variant_id);
+        await db.logStockMovement({ variant_id: l.variant_id, product_id: l.product_id, type: 'OUT', qty: l.quantity, ref_type: 'order', ref_id: orderId, note: 'Bán hàng — đơn #' + orderId });
       } else {
-        decProductStock.run(l.quantity, l.product_id);
-        db.logStockMovement({ product_id: l.product_id, type: 'OUT', qty: l.quantity, ref_type: 'order', ref_id: orderId, note: 'Bán hàng — đơn #' + orderId });
+        await decProductStock.run(l.quantity, l.product_id);
+        await db.logStockMovement({ product_id: l.product_id, type: 'OUT', qty: l.quantity, ref_type: 'order', ref_id: orderId, note: 'Bán hàng — đơn #' + orderId });
       }
     }
 
     // 6. Tăng used_count của voucher (atomic trong cùng transaction)
     if (voucherRow) {
-      db.prepare('UPDATE vouchers SET used_count = used_count + 1 WHERE id = ?').run(voucherRow.id);
+      await db.prepare('UPDATE vouchers SET used_count = used_count + 1 WHERE id = ?').run(voucherRow.id);
     }
 
     // 6b. Đánh dấu thẻ discount đã dùng (guard status chống dùng trùng)
     if (cardRow) {
-      const upd = db.prepare(
+      const upd = await db.prepare(
         "UPDATE discount_cards SET status = 'used', used_order_id = ?, used_product_id = ? WHERE id = ? AND status = 'unused'"
       ).run(orderId, cardProductId, cardRow.id);
       if (!upd.changes) throw new Error('Thẻ discount đã được sử dụng');
@@ -260,18 +260,18 @@ router.post('/', auth, (req, res) => {
 
     // 7. Tạo payment: INSERT trực tiếp (đơn giản hơn gọi HTTP nội bộ)
     const paymentNote = pm === 'momo' ? 'Chờ webhook MoMo' : (note || '').toString().trim();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO payments (order_id, method, amount, status, note)
        VALUES (?, ?, ?, 'pending', ?)`
     ).run(orderId, pm, total, paymentNote);
 
     // 8. Tạo dòng shippings cho đơn (status mặc định 'preparing')
-    db.prepare(
+    await db.prepare(
       'INSERT INTO shippings (order_id, method_id, fee) VALUES (?, ?, ?)'
     ).run(orderId, method.id, shipping_fee);
 
     // 9. Ghi lịch sử: đơn mới tạo, kèm danh tính khách hàng (tên + SĐT)
-    db.prepare(
+    await db.prepare(
       `INSERT INTO order_status_history (order_id, from_status, to_status, actor_name, reason)
        VALUES (?, NULL, 'pending', ?, ?)`
     ).run(
@@ -284,115 +284,127 @@ router.post('/', auth, (req, res) => {
   });
 
   try {
-    const orderId = createOrder(items);
-    const payment = db.prepare('SELECT id, method, amount, status FROM payments WHERE order_id = ?').get(orderId);
-    res.status(201).json({ order: getOrderWithItems(orderId), payment });
+    const orderId = await createOrder(items);
+    const payment = await db.prepare('SELECT id, method, amount, status FROM payments WHERE order_id = ?').get(orderId);
+    res.status(201).json({ order: await getOrderWithItems(orderId), payment });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
 // GET /api/orders — khách xem đơn của mình, admin xem tất cả (?status= để lọc)
-router.get('/', auth, (req, res) => {
-  const { status } = req.query;
-  const conds = [];
-  const params = [];
-  if (req.user.role !== 'admin') { conds.push('o.user_id = ?'); params.push(req.user.id); }
-  if (status) { conds.push('o.status = ?'); params.push(status); }
-  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
-  const orders = db.prepare(
-    `SELECT o.*, (SELECT COUNT(*) FROM order_items i WHERE i.order_id = o.id) AS item_count,
-            u.email AS user_email
-     FROM orders o LEFT JOIN users u ON u.id = o.user_id
-     ${where} ORDER BY o.created_at DESC`
-  ).all(...params);
-  // Khách xem đơn của mình: kèm thông tin chốt điểm hạng (ngày giao, hạn đổi/trả, đã ghi điểm chưa)
-  if (req.user.role === 'customer') {
-    for (const o of orders) Object.assign(o, settleInfo(o));
-  }
-  res.json({ orders });
+router.get('/', auth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const conds = [];
+    const params = [];
+    if (req.user.role !== 'admin') { conds.push('o.user_id = ?'); params.push(req.user.id); }
+    if (status) { conds.push('o.status = ?'); params.push(status); }
+    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    const orders = await db.prepare(
+      `SELECT o.*, (SELECT COUNT(*) FROM order_items i WHERE i.order_id = o.id) AS item_count,
+              u.email AS user_email
+       FROM orders o LEFT JOIN users u ON u.id = o.user_id
+       ${where} ORDER BY o.created_at DESC`
+    ).all(...params);
+    // Khách xem đơn của mình: kèm thông tin chốt điểm hạng (ngày giao, hạn đổi/trả, đã ghi điểm chưa)
+    if (req.user.role === 'customer') {
+      for (const o of orders) Object.assign(o, await settleInfo(o));
+    }
+    res.json({ orders });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/orders/:id/confirm-satisfied — khách xác nhận hài lòng với đơn đã giao:
 // đơn được ghi điểm hạng NGAY (có thể thăng hạng -> báo chuông) và khóa đổi/trả vĩnh viễn.
-router.post('/:id/confirm-satisfied', auth, (req, res) => {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
-  if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-  if (order.user_id !== req.user.id)
-    return res.status(403).json({ error: 'Bạn không có quyền với đơn hàng này' });
-  if (order.status !== 'delivered')
-    return res.status(400).json({ error: 'Chỉ đơn hàng đã giao mới xác nhận hài lòng được' });
-  if (order.satisfied_at) return res.json({ ok: true, already: true, tier: tierInfo(req.user.id).tier });
-  const open = db.prepare(
-    "SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')"
-  ).get(order.id);
-  if (open)
-    return res.status(409).json({ error: 'Đơn đang có yêu cầu đổi/trả đang được xử lý, chưa thể xác nhận hài lòng' });
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  db.prepare('UPDATE orders SET satisfied_at = ? WHERE id = ?').run(now, order.id);
-  const upgraded = checkTierUpgrade(req.user.id);
-  res.json({ ok: true, upgraded, tier: tierInfo(req.user.id).tier });
+router.post('/:id/confirm-satisfied', auth, async (req, res) => {
+  try {
+    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    if (order.user_id !== req.user.id)
+      return res.status(403).json({ error: 'Bạn không có quyền với đơn hàng này' });
+    if (order.status !== 'delivered')
+      return res.status(400).json({ error: 'Chỉ đơn hàng đã giao mới xác nhận hài lòng được' });
+    if (order.satisfied_at) return res.json({ ok: true, already: true, tier: (await tierInfo(req.user.id)).tier });
+    const open = await db.prepare(
+      "SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')"
+    ).get(order.id);
+    if (open)
+      return res.status(409).json({ error: 'Đơn đang có yêu cầu đổi/trả đang được xử lý, chưa thể xác nhận hài lòng' });
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    await db.prepare('UPDATE orders SET satisfied_at = ? WHERE id = ?').run(now, order.id);
+    const upgraded = await checkTierUpgrade(req.user.id);
+    res.json({ ok: true, upgraded, tier: (await tierInfo(req.user.id)).tier });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/orders/new-count — nhân viên: số đơn mới kể từ lần cuối mở tab Đơn hàng
 // Lần đầu chưa có mốc thì lấy mốc = đơn mới nhất hiện tại (số đếm bắt đầu từ 0).
-router.get('/new-count', auth, staffOnly, (req, res) => {
-  const row = db.prepare('SELECT last_seen_order_id FROM staff_order_seen WHERE user_id = ?').get(req.user.id);
-  if (!row) {
-    const maxId = db.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM orders').get().m;
-    db.prepare('INSERT INTO staff_order_seen (user_id, last_seen_order_id) VALUES (?, ?)').run(req.user.id, maxId);
-    return res.json({ count: 0, watermark: maxId });
-  }
-  const count = db.prepare('SELECT COUNT(*) AS c FROM orders WHERE id > ?').get(row.last_seen_order_id).c;
-  res.json({ count, watermark: row.last_seen_order_id });
+router.get('/new-count', auth, staffOnly, async (req, res) => {
+  try {
+    const row = await db.prepare('SELECT last_seen_order_id FROM staff_order_seen WHERE user_id = ?').get(req.user.id);
+    if (!row) {
+      const maxId = (await db.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM orders').get()).m;
+      await db.prepare('INSERT INTO staff_order_seen (user_id, last_seen_order_id) VALUES (?, ?)').run(req.user.id, maxId);
+      return res.json({ count: 0, watermark: maxId });
+    }
+    const count = (await db.prepare('SELECT COUNT(*) AS c FROM orders WHERE id > ?').get(row.last_seen_order_id)).c;
+    res.json({ count, watermark: row.last_seen_order_id });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // POST /api/orders/mark-seen — nhân viên mở tab Đơn hàng: xóa số đếm đơn mới
-router.post('/mark-seen', auth, staffOnly, (req, res) => {
-  const maxId = db.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM orders').get().m;
-  db.prepare(
-    `INSERT INTO staff_order_seen (user_id, last_seen_order_id) VALUES (?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET last_seen_order_id = excluded.last_seen_order_id`
-  ).run(req.user.id, maxId);
-  res.json({ ok: true, watermark: maxId });
+router.post('/mark-seen', auth, staffOnly, async (req, res) => {
+  try {
+    const maxId = (await db.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM orders').get()).m;
+    await db.prepare(
+      `UPDATE staff_order_seen SET last_seen_order_id = @p1 WHERE user_id = @p0; IF @@ROWCOUNT = 0 INSERT INTO staff_order_seen (user_id, last_seen_order_id) VALUES (@p0, @p1);`
+    ).run(req.user.id, maxId);
+    res.json({ ok: true, watermark: maxId });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // GET /api/orders/:id — chủ đơn hoặc admin
-router.get('/:id', auth, (req, res) => {
-  const order = getOrderWithItems(req.params.id);
-  if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-  if (req.user.role !== 'admin' && order.user_id !== req.user.id)
-    return res.status(403).json({ error: 'Bạn không có quyền xem đơn hàng này' });
-  res.json({ order });
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const order = await getOrderWithItems(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    if (req.user.role !== 'admin' && order.user_id !== req.user.id)
+      return res.status(403).json({ error: 'Bạn không có quyền xem đơn hàng này' });
+    res.json({ order });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // PUT /api/orders/:id/status — admin cập nhật trạng thái (tuân thủ luồng chặt chẽ)
-router.put('/:id/status', auth, staffOnly, (req, res) => {
+router.put('/:id/status', auth, staffOnly, async (req, res) => {
   const { status, reason } = req.body || {};
   const valid = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
   if (!valid.includes(status))
     return res.status(400).json({ error: 'Trạng thái không hợp lệ' });
 
-  const change = db.transaction(() => {
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  const change = db.transaction(async () => {
+    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return null;
     const from = order.status;
     if (!(STATUS_FLOW[from] || []).includes(status))
       throw new Error(`Không thể chuyển đơn từ "${from}" sang "${status}"`);
     if (status === 'cancelled' && !(reason || '').trim())
       throw new Error('Hủy đơn hàng phải ghi rõ lý do');
-    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, order.id);
+    await db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, order.id);
     // Hủy đơn → hoàn lại toàn bộ tồn kho đã trừ
-    if (status === 'cancelled') restoreStock(order.id);
-    writeHistory(order.id, from, status, req, (reason || '').trim());
+    if (status === 'cancelled') await restoreStock(order.id);
+    await writeHistory(order.id, from, status, req, (reason || '').trim());
   });
 
   try {
-    change();
+    await change();
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
-  const order = getOrderWithItems(req.params.id);
+  let order;
+  try {
+    order = await getOrderWithItems(req.params.id);
+  } catch (e) { console.error(e); return res.status(500).json({ error: 'Lỗi máy chủ' }); }
   if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
 
   // Báo cho khách qua chuông thông báo khi đơn đổi trạng thái
@@ -412,7 +424,7 @@ router.put('/:id/status', auth, staffOnly, (req, res) => {
       cancelled: `Đơn hàng #${order.id} của bạn đã bị hủy.${reason ? ' Lý do: ' + String(reason) : ''}`,
     };
     try {
-      db.prepare(
+      await db.prepare(
         'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
       ).run(
         order.user_id, 'order',
@@ -427,18 +439,18 @@ router.put('/:id/status', auth, staffOnly, (req, res) => {
 });
 
 // DELETE /api/orders/:id — admin xóa đơn (tự động hoàn tồn kho nếu đơn chưa bị hủy)
-router.delete('/:id', auth, staffOnly, (req, res) => {
-  const remove = db.transaction(() => {
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+router.delete('/:id', auth, staffOnly, async (req, res) => {
+  const remove = db.transaction(async () => {
+    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return null;
     // Đơn chưa hủy → hoàn tồn kho trước khi xóa (đơn đã hủy kho đã hoàn)
-    if (order.status !== 'cancelled') restoreStock(order.id);
-    db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
+    if (order.status !== 'cancelled') await restoreStock(order.id);
+    await db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
     return order;
   });
 
   let order;
-  try { order = remove(); } catch (e) {
+  try { order = await remove(); } catch (e) {
     return res.status(400).json({ error: e.message });
   }
   if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
@@ -452,14 +464,14 @@ router.delete('/:id', auth, staffOnly, (req, res) => {
 // ghi lịch sử {from:'pending', to:'cancelled', actor_name lấy từ phiên đăng nhập}.
 // Lý do hủy là bắt buộc (thiếu → 400).
 // ============================================================
-router.put('/:id/cancel', auth, (req, res) => {
+router.put('/:id/cancel', auth, async (req, res) => {
   const { reason } = req.body || {};
   if (!(reason || '').trim())
     return res.status(400).json({ error: 'Vui lòng ghi rõ lý do hủy đơn hàng' });
 
   let notFound = false;
-  const doCancel = db.transaction(() => {
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  const doCancel = db.transaction(async () => {
+    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) { notFound = true; return; }
     // Chỉ chủ đơn được tự hủy (admin hủy giúp khách dùng route PUT /:id/status)
     if (req.user.role !== 'admin' && order.user_id !== req.user.id) {
@@ -475,19 +487,21 @@ router.put('/:id/cancel', auth, (req, res) => {
       e.statusCode = 400;
       throw e;
     }
-    db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(order.id);
+    await db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(order.id);
     // Hoàn lại toàn bộ tồn kho đã trừ (hỗ trợ cả variant)
-    restoreStock(order.id);
-    writeHistory(order.id, 'pending', 'cancelled', req, reason.trim());
+    await restoreStock(order.id);
+    await writeHistory(order.id, 'pending', 'cancelled', req, reason.trim());
   });
 
   try {
-    doCancel();
+    await doCancel();
   } catch (e) {
     return res.status(e.statusCode || 400).json({ error: e.message });
   }
   if (notFound) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-  res.json({ order: getOrderWithItems(req.params.id) });
+  try {
+    res.json({ order: await getOrderWithItems(req.params.id) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 // ============================================================
@@ -496,28 +510,30 @@ router.put('/:id/cancel', auth, (req, res) => {
 // Chỉ cho đơn pending/confirmed (400 nếu đơn đã sang giai đoạn giao hàng).
 // Ghi lịch sử với note 'Cập nhật thông tin giao hàng', không đổi trạng thái đơn.
 // ============================================================
-router.put('/:id/shipping-info', auth, staffOnly, (req, res) => {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
-  if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-  if (!['pending', 'confirmed'].includes(order.status))
-    return res.status(400).json({
-      error: 'Chỉ đơn hàng chưa giao (Chờ xác nhận / Đã xác nhận) mới được sửa thông tin giao hàng',
+router.put('/:id/shipping-info', auth, staffOnly, async (req, res) => {
+  try {
+    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    if (!['pending', 'confirmed'].includes(order.status))
+      return res.status(400).json({
+        error: 'Chỉ đơn hàng chưa giao (Chờ xác nhận / Đã xác nhận) mới được sửa thông tin giao hàng',
+      });
+
+    const { customer_name, phone, address } = req.body || {};
+    const name = (customer_name || '').toString().trim() || order.customer_name;
+    const ph = (phone || '').toString().trim() || order.phone;
+    const addr = (address || '').toString().trim() || order.address;
+
+    const update = db.transaction(async () => {
+      await db.prepare('UPDATE orders SET customer_name = ?, phone = ?, address = ? WHERE id = ?')
+        .run(name, ph, addr, order.id);
+      // Ghi lịch sử dạng ghi chú: from = to = trạng thái hiện tại (không đổi status)
+      await writeHistory(order.id, order.status, order.status, req, 'Cập nhật thông tin giao hàng');
     });
+    await update();
 
-  const { customer_name, phone, address } = req.body || {};
-  const name = (customer_name || '').toString().trim() || order.customer_name;
-  const ph = (phone || '').toString().trim() || order.phone;
-  const addr = (address || '').toString().trim() || order.address;
-
-  const update = db.transaction(() => {
-    db.prepare('UPDATE orders SET customer_name = ?, phone = ?, address = ? WHERE id = ?')
-      .run(name, ph, addr, order.id);
-    // Ghi lịch sử dạng ghi chú: from = to = trạng thái hiện tại (không đổi status)
-    writeHistory(order.id, order.status, order.status, req, 'Cập nhật thông tin giao hàng');
-  });
-  update();
-
-  res.json({ order: getOrderWithItems(req.params.id) });
+    res.json({ order: await getOrderWithItems(req.params.id) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
 module.exports = router;
