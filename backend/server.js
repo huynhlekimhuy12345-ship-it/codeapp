@@ -5,7 +5,21 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-require('./db'); // khởi tạo DB
+// Trên Vercel (DB_PATH trỏ vào /tmp): chép file DB đóng gói kèm repo sang nếu /tmp chưa có
+try {
+  const dbTarget = process.env.DB_PATH;
+  const dbBundled = path.join(__dirname, 'leather_shop.db');
+  if (dbTarget && !fs.existsSync(dbTarget) && fs.existsSync(dbBundled) && path.resolve(dbTarget) !== path.resolve(dbBundled)) {
+    fs.copyFileSync(dbBundled, dbTarget);
+  }
+} catch (e) { console.error('Không chép được DB đóng gói:', e.message); }
+
+const db = require('./db'); // khởi tạo DB
+
+// DB trống (chưa có user nào) thì tự seed dữ liệu mẫu
+try {
+  if (db.prepare('SELECT COUNT(*) AS c FROM users').get().c === 0) require('./seed');
+} catch (e) { console.error('Auto-seed thất bại:', e.message); }
 
 const app = express();
 const PORT = process.env.PORT || 5000;
