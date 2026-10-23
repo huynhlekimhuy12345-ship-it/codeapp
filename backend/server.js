@@ -35,53 +35,49 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '8mb' })); // đủ chỗ cho ảnh minh họa (base64) của yêu cầu hậu mãi
 
-// API routes — nạp cách ly từng route: route nào lỗi trên môi trường deploy
-// thì bỏ qua + ghi log, không để sập cả backend.
-const ROUTE_TABLE = [
-  ['/api/auth', './routes/auth'],
-  ['/api/categories', './routes/categories'],
-  ['/api/products', './routes/products'],
-  ['/api/orders', './routes/orders'],
-  ['/api/users', './routes/users'],
-  ['/api/posts', './routes/posts'],
-  ['/api/contact', './routes/contact'],
-  ['/api/returns', './routes/returns'],
-  ['/api/warranties', './routes/warranties'],
-  ['/api/repairs', './routes/repairs'],
-  ['/api/inventory', './routes/inventory'],
-  ['/api/payments', './routes/payments'],
-  ['/api/shipping', './routes/shipping'],
-  ['/api/vouchers', './routes/vouchers'],
-  ['/api/promo-events', './routes/promo-events'],
-  ['/api/reviews', './routes/reviews'],
-  ['/api/reports', './routes/reports'],
-  ['/api/announcements', './routes/announcements'],
-  ['/api/chat', './routes/chat'],
-  ['/api/notifications', './routes/notifications'],
-  ['/api/loyalty', './routes/loyalty'],
-  ['/api/hunt-events', './routes/hunt-events'],
-];
-const _skippedRoutes = [];
-for (const [_routePath, _routeModule] of ROUTE_TABLE) {
+// API routes — require TĨNH từng file (để công cụ đóng gói của Vercel lần ra
+// và đính kèm đủ file route) + gắn qua mountRoute có vòng bảo vệ: route nào
+// lỗi thì bỏ qua + ghi log, không để sập cả backend.
+function mountRoute(routePath, loadModule) {
+  let mod = null;
   try {
-    const _mod = require(_routeModule);
-    const _router = (typeof _mod === 'function')
-      ? _mod
-      : (_mod && (_mod.default || _mod.router)) || null;
-    if (typeof _router === 'function') {
-      app.use(_routePath, _router);
-    } else {
-      _skippedRoutes.push(_routePath + ' (export ' + typeof _mod + ')');
-    }
+    mod = loadModule();
   } catch (e) {
-    _skippedRoutes.push(_routePath + ' (throw: ' + e.message + ')');
+    console.error('[route] SKIP', routePath, '| throw:', e.message);
+    return;
+  }
+  const router = (typeof mod === 'function')
+    ? mod
+    : (mod && (mod.default || mod.router)) || null;
+  if (typeof router === 'function') {
+    app.use(routePath, router);
+    console.log('[route] OK', routePath);
+  } else {
+    console.error('[route] SKIP', routePath, '| typeof export:', typeof mod, '| keys:', mod && typeof mod === 'object' ? Object.keys(mod).join(',') : '');
   }
 }
-if (_skippedRoutes.length) {
-  console.error('[routes] BỎ QUA ' + _skippedRoutes.length + ' route lỗi:', _skippedRoutes.join(' | '));
-} else {
-  console.log('[routes] Đã gắn đủ ' + ROUTE_TABLE.length + ' route');
-}
+mountRoute('/api/auth', () => require('./routes/auth'));
+mountRoute('/api/categories', () => require('./routes/categories'));
+mountRoute('/api/products', () => require('./routes/products'));
+mountRoute('/api/orders', () => require('./routes/orders'));
+mountRoute('/api/users', () => require('./routes/users'));
+mountRoute('/api/posts', () => require('./routes/posts'));
+mountRoute('/api/contact', () => require('./routes/contact'));
+mountRoute('/api/returns', () => require('./routes/returns'));
+mountRoute('/api/warranties', () => require('./routes/warranties'));
+mountRoute('/api/repairs', () => require('./routes/repairs'));
+mountRoute('/api/inventory', () => require('./routes/inventory'));
+mountRoute('/api/payments', () => require('./routes/payments'));
+mountRoute('/api/shipping', () => require('./routes/shipping'));
+mountRoute('/api/vouchers', () => require('./routes/vouchers'));
+mountRoute('/api/promo-events', () => require('./routes/promo-events'));
+mountRoute('/api/reviews', () => require('./routes/reviews'));
+mountRoute('/api/reports', () => require('./routes/reports'));
+mountRoute('/api/announcements', () => require('./routes/announcements'));
+mountRoute('/api/chat', () => require('./routes/chat'));
+mountRoute('/api/notifications', () => require('./routes/notifications'));
+mountRoute('/api/loyalty', () => require('./routes/loyalty'));
+mountRoute('/api/hunt-events', () => require('./routes/hunt-events'));
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
