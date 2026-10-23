@@ -55,7 +55,9 @@ app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩ
 app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
 app.use('/api/announcements', require('./routes/announcements')); // thông báo / tin tức
 app.use('/api/chat', require('./routes/chat')); // nhắn tin khách hàng + nội bộ
-app.use('/api/notifications', require('./routes/notifications')); // thông báo riêng từng tài khoản (chuông)
+const _notificationsRoute = require('./routes/notifications');
+console.log('[debug] notifications typeof:', typeof _notificationsRoute, 'keys:', _notificationsRoute && typeof _notificationsRoute === 'object' ? Object.keys(_notificationsRoute) : '');
+app.use('/api/notifications', _notificationsRoute && _notificationsRoute.default ? _notificationsRoute.default : _notificationsRoute); // thông báo riêng từng tài khoản (chuông)
 app.use('/api/loyalty', require('./routes/loyalty')); // hạng khách hàng + thẻ discount theo tháng
 app.use('/api/hunt-events', require('./routes/hunt-events')); // sự kiện săn thẻ ở trang Khuyến mãi (chỉ Admin tạo)
 
