@@ -35,44 +35,53 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '8mb' })); // đủ chỗ cho ảnh minh họa (base64) của yêu cầu hậu mãi
 
-// API routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/categories', require('./routes/categories'));
-app.use('/api/products', require('./routes/products'));
-app.use('/api/orders', require('./routes/orders'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/posts', require('./routes/posts'));
-app.use('/api/contact', require('./routes/contact'));
-app.use('/api/returns', require('./routes/returns')); // đổi/trả hàng (khách yêu cầu, admin xử lý)
-app.use('/api/warranties', require('./routes/warranties')); // bảo hành (khách tạo, admin quản lý)
-app.use('/api/repairs', require('./routes/repairs')); // sửa chữa đồ da
-app.use('/api/inventory', require('./routes/inventory')); // tồn kho, NCC, phiếu nhập
-app.use('/api/payments', require('./routes/payments')); // thanh toán
-app.use('/api/shipping', require('./routes/shipping')); // vận chuyển
-app.use('/api/vouchers', require('./routes/vouchers')); // khuyến mãi
-app.use('/api/promo-events', require('./routes/promo-events')); // sự kiện khuyến mãi
-app.use('/api/reviews', require('./routes/reviews')); // đánh giá sản phẩm
-app.use('/api/reports', require('./routes/reports')); // báo cáo, thống kê
-app.use('/api/announcements', require('./routes/announcements')); // thông báo / tin tức
-app.use('/api/chat', require('./routes/chat')); // nhắn tin khách hàng + nội bộ
-// Thông báo riêng từng tài khoản (chuông) — nạp cách ly: nếu file route export
-// lỗi trên môi trường deploy thì bỏ qua route này chứ không để sập cả backend.
-let _notificationsRoute = null;
-try {
-  const _mod = require('./routes/notifications');
-  _notificationsRoute = (typeof _mod === 'function')
-    ? _mod
-    : (_mod && (_mod.default || _mod.router)) || null;
-} catch (e) {
-  console.error('[notifications] không nạp được route:', e.message);
+// API routes — nạp cách ly từng route: route nào lỗi trên môi trường deploy
+// thì bỏ qua + ghi log, không để sập cả backend.
+const ROUTE_TABLE = [
+  ['/api/auth', './routes/auth'],
+  ['/api/categories', './routes/categories'],
+  ['/api/products', './routes/products'],
+  ['/api/orders', './routes/orders'],
+  ['/api/users', './routes/users'],
+  ['/api/posts', './routes/posts'],
+  ['/api/contact', './routes/contact'],
+  ['/api/returns', './routes/returns'],
+  ['/api/warranties', './routes/warranties'],
+  ['/api/repairs', './routes/repairs'],
+  ['/api/inventory', './routes/inventory'],
+  ['/api/payments', './routes/payments'],
+  ['/api/shipping', './routes/shipping'],
+  ['/api/vouchers', './routes/vouchers'],
+  ['/api/promo-events', './routes/promo-events'],
+  ['/api/reviews', './routes/reviews'],
+  ['/api/reports', './routes/reports'],
+  ['/api/announcements', './routes/announcements'],
+  ['/api/chat', './routes/chat'],
+  ['/api/notifications', './routes/notifications'],
+  ['/api/loyalty', './routes/loyalty'],
+  ['/api/hunt-events', './routes/hunt-events'],
+];
+const _skippedRoutes = [];
+for (const [_routePath, _routeModule] of ROUTE_TABLE) {
+  try {
+    const _mod = require(_routeModule);
+    const _router = (typeof _mod === 'function')
+      ? _mod
+      : (_mod && (_mod.default || _mod.router)) || null;
+    if (typeof _router === 'function') {
+      app.use(_routePath, _router);
+    } else {
+      _skippedRoutes.push(_routePath + ' (export ' + typeof _mod + ')');
+    }
+  } catch (e) {
+    _skippedRoutes.push(_routePath + ' (throw: ' + e.message + ')');
+  }
 }
-if (typeof _notificationsRoute === 'function') {
-  app.use('/api/notifications', _notificationsRoute); // chuông thông báo
+if (_skippedRoutes.length) {
+  console.error('[routes] BỎ QUA ' + _skippedRoutes.length + ' route lỗi:', _skippedRoutes.join(' | '));
 } else {
-  console.error('[notifications] bỏ qua route chuông: export không phải router');
+  console.log('[routes] Đã gắn đủ ' + ROUTE_TABLE.length + ' route');
 }
-app.use('/api/loyalty', require('./routes/loyalty')); // hạng khách hàng + thẻ discount theo tháng
-app.use('/api/hunt-events', require('./routes/hunt-events')); // sự kiện săn thẻ ở trang Khuyến mãi (chỉ Admin tạo)
 
 // Kiểm tra sức khỏe server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
