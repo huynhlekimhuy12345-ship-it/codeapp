@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PageTitle from '../components/PageTitle';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,14 @@ const PAYMENT_METHODS = [
 function ShipMethodName({ name }) {
   const tname = useTranslatedText(name);
   return tname;
+}
+
+// Lỗi kỹ thuật (database, mạng, lỗi 500) thì hiện câu chung dễ hiểu thay vì
+// in nguyên văn bản lỗi kỹ thuật; lỗi nghiệp vụ (hết hàng, voucher...) giữ nguyên.
+function friendlyOrderError(msg, fallback) {
+  const m = String(msg || '');
+  const technical = /cannot insert|violation|sql|column|table|database|timeout|failed to fetch|network|500|econn|deadlock|truncat/i;
+  return technical.test(m) ? fallback : (m || fallback);
 }
 
 export default function Checkout() {
@@ -60,6 +68,12 @@ export default function Checkout() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const errorRef = useRef(null);
+  // Lỗi hiện ở đầu form: khi lỗi xuất hiện phải cuộn trang tới chỗ lỗi
+  // (trước đây trang đứng yên ở nút đặt hàng, người dùng không thấy hộp lỗi).
+  useEffect(() => {
+    if (error && errorRef.current) errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [error]);
 
   // Nạp thẻ discount dùng được của khách: mọi thẻ CHƯA DÙNG và CÒN HẠN
   // (thẻ tháng + thẻ săn sale), thẻ sắp hết hạn hiện trước.
@@ -164,7 +178,7 @@ export default function Checkout() {
         navigate('/don-hang', { state: { newOrderId: order.id } });
       }
     } catch (err) {
-      setError(err.message);
+      setError(friendlyOrderError(err.message, t('checkout.orderFailed')));
     } finally {
       setLoading(false);
     }
@@ -228,7 +242,7 @@ export default function Checkout() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }} className="checkout-grid">
         <form className="form-card" style={{ maxWidth: 'none', margin: 0 }} onSubmit={submit}>
           <h2>{t('checkout.shippingInfo')}</h2>
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="form-error" ref={errorRef}>{error}</div>}
           <div className="field">
             <label htmlFor="checkout-ho-ten">{t('checkout.fullName')}</label>
             <input id="checkout-ho-ten" value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} required />

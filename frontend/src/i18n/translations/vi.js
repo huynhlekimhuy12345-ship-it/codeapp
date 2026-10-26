@@ -175,6 +175,7 @@ export default {
     voucherDiscount: 'Voucher giảm',
     emptyCart: 'Giỏ hàng trống',
     pickShipping: 'Vui lòng chọn phương thức vận chuyển',
+    orderFailed: 'Đặt hàng thất bại. Vui lòng thử lại, nếu vẫn lỗi hãy liên hệ shop.',
     orderSuccess: '✅ Đặt hàng thành công!',
     orderCode: 'Mã đơn hàng:',
     total: 'Tổng',

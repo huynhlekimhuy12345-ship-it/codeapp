@@ -174,6 +174,7 @@ export default {
     shipping: '배송비',
     voucherDiscount: '쿠폰 할인',
     emptyCart: '장바구니가 비어 있어요',
+    orderFailed: '주문 실패. 다시 시도해 주세요. 문제가 계속되면 매장에 문의하세요.',
     pickShipping: '배송 방법을 선택해 주세요',
     orderSuccess: '✅ 주문이 완료되었습니다!',
     orderCode: '주문 번호:',

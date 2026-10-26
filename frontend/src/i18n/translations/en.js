@@ -174,6 +174,7 @@ export default {
     shipping: 'Shipping',
     voucherDiscount: 'Voucher discount',
     emptyCart: 'Your cart is empty',
+    orderFailed: 'Order failed. Please try again, or contact the shop if the problem persists.',
     pickShipping: 'Please choose a shipping method',
     orderSuccess: '✅ Order placed successfully!',
     orderCode: 'Order code:',

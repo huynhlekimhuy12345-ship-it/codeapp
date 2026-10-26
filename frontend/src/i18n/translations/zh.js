@@ -174,6 +174,7 @@ export default {
     shipping: '运费',
     voucherDiscount: '优惠码抵扣',
     emptyCart: '购物车是空的',
+    orderFailed: '下单失败，请重试；如仍有问题请联系店铺。',
     pickShipping: '请选择配送方式',
     orderSuccess: '✅ 下单成功！',
     orderCode: '订单号：',
