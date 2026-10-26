@@ -69,7 +69,13 @@ async function test(name, fn) {
     ok('Sau rollback dòng ghi thử đã biến mất', !after);
   });
   await test('Batch đánh dấu đã xem đơn (staff_order_seen)', async () => {
-    const uid = 999999001;
+    // Dùng user THẬT trong DB: SQL Server kiểm tra FK staff_order_seen -> users
+    // rất chặt (SQLite mặc định không kiểm tra nên id giả 999999001 vẫn qua).
+    const u = await db.prepare('SELECT id FROM users ORDER BY id LIMIT 1').get();
+    if (!u) { ok('Batch chạy và ghi đúng', false, '(bảng users trống, không có user thật để test)'); return; }
+    const uid = u.id;
+    // Giữ lại mốc cũ của user này để khôi phục sau test (không làm mất watermark thật)
+    const before = await db.prepare('SELECT last_seen_order_id FROM staff_order_seen WHERE user_id = ?').get(uid);
     await db.prepare('DELETE FROM staff_order_seen WHERE user_id = ?').run(uid);
     // Đúng nguyên văn batch trong routes/orders.js (mark-seen), tham số bind theo tên @p0/@p1
     await db.prepare(
@@ -77,7 +83,11 @@ async function test(name, fn) {
     ).run(uid, 5);
     const row = await db.prepare('SELECT last_seen_order_id FROM staff_order_seen WHERE user_id = ?').get(uid);
     ok('Batch chạy và ghi đúng', row && row.last_seen_order_id === 5, row ? `(=${row.last_seen_order_id})` : '(không thấy dòng)');
-    await db.prepare('DELETE FROM staff_order_seen WHERE user_id = ?').run(uid);
+    if (before) {
+      await db.prepare('UPDATE staff_order_seen SET last_seen_order_id = ? WHERE user_id = ?').run(before.last_seen_order_id, uid);
+    } else {
+      await db.prepare('DELETE FROM staff_order_seen WHERE user_id = ?').run(uid);
+    }
   });
 
   console.log(`\n== KẾT QUẢ: ${pass} đạt, ${fail} lỗi ==`);
