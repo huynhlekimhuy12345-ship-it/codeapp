@@ -107,7 +107,7 @@ export default function ProductReviews({ productId }) {
     }
   };
 
-  const fmtDate = (iso) => new Date(iso + 'Z').toLocaleDateString(
+  const fmtDate = (iso) => new Date(String(iso).replace(' ', 'T')).toLocaleDateString(
     lang === 'vi' ? 'vi-VN' : lang === 'zh' ? 'zh-CN' : lang === 'ko' ? 'ko-KR' : 'en-US',
     { day: '2-digit', month: '2-digit', year: 'numeric' }
   );

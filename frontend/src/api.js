@@ -227,10 +227,14 @@ export const api = {
 export const fmtVND = (n) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
-// Định dạng ngày giờ
+// Định dạng ngày giờ. Chuỗi từ API là giờ địa phương dạng naive
+// ('YYYY-MM-DD HH:MM:SS') nên parse thẳng giờ địa phương, KHÔNG gắn 'Z':
+// gắn 'Z' sẽ ép nó thành giờ UTC rồi cộng thêm 7h khi hiển thị (lỗi lệch
+// 27/10 00:19 thay vì 26/10 10:19 gặp ở đơn #54). Dạng 'Z' chỉ đúng với thời
+// SQLite cũ (lưu giờ UTC) nên từ khi qua SQL Server (lưu giờ máy) phải bỏ.
 export const fmtDate = (s) => {
   if (!s) return '—';
-  const d = new Date(String(s).includes('T') ? s : String(s).replace(' ', 'T') + 'Z');
+  const d = new Date(String(s).replace(' ', 'T'));
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('vi-VN');
 };
 

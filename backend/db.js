@@ -34,6 +34,7 @@ function getPool() {
         encrypt: process.env.DB_ENCRYPT === 'true',
         trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== 'false',
         instanceName: process.env.DB_INSTANCE || undefined,
+        useUTC: true, // cố định: DATETIME2 trả về dạng Date UTC, fmtLocal đọc getter UTC
       },
       pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
       requestTimeout: 30000,
@@ -50,9 +51,12 @@ function getPool() {
 
 // ---------- Chuẩn hoá giá trị ----------
 
+// tedious trả DATETIME2 dưới dạng Date theo giờ UTC (useUTC: true — xem options
+// của pool bên dưới). Muốn chuỗi đúng bằng giờ ghi trong DB thì phải đọc bằng
+// getter UTC; dùng getter địa phương sẽ cộng thêm 7h (lệch giờ hiển thị).
 function fmtLocal(d) {
   const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
 }
 
 function normalizeRow(row) {

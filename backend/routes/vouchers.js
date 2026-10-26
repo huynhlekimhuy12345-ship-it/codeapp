@@ -1,5 +1,5 @@
 // CRUD voucher khuyến mãi (admin) + validate mã ở checkout (customer)
-// Convention: dùng db better-sqlite3 đồng bộ, middleware { auth, staffOnly } như routes/products.js
+// Convention: dùng db SQL Server bất đồng bộ, middleware { auth, staffOnly } như routes/products.js
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');

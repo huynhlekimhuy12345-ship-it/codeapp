@@ -1,5 +1,5 @@
 // CRUD sự kiện khuyến mãi (admin) + bật/tắt + lấy sự kiện đang chạy (public cho landing page)
-// Convention: better-sqlite3 đồng bộ, middleware { auth, staffOnly } như routes/vouchers.js
+// Convention: db SQL Server bất đồng bộ, middleware { auth, staffOnly } như routes/vouchers.js
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');

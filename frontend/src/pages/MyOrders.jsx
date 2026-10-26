@@ -355,7 +355,7 @@ export default function MyOrders() {
                       onClick={() => setSatisfiedTarget(o)}>
                       {t('myOrders.confirmSatisfied')}
                     </button>
-                    {o.return_deadline && new Date(String(o.return_deadline).replace(' ', 'T') + 'Z').getTime() > Date.now() ? (
+                    {o.return_deadline && new Date(String(o.return_deadline).replace(' ', 'T')).getTime() > Date.now() ? (
                       <button className="btn btn-small btn-outline"
                         onClick={() => { setReturnTarget(o); setReturnType('return'); setReturnReason(''); setReturnImages([]); setReturnPick([]); }}>
                         {t('myOrders.requestReturn')}
@@ -378,7 +378,7 @@ export default function MyOrders() {
               <p style={{ margin: '8px 0 0', color: 'var(--green)', fontSize: '.9rem' }}>{t('myOrders.pointsSettled')}</p>
             ) : o.return_deadline ? (
               <p className="muted" style={{ margin: '8px 0 0', fontSize: '.9rem' }}>
-                {t('myOrders.pointsPending', { date: fmtDay(String(o.return_deadline).replace(' ', 'T') + 'Z') })}
+                {t('myOrders.pointsPending', { date: fmtDay(String(o.return_deadline).replace(' ', 'T')) })}
               </p>
             ) : null
           )}
