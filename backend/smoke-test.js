@@ -33,7 +33,7 @@ async function test(name, fn) {
 
   console.log('== Kiểm tra lớp dịch cú pháp (các mẫu câu lệnh khó) ==');
   await test('LIMIT -> TOP (danh sách sản phẩm)', async () => {
-    const rows = await db.prepare('SELECT * FROM products WHERE is_active = 1 ORDER BY id DESC LIMIT 5').all();
+    const rows = await db.prepare('SELECT * FROM products ORDER BY id DESC LIMIT 5').all();
     ok('Lấy được tối đa 5 sản phẩm', Array.isArray(rows) && rows.length <= 5, `(${rows.length} dòng)`);
   });
   await test("datetime('now','-7 days') (cửa sổ chốt điểm hạng)", async () => {

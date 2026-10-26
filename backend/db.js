@@ -206,7 +206,7 @@ async function newRequest() {
 }
 
 function bindParams(req, params, skippedParams) {
-  if (!params) return;
+  if (params === undefined || params === null) return;
   if (Array.isArray(params)) {
     params.forEach((v, i) => {
       if (skippedParams && skippedParams.has(i)) return;
@@ -215,6 +215,10 @@ function bindParams(req, params, skippedParams) {
   } else if (typeof params === 'object') {
     // better-sqlite3 cho phép truyền object cho tham số đặt tên @ten
     for (const [k, v] of Object.entries(params)) req.input(k.replace(/^[@:$]/, ''), v === undefined ? null : v);
+  } else {
+    // Tham số đơn (số/chuỗi/...): bind vào @p0. Lưới an toàn cho mọi đường
+    // gọi trực tiếp; đường chính đã bọc thành mảng ở flattenArgs.
+    req.input('p0', params);
   }
 }
 
@@ -261,7 +265,15 @@ async function execQuery(mode, rawSql, params) {
 function flattenArgs(args) {
   // better-sqlite3: .get(a, b) hoặc .get([a, b]) hoặc .get({...})
   if (args.length === 0) return [];
-  if (args.length === 1) return args[0];
+  if (args.length === 1) {
+    const v = args[0];
+    // Mảng và object (tham số đặt tên) giữ nguyên; tham số đơn dạng số/chuỗi
+    // bọc thành [v] để bindParams và translateSql (strftime) đều đọc đúng
+    // vị trí @p0 — trước đây giá trị đơn rơi qua cả 2 nhánh nên SQL Server
+    // báo thiếu @p0.
+    if (Array.isArray(v) || (v !== null && typeof v === 'object')) return v;
+    return [v];
+  }
   return args;
 }
 
