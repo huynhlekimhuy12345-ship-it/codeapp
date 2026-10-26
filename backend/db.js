@@ -233,18 +233,23 @@ async function execQuery(mode, rawSql, params) {
     if (ignoreDup && (e.number === 2627 || e.number === 2601)) {
       return { lastInsertRowid: null, changes: 0 };
     }
-    e.message = e.message + ' | SQL: ' + finalSql.slice(0, 300);
+    // SQL chỉ ghi ra log server, KHÔNG đưa vào message trả cho client
+    // (trước đây message kèm cả câu SQL nên người dùng thấy toàn ký tự lạ).
+    console.error('[SQL lỗi]', finalSql.slice(0, 300), '—', e.message);
     throw e;
   }
   const rows = (result.recordset || []).map(normalizeRow);
   if (mode === 'get') return rows[0];
   if (mode === 'all') return rows;
-  // run
-  const lidRow = result.recordsets && result.recordsets.length > 1
-    ? result.recordsets[result.recordsets.length - 1][0]
-    : null;
+  // run — tìm dòng __lid trong BẤT KỲ recordset nào: lệnh INSERT không trả
+  // recordset, nên batch "INSERT; SELECT __lid" thường chỉ có 1 recordset.
+  // (Bản cũ đòi recordsets.length > 1 nên luôn trả null → đơn hàng bị NULL id.)
+  let lid = null;
+  for (const rs of (result.recordsets || [])) {
+    if (rs && rs.length && rs[0] && rs[0].__lid != null) { lid = rs[0].__lid; break; }
+  }
   return {
-    lastInsertRowid: lidRow && lidRow.__lid != null ? lidRow.__lid : null,
+    lastInsertRowid: lid,
     changes: (result.rowsAffected && result.rowsAffected[0]) || 0,
   };
 }
