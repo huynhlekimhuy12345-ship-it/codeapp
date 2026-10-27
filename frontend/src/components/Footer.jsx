@@ -24,8 +24,8 @@ export default function Footer() {
         </div>
         <div>
           <h4>{t('nav.contact')}</h4>
-          <p>📍 123 Nguyễn Trãi, Q.1, TP.HCM</p>
-          <p>📞 0901 234 567</p>
+          <p>📍 2B Phan Bội Châu, Hội An</p>
+          <p>📞 0935 468 662</p>
           <p>✉️ hotro@dodashop.vn</p>
         </div>
       </div>

@@ -117,6 +117,7 @@ h1, h2, h3, .logo, .hero-title {
 }
 .nav-links a.active::after { transform: scaleX(1); opacity: 1; }
 .hamburger { display: none; background: none; border: 1px solid var(--panel-border); color: var(--text); font-size: 1.3rem; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+.nav-menu-action { display: none; }
 .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .cart-link {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
@@ -782,20 +783,31 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 
 @media (max-width: 768px) {
   .detail { grid-template-columns: 1fr; padding: 24px; gap: 28px; }
-  .hero-3d { min-height: 86vh; }
+  .hero-3d { min-height: 78vh; }
+  .hero-title { font-size: 2.05rem; line-height: 1.22; }
+  .hero-kicker { letter-spacing: 1.5px; padding: 7px 14px; font-size: 0.78rem; }
+  .hero-sub { font-size: 1rem; }
   .cart-row { grid-template-columns: 22px 60px 1fr 40px; }
   .cart-row .hide-m { display: none; }
   .cart-row .qty-row { display: flex; grid-column: 1 / -1; margin-top: 6px !important; }
   .cart-row .line-total { grid-column: 1 / -1; text-align: right; }
-  .navbar { position: sticky; }
+  .navbar { position: sticky; z-index: 300; }
+  .navbar .container { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .nav-right .btn, .nav-right .user-chip { display: none; }
   .nav-links {
     display: none; position: absolute; top: 66px; left: 0; right: 0;
     flex-direction: column; gap: 0; margin: 0; padding: 8px 0;
-    background: rgba(18, 12, 7, 0.97); border-bottom: 1px solid var(--panel-border);
-    z-index: 99;
+    background: #17100a; border-bottom: 1px solid var(--panel-border);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    z-index: 300;
   }
   .nav-links.open { display: flex; }
   .nav-links a { padding: 12px 24px; font-size: 1rem; border-top: 1px solid rgba(232, 181, 106, 0.08); }
+  .nav-menu-action {
+    display: block; width: 100%; text-align: center; background: none; border: none;
+    border-top: 1px solid rgba(232, 181, 106, 0.08); color: var(--amber-light);
+    font: inherit; font-size: 1rem; font-weight: 600; padding: 12px 24px; cursor: pointer;
+  }
   .hamburger { display: block; }
   .form-card { padding: 24px; }
   .admin-layout { flex-direction: column; }

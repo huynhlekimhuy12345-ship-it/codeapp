@@ -69,6 +69,11 @@ export default function Navbar() {
           {user && <NavLink to="/don-hang">{t('nav.orders')}</NavLink>}
           {user?.role === 'customer' && <NavLink to="/hang-cua-toi">🏆 {t('nav.myTier')}</NavLink>}
           {['admin', 'sale'].includes(user?.role) && <NavLink to="/admin">{t('nav.admin')}</NavLink>}
+          {user ? (
+            <button type="button" className="nav-menu-action" onClick={handleLogout}>{t('nav.logout')}</button>
+          ) : (
+            <NavLink to="/dang-nhap" className="nav-menu-action">{t('nav.login')}</NavLink>
+          )}
         </div>
         <div className="nav-right">
           <button
