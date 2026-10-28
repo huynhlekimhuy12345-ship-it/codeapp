@@ -106,7 +106,7 @@ router.get('/leaderboard', auth, async (req, res) => {
       JOIN orders o ON o.user_id = u.id AND o.payment_status = 'verified' AND o.status != 'cancelled'
         AND ${SETTLED_SQL}
       WHERE u.role = 'customer'
-      GROUP BY u.id
+      GROUP BY u.id, u.name
       ORDER BY total_spent DESC, order_count DESC
     `).all();
     const top = rows.slice(0, 10).map((r, i) => ({

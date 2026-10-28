@@ -49,7 +49,7 @@ router.get('/', auth, staffOnly, async (req, res) => {
             ), 0) AS total_spent
       FROM users u
       LEFT JOIN orders o ON o.user_id = u.id
-      GROUP BY u.id
+      GROUP BY u.id, u.name, u.email, u.phone, u.role, u.created_at
       ORDER BY u.created_at DESC
     `).all();
     const tier_counts = { diamond: 0, gold: 0, silver: 0, bronze: 0, potential: 0 };
@@ -91,7 +91,7 @@ router.get('/top-customers', auth, staffOnly, async (req, res) => {
         AND o.payment_status = 'verified' AND o.status != 'cancelled'
         AND ${SETTLED_SQL}
       WHERE u.role = 'customer'
-      GROUP BY u.id
+      GROUP BY u.id, u.name, u.email, u.phone
       ORDER BY total_spent DESC, order_count DESC
       LIMIT 10
     `).all();
