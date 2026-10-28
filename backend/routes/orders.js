@@ -43,16 +43,35 @@ async function writeHistory(orderId, fromStatus, toStatus, req, reason = '') {
 
 // Hoàn lại tồn kho cho toàn bộ sản phẩm trong đơn
 // Item có variant_id → hoàn vào product_variants.stock, còn lại hoàn vào products.stock
-async function restoreStock(orderId) {
+async function restoreStock(orderId, note) {
   const items = await db.prepare(
     'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = ?'
   ).all(orderId);
   const updProduct = db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?');
   const updVariant = db.prepare('UPDATE product_variants SET stock = stock + ? WHERE id = ?');
+  const noteText = note || `Hoàn kho — đơn #${orderId}`;
   for (const i of items) {
     if (i.variant_id) await updVariant.run(i.quantity, i.variant_id);
     else if (i.product_id) await updProduct.run(i.quantity, i.product_id);
+    // GAP-11: hoàn kho phải ghi log tồn kho (trước đây chỉ UPDATE, sổ kho mất dấu đường hủy)
+    const mv = { product_id: i.product_id, type: 'IN', qty: i.quantity, ref_type: 'order_cancel', ref_id: orderId, note: noteText };
+    if (i.variant_id) mv.variant_id = i.variant_id;
+    await db.logStockMovement(mv);
   }
+}
+
+// GAP-01: trả lại thẻ hạng đã dùng cho đơn bị hủy (tìm theo used_order_id)
+async function restoreCard(orderId) {
+  await db.prepare(
+    "UPDATE discount_cards SET status = 'unused', used_order_id = NULL, used_product_id = NULL WHERE used_order_id = ? AND status = 'used'"
+  ).run(orderId);
+}
+
+// GAP-01: payment đang treo (pending) của đơn bị hủy thì đánh dấu thất bại để khỏi treo
+async function failPendingPayment(orderId) {
+  await db.prepare(
+    "UPDATE payments SET status = 'failed', note = 'Đơn đã hủy' WHERE order_id = ? AND status = 'pending'"
+  ).run(orderId);
 }
 
 // Nhãn tiếng Việt cho phương thức thanh toán (hiển thị trong lịch sử đơn)
@@ -259,7 +278,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // 7. Tạo payment: INSERT trực tiếp (đơn giản hơn gọi HTTP nội bộ)
-    const paymentNote = pm === 'momo' ? 'Chờ webhook MoMo' : (note || '').toString().trim();
+    const paymentNote = pm === 'momo' ? 'Chờ nhân viên đối soát' : (note || '').toString().trim();
     await db.prepare(
       `INSERT INTO payments (order_id, method, amount, status, note)
        VALUES (?, ?, ?, 'pending', ?)`
@@ -325,6 +344,9 @@ router.post('/:id/confirm-satisfied', auth, async (req, res) => {
       return res.status(403).json({ error: 'Bạn không có quyền với đơn hàng này' });
     if (order.status !== 'delivered')
       return res.status(400).json({ error: 'Chỉ đơn hàng đã giao mới xác nhận hài lòng được' });
+    // GAP-13: đơn đã hoàn tiền toàn bộ thì không cần xác nhận hài lòng
+    if (order.payment_status === 'refunded')
+      return res.status(400).json({ error: 'Đơn hàng đã được hoàn tiền toàn bộ' });
     if (order.satisfied_at) return res.json({ ok: true, already: true, tier: (await tierInfo(req.user.id)).tier });
     const open = await db.prepare(
       "SELECT id FROM returns WHERE order_id = ? AND status IN ('requested','approved','received')"
@@ -386,13 +408,36 @@ router.put('/:id/status', auth, staffOnly, async (req, res) => {
     const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return null;
     const from = order.status;
+    // GAP-03: bank/MoMo chưa xác nhận thanh toán thì chưa được giao hàng
+    if (status === 'shipping' && ['bank', 'momo'].includes(order.payment_method) && order.payment_status !== 'verified')
+      throw new Error('Chưa xác nhận thanh toán (chuyển khoản/MoMo) nên chưa thể chuyển sang giao hàng');
+    // GAP-05: đơn đang giao chỉ hủy được khi vận đơn đã giao thất bại (hàng không còn ở khách);
+    // đơn cũ không có dòng vận chuyển thì vẫn cho hủy (không có gì để chặn).
+    if (status === 'cancelled' && from === 'shipping') {
+      const ship = await db.prepare('SELECT * FROM shippings WHERE order_id = ?').get(order.id);
+      if (ship && ship.status !== 'failed')
+        throw new Error('Đơn đang giao chỉ hủy được khi giao thất bại (vận đơn ở trạng thái Giao thất bại)');
+    }
     if (!(STATUS_FLOW[from] || []).includes(status))
       throw new Error(`Không thể chuyển đơn từ "${from}" sang "${status}"`);
     if (status === 'cancelled' && !(reason || '').trim())
       throw new Error('Hủy đơn hàng phải ghi rõ lý do');
     await db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, order.id);
-    // Hủy đơn → hoàn lại toàn bộ tồn kho đã trừ
-    if (status === 'cancelled') await restoreStock(order.id);
+    // Hủy đơn → hoàn lại toàn bộ tồn kho đã trừ + trả thẻ hạng + đánh dấu payment treo
+    if (status === 'cancelled') {
+      await restoreStock(order.id, `Hủy đơn #${order.id} — hoàn kho`);
+      await restoreCard(order.id);
+      await failPendingPayment(order.id);
+    }
+    // GAP-10: đồng bộ trạng thái vận đơn theo đơn (chỉ các chuyển hợp lệ của vận đơn)
+    const SHIP_SYNC = { shipping: 'shipped', delivered: 'delivered' };
+    const SHIP_VALID = { preparing: ['shipped'], shipped: ['delivered'], delivered: [], failed: [] };
+    if (SHIP_SYNC[status]) {
+      const ship = await db.prepare('SELECT * FROM shippings WHERE order_id = ?').get(order.id);
+      if (ship && (SHIP_VALID[ship.status] || []).includes(SHIP_SYNC[status])) {
+        await db.prepare('UPDATE shippings SET status = ? WHERE id = ?').run(SHIP_SYNC[status], ship.id);
+      }
+    }
     await writeHistory(order.id, from, status, req, (reason || '').trim());
   });
 
@@ -444,7 +489,7 @@ router.delete('/:id', auth, staffOnly, async (req, res) => {
     const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return null;
     // Đơn chưa hủy → hoàn tồn kho trước khi xóa (đơn đã hủy kho đã hoàn)
-    if (order.status !== 'cancelled') await restoreStock(order.id);
+    if (order.status !== 'cancelled') await restoreStock(order.id, `Xóa đơn #${order.id} — hoàn kho`);
     await db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
     return order;
   });
@@ -488,8 +533,10 @@ router.put('/:id/cancel', auth, async (req, res) => {
       throw e;
     }
     await db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(order.id);
-    // Hoàn lại toàn bộ tồn kho đã trừ (hỗ trợ cả variant)
-    await restoreStock(order.id);
+    // Hoàn lại toàn bộ tồn kho đã trừ (hỗ trợ cả variant) + trả thẻ hạng + đánh dấu payment treo
+    await restoreStock(order.id, `Hủy đơn #${order.id} — hoàn kho`);
+    await restoreCard(order.id);
+    await failPendingPayment(order.id);
     await writeHistory(order.id, 'pending', 'cancelled', req, reason.trim());
   });
 
@@ -498,9 +545,56 @@ router.put('/:id/cancel', auth, async (req, res) => {
   } catch (e) {
     return res.status(e.statusCode || 400).json({ error: e.message });
   }
+  if (!notFound) {
+    // GAP-07: báo cho staff khi khách tự hủy (trước đây staff chỉ biết khi tự mở danh sách)
+    try {
+      const staff = await db.prepare("SELECT id FROM users WHERE role IN ('admin','sale') AND id != ?").all(req.user.id);
+      for (const s of staff) {
+        await db.prepare('INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)').run(s.id, 'order', `Đơn #${req.params.id} khách đã hủy`, `Khách đã hủy đơn #${req.params.id}. Lý do: ${reason.trim()}`, '/admin');
+      }
+    } catch (e) { /* lỗi chuông không làm hỏng hủy đơn */ }
+  }
   if (notFound) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
   try {
     res.json({ order: await getOrderWithItems(req.params.id) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
+});
+
+// ============================================================
+// POST /api/orders/expire-unpaid — staff quét đơn quá hạn thanh toán
+// GAP-08: bank/MoMo quá 7 ngày chưa thanh toán + đơn chưa giao thì tự hủy:
+// hoàn kho, trả thẻ hạng, đánh dấu payment treo, ghi lịch sử, báo chuông khách.
+// Chạy tay định kỳ (chưa có cron trong app); không chạm đơn COD, không chạm đơn đã giao.
+// ============================================================
+router.post('/expire-unpaid', auth, staffOnly, async (req, res) => {
+  try {
+    const candidates = await db.prepare(
+      `SELECT * FROM orders WHERE status IN ('pending','confirmed')
+       AND payment_method IN ('bank','momo') AND payment_status = 'pending'`
+    ).all();
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const expired = [];
+    for (const order of candidates) {
+      const created = new Date(String(order.created_at).replace(' ', 'T')).getTime();
+      if (!Number.isFinite(created) || created > cutoff) continue;
+      const run = db.transaction(async () => {
+        await db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(order.id);
+        await restoreStock(order.id, `Quá hạn thanh toán — hoàn kho đơn #${order.id}`);
+        await restoreCard(order.id);
+        await failPendingPayment(order.id);
+        await writeHistory(order.id, order.status, 'cancelled', req, 'Quá hạn thanh toán (tự động)');
+      });
+      try {
+        await run();
+        expired.push(order.id);
+        if (order.user_id) {
+          try {
+            await db.prepare('INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)').run(order.user_id, 'order', `Đơn hàng #${order.id} — Đã hủy`, `Đơn hàng #${order.id} của bạn đã bị hủy do quá hạn thanh toán.`, '/don-hang');
+          } catch (e) { /* lỗi chuông không làm hỏng quét */ }
+        }
+      } catch (e) { console.error('expire-unpaid', order.id, e.message); }
+    }
+    res.json({ expired });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 

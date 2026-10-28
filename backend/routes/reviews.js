@@ -94,6 +94,14 @@ router.post('/', auth, async (req, res) => {
     const product = await db.prepare('SELECT id FROM products WHERE id = ?').get(product_id);
     if (!product) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
 
+    // GAP-12: chỉ đánh giá được sản phẩm đã mua và nhận hàng
+    const bought = await db.prepare(
+      `SELECT oi.id FROM orders o JOIN order_items oi ON oi.order_id = o.id
+       WHERE o.user_id = ? AND o.status = 'delivered' AND oi.product_id = ? LIMIT 1`
+    ).get(req.user.id, product_id);
+    if (!bought)
+      return res.status(403).json({ error: 'Chỉ đánh giá được sản phẩm bạn đã mua và nhận hàng' });
+
     const dup = await db.prepare('SELECT id FROM reviews WHERE product_id = ? AND user_id = ?')
       .get(product_id, req.user.id);
     if (dup)

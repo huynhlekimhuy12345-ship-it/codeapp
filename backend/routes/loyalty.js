@@ -222,4 +222,20 @@ router.get('/admin/user-cards/:userId', auth, staffOnly, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
+// POST /api/loyalty/sweep-tier-ups — staff quét thăng hạng cho khách qua mốc 7 ngày
+// GAP-09: hạng tự động sau 7 ngày không có sự kiện nào tự nổ chuông; endpoint này
+// chạy tay định kỳ (vd mỗi sáng) để chuông thăng hạng nổ đúng lúc.
+router.post('/sweep-tier-ups', auth, staffOnly, async (req, res) => {
+  try {
+    const users = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+    const upgraded = [];
+    for (const u of users) {
+      try {
+        if (await checkTierUpgrade(u.id)) upgraded.push(u.id);
+      } catch (e) { /* bỏ qua lỗi từng khách */ }
+    }
+    res.json({ checked: users.length, upgraded });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
+});
+
 module.exports = router;

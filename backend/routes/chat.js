@@ -166,15 +166,16 @@ router.post('/start', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
-// POST /api/chat/my/messages {content} — khách chỉ nhắn tiếp khi cuộc đã được chấp nhận (active)
+// POST /api/chat/my/messages {content} — khách nhắn được cả khi chờ (waiting) và đang mở (active)
+// GAP-14: trước đây khách bị khóa ô chat lúc chờ, không bổ sung được thông tin cho staff.
 router.post('/my/messages', auth, async (req, res) => {
   try {
     const content = cleanContent(req.body.content);
     if (!content) return res.status(400).json({ error: 'Nội dung tin nhắn trống' });
     const c = await db.prepare(
-      "SELECT * FROM conversations WHERE type = 'customer' AND customer_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1"
+      "SELECT * FROM conversations WHERE type = 'customer' AND customer_id = ? AND status IN ('waiting','active') ORDER BY id DESC LIMIT 1"
     ).get(req.user.id);
-    if (!c) return res.status(400).json({ error: 'Cuộc trò chuyện chưa được nhân viên chấp nhận' });
+    if (!c) return res.status(400).json({ error: 'Chưa có cuộc trò chuyện đang chờ hoặc đang mở' });
     await db.prepare('INSERT INTO chat_messages (conversation_id, sender_id, content) VALUES (?, ?, ?)').run(c.id, req.user.id, content);
     await touch(c.id);
     await markRead(c.id, req.user.id);
@@ -191,7 +192,16 @@ router.get('/customer-conversations', auth, staffOnly, async (req, res) => {
       `SELECT * FROM conversations WHERE type = 'customer'
        ORDER BY CASE status WHEN 'waiting' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, updated_at DESC LIMIT 100`
     ).all();
-    res.json({ conversations: await Promise.all(rows.map((c) => convShape(c, req.user.id))) });
+    const conversations = await Promise.all(rows.map(async (c) => {
+      const shaped = await convShape(c, req.user.id);
+      // GAP-14: staff thấy cuộc chờ đã chờ bao lâu (phút) để ưu tiên xử lý
+      if (c.status === 'waiting') {
+        const t = new Date(String(c.created_at).replace(' ', 'T')).getTime();
+        shaped.wait_minutes = Number.isFinite(t) ? Math.max(0, Math.floor((Date.now() - t) / 60000)) : null;
+      }
+      return shaped;
+    }));
+    res.json({ conversations });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 

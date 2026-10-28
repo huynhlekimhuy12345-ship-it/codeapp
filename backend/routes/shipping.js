@@ -15,7 +15,8 @@ const STATUS_FLOW = {
   preparing: ['shipped', 'failed'],
   shipped: ['delivered', 'failed'],
   delivered: [],
-  failed: [],
+  // GAP-04: giao thất bại được giao lại (failed -> shipped), không còn là ngõ cụt
+  failed: ['shipped'],
 };
 
 // Nhãn tiếng Việt cho trạng thái vận đơn

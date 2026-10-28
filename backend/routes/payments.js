@@ -1,11 +1,12 @@
 // Quản lý thanh toán đơn hàng (1 đơn hàng = 1 bản ghi thanh toán)
 // - Customer chỉ được tạo / xem payment cho đơn của chính mình
 // - Admin: xem tất cả, duyệt / từ chối, đánh dấu hoàn tiền
-// - MoMo: chỉ tạo bản ghi pending chờ webhook, KHÔNG tự động verify
+// - MoMo: chỉ tạo bản ghi pending chờ nhân viên đối soát, KHÔNG tự động verify
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
 const { checkTierUpgrade } = require('../lib/tiers');
+const { postChatNotice } = require('../lib/chatCard');
 
 const router = express.Router();
 
@@ -53,8 +54,8 @@ router.post('/', auth, async (req, res) => {
   if (exists)
     return res.status(409).json({ error: 'Đơn hàng này đã có bản ghi thanh toán' });
 
-  // MoMo: chỉ tạo pending chờ webhook, không tự verify
-  const note = method === 'momo' ? 'Chờ webhook MoMo' : '';
+  // MoMo: chỉ tạo pending chờ nhân viên đối soát, không tự verify
+  const note = method === 'momo' ? 'Chờ nhân viên đối soát' : '';
 
   const create = db.transaction(async () => {
     const info = await db.prepare(
@@ -98,6 +99,24 @@ router.get('/', auth, async (req, res) => {
      ${where} ORDER BY p.created_at DESC`
   ).all(...params);
   res.json({ payments });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
+});
+
+// GET /api/payments/stale — staff: các payment pending quá 48 giờ (cần đối soát gấp)
+// GAP-02: chưa có webhook nên thanh toán treo chỉ lộ ra khi staff chủ động rà.
+router.get('/stale', auth, staffOnly, async (req, res) => {
+  try {
+    const rows = await db.prepare(
+      `SELECT p.*, o.customer_name, o.phone, o.status AS order_status, o.user_id
+       FROM payments p JOIN orders o ON o.id = p.order_id
+       WHERE p.status = 'pending' ORDER BY p.created_at ASC`
+    ).all();
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    const stale = rows.filter((p) => {
+      const t = new Date(String(p.created_at).replace(' ', 'T')).getTime();
+      return Number.isFinite(t) && t < cutoff;
+    });
+    res.json({ stale });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
@@ -165,7 +184,20 @@ router.put('/:id/verify', auth, staffOnly, async (req, res) => {
       if (ord && ord.user_id) await checkTierUpgrade(ord.user_id);
     } catch (e) { /* thông báo thăng hạng lỗi không được làm hỏng việc duyệt thanh toán */ }
   }
-  res.json({ payment: await getPaymentFull(paymentId) });
+  const full = await getPaymentFull(paymentId);
+  // GAP-06: báo khách qua chuông + chat khi thanh toán được duyệt hoặc bị từ chối
+  if (full && full.user_id) {
+    const ok = action === 'verified';
+    const title = ok ? `Thanh toán đơn #${full.order_id} — Đã xác nhận` : `Thanh toán đơn #${full.order_id} — Bị từ chối`;
+    const content = ok
+      ? `Thanh toán đơn #${full.order_id} của bạn đã được shop xác nhận.`
+      : `Thanh toán đơn #${full.order_id} của bạn bị từ chối.${note ? ' Lý do: ' + String(note) : ''} Vui lòng kiểm tra và chuyển khoản lại.`;
+    try {
+      await db.prepare('INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)').run(full.user_id, 'payment', title, content, '/don-hang');
+    } catch (e) { /* lỗi chuông không làm hỏng duyệt */ }
+    try { await postChatNotice(full.user_id, req.user.id, content); } catch (e) { /* lỗi chat không làm hỏng duyệt */ }
+  }
+  res.json({ payment: full });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
@@ -193,7 +225,16 @@ router.put('/:id/refund', auth, staffOnly, async (req, res) => {
   try { paymentId = await apply(); }
   catch (e) { return res.status(400).json({ error: e.message }); }
   if (!paymentId) return res.status(404).json({ error: 'Không tìm thấy thanh toán' });
-  res.json({ payment: await getPaymentFull(paymentId) });
+  const full = await getPaymentFull(paymentId);
+  // GAP-06: báo khách qua chuông + chat khi shop đánh dấu hoàn tiền
+  if (full && full.user_id) {
+    const content = `Đơn #${full.order_id} của bạn đã được shop hoàn tiền.${note ? ' Lý do: ' + String(note) : ''}`;
+    try {
+      await db.prepare('INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)').run(full.user_id, 'payment', `Đơn #${full.order_id} — Đã hoàn tiền`, content, '/don-hang');
+    } catch (e) { /* lỗi chuông không làm hỏng hoàn tiền */ }
+    try { await postChatNotice(full.user_id, req.user.id, content); } catch (e) { /* lỗi chat không làm hỏng hoàn tiền */ }
+  }
+  res.json({ payment: full });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
