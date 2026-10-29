@@ -88,6 +88,33 @@ export default {
     reason3d: 'Free repairs and polishing',
     reason4t: 'Nationwide COD',
     reason4d: 'Pay on delivery, inspect first',
+    viewProcess: 'View process',
+    reasonSteps: [
+      [
+        { t: 'Every hide hand-picked', d: '100% genuine vegetable-tanned cowhide; grain and thickness are checked before a hide enters the workshop.' },
+        { t: 'Workshop inspection', d: 'Craftsmen re-check each hide: natural grain, elasticity, no cracks — only then is it cut.' },
+        { t: 'Inspect on delivery', d: 'Open and check the product in person when it arrives (COD), or view it in store.' },
+        { t: 'Refund if not genuine', d: 'If it turns out to be faux or bonded leather: 100% refund and we take the product back.' },
+      ],
+      [
+        { t: 'Select leather & cut', d: 'Each part is cut from its own pattern, reserving the finest hide area for the front face.' },
+        { t: 'Skive & punch', d: 'Edges are skived thin and holes punched evenly by hand for straight, durable stitching.' },
+        { t: 'Two-needle hand stitching', d: 'Fully hand-sewn with two needles and waxed thread — seams that outlast machine stitching.' },
+        { t: 'Polish & finish', d: 'Edges are burnished and polished, then a final check; each piece takes 6–10 hours to make.' },
+      ],
+      [
+        { t: 'Send a warranty request', d: 'Go to My Orders or the Warranty page, pick the product, describe the issue and attach photos.' },
+        { t: 'Workshop confirms', d: 'Staff review it and reply via the notification bell and in-system messages.' },
+        { t: 'Send the product back', d: 'Pack and ship it to our Hoi An workshop, or bring it to the store in person.' },
+        { t: 'Repair & return', d: 'Free repair and polishing within the warranty period, then shipped back to your door.' },
+      ],
+      [
+        { t: 'Order on the website', d: 'Pick a product, enter delivery details and choose cash on delivery (COD).' },
+        { t: 'Shop confirms the order', d: 'The order is confirmed and packed at the workshop; status updates in your My Orders.' },
+        { t: 'Nationwide delivery', d: 'A carrier delivers to your door anywhere in the country, with a tracking code.' },
+        { t: 'Inspect, then pay', d: 'Open the parcel, check the model and leather quality, and only then pay the courier.' },
+      ],
+    ],
   },
   notifPage: {
     title: 'All notifications',

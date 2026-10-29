@@ -192,6 +192,14 @@ export default function Home() {
   const { t } = useLang();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [activeReason, setActiveReason] = useState(null);
+
+  useEffect(() => {
+    if (activeReason === null) return;
+    const onKey = (e) => { if (e.key === 'Escape') setActiveReason(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeReason]);
 
   useEffect(() => {
     api.getProducts({ limit: 8 }).then((d) => setProducts(d.products)).catch(() => {});
@@ -241,13 +249,53 @@ export default function Home() {
 
         <div className="section">
           <div className="section-head"><h2>{t('home.whyUs')}</h2></div>
-          <div className="cat-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          <div className="cat-grid">
             {reasons.map((r, i) => (
-              <div className="cat-card" key={i}>{r.icon} {r.title}<small>{r.desc}</small></div>
+              <div
+                className="cat-card reason-card"
+                key={i}
+                role="button"
+                tabIndex={0}
+                onClick={() => setActiveReason(i)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setActiveReason(i); }}
+              >
+                <span className="cat-icon">{r.icon}</span>
+                <span className="cat-name">{r.title}</span>
+                <small>{r.desc}</small>
+                <span className="reason-more">{t('home.viewProcess')} ›</span>
+              </div>
             ))}
           </div>
         </div>
       </div>
+
+      {activeReason !== null && (() => {
+        const all = t('home.reasonSteps');
+        const steps = Array.isArray(all) ? (all[activeReason] || []) : [];
+        const r = reasons[activeReason];
+        return (
+          <div className="modal-overlay" onClick={() => setActiveReason(null)}>
+            <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-head">
+                <h3>{r.icon} {r.title}</h3>
+                <button className="modal-close" onClick={() => setActiveReason(null)} aria-label="Đóng">✕</button>
+              </div>
+              <p className="process-intro">{r.desc}</p>
+              <div className="process-steps">
+                {steps.map((s, i) => (
+                  <div className="process-step" key={i}>
+                    <span className="process-num">{i + 1}</span>
+                    <div>
+                      <h4>{s.t}</h4>
+                      <p>{s.d}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }

@@ -88,6 +88,33 @@ export default {
     reason3d: 'Miễn phí sửa chữa, đánh bóng',
     reason4t: 'COD toàn quốc',
     reason4d: 'Thanh toán khi nhận hàng, kiểm tra trước',
+    viewProcess: 'Xem quy trình',
+    reasonSteps: [
+      [
+        { t: 'Chọn lọc từng tấm da', d: 'Da bò thật 100% thuộc thảo mộc; mỗi tấm được kiểm tra vân da và độ dày trước khi nhập xưởng.' },
+        { t: 'Kiểm tra tại xưởng', d: 'Thợ kiểm tra lại từng tấm: vân tự nhiên, độ đàn hồi, không nứt gãy mới đưa vào cắt.' },
+        { t: 'Đối chiếu khi nhận hàng', d: 'Khách được mở hàng kiểm tra trực tiếp khi nhận (COD) hoặc xem tại cửa hàng.' },
+        { t: 'Hoàn tiền nếu là da giả', d: 'Phát hiện da giả hay da công nghiệp: hoàn 100% tiền và thu hồi sản phẩm.' },
+      ],
+      [
+        { t: 'Chọn da & cắt rập', d: 'Cắt từng chi tiết theo rập riêng của mẫu, dành phần da đẹp nhất cho mặt chính.' },
+        { t: 'Lạng mỏng & đục lỗ', d: 'Lạng mỏng mép da và đục lỗ đều tay để đường khâu thẳng, chắc và bền.' },
+        { t: 'Khâu tay hai kim', d: 'Khâu hoàn toàn bằng tay với hai kim và chỉ sáp — đường khâu bền, không bung như khâu máy.' },
+        { t: 'Đánh bóng & hoàn thiện', d: 'Mài và đánh bóng cạnh da, kiểm tra lần cuối; mỗi sản phẩm mất 6–10 giờ chế tác.' },
+      ],
+      [
+        { t: 'Gửi yêu cầu bảo hành', d: 'Vào mục Đơn hàng hoặc trang Bảo hành, chọn sản phẩm, ghi lý do và đính kèm ảnh.' },
+        { t: 'Xưởng xác nhận', d: 'Nhân viên kiểm tra và phản hồi qua chuông thông báo và tin nhắn trong hệ thống.' },
+        { t: 'Gửi sản phẩm về xưởng', d: 'Đóng gói gửi về xưởng Hội An, hoặc mang trực tiếp tới cửa hàng.' },
+        { t: 'Sửa chữa & gửi lại', d: 'Sửa chữa, đánh bóng miễn phí trong thời hạn bảo hành rồi gửi trả tận nơi.' },
+      ],
+      [
+        { t: 'Đặt hàng trên website', d: 'Chọn sản phẩm, điền thông tin giao hàng và chọn thanh toán khi nhận hàng (COD).' },
+        { t: 'Shop xác nhận đơn', d: 'Đơn được xác nhận và đóng gói tại xưởng; trạng thái cập nhật trong mục Đơn hàng của bạn.' },
+        { t: 'Giao hàng toàn quốc', d: 'Đơn vị vận chuyển giao tận nơi trên toàn quốc, có mã theo dõi hành trình.' },
+        { t: 'Kiểm tra rồi thanh toán', d: 'Mở hàng kiểm tra đúng mẫu, đúng chất da rồi mới trả tiền cho nhân viên giao hàng.' },
+      ],
+    ],
   },
   notifPage: {
     title: 'Tất cả thông báo',
