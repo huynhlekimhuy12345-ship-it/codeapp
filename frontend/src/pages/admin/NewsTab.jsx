@@ -1,6 +1,7 @@
 // Tab quản lý Tin tức / Thông báo (admin + sale được viết).
 // Đăng tin → hiện banner trang chủ + chuông thông báo của mọi tài khoản.
 import { useEffect, useState } from 'react';
+import ImageField from '../../components/ImageField';
 
 function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -187,12 +188,7 @@ export default function NewsTab() {
                 style={{ marginTop: 8 }} />
               {form.cta_link && <small style={{ color: 'var(--muted)' }}>Banner & trang chi tiết sẽ dẫn đến: <code>{form.cta_link}</code></small>}
             </div>
-            <div className="field"><label>Hình ảnh (link URL, tùy chọn)</label>
-              <input value={form.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://... (link ảnh minh họa)" />
-              {form.image_url && (
-                <img src={form.image_url} alt="Xem trước" style={{ marginTop: 8, maxWidth: '100%', maxHeight: 160, borderRadius: 10, objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-              )}
-            </div>
+            <ImageField label="Hình ảnh (tùy chọn)" value={form.image_url} onChange={(v) => set('image_url', v)} />
             <div className="field"><label>Chú thích hình ảnh (tùy chọn)</label>
               <input value={form.image_caption} onChange={(e) => set('image_caption', e.target.value)} placeholder="VD: Xưởng da BI99 tại Hội An" />
             </div>

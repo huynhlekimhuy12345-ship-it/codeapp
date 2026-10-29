@@ -19,11 +19,13 @@ function slugify(text) {
     .replace(/(^-|-$)/g, '');
 }
 
-// Chỉ cho ảnh nội bộ hoặc host đã duyệt (Unsplash); chống ép trình duyệt
+// Chỉ cho ảnh nội bộ, ảnh tải lên dạng data URL (admin/sale kéo thả, đã nén,
+// tối đa ~1,1MB) hoặc host đã duyệt (Unsplash); chống ép trình duyệt
 // của khách tải tài nguyên từ host lạ.
 function safeImageUrl(raw) {
   const v = String(raw || '').trim();
   if (!v) return '';
+  if (/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length <= 1_500_000) return v;
   if (v.startsWith('/') && !v.startsWith('//')) return v;
   if (v.startsWith('./')) return v;
   try {
