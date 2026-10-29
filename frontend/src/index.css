@@ -484,7 +484,7 @@ h1, h2, h3, .logo, .hero-title {
 }
 
 /* --- Thẻ sản phẩm --- */
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .product-card {
   background: var(--panel);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
@@ -572,9 +572,9 @@ select option:checked { background-color: #b97a1e; color: #fff; }
 .btn-pair .btn {
   flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center;
   white-space: nowrap; text-align: center; overflow: hidden; text-overflow: ellipsis;
-  padding-left: 8px; padding-right: 8px;
+  padding-left: 6px; padding-right: 6px; font-size: 0.8rem;
 }
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .btn-pair { flex-direction: column; }
 }
 .cart-select-bar {
