@@ -515,6 +515,37 @@ h1, h2, h3, .logo, .hero-title {
 .process-step p { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
 
 /* --- Thẻ sản phẩm --- */
+/* --- Bộ lọc giá: thanh kéo 2 núm 0 → 20 triệu, đồng bộ 2 ô nhập --- */
+.price-group { display: flex; flex-direction: column; gap: 6px; flex: 1 1 300px; min-width: 250px; }
+.price-slider { position: relative; height: 28px; }
+.price-slider .price-track {
+  position: absolute; left: 0; right: 0; top: 50%; height: 6px; transform: translateY(-50%);
+  border-radius: 99px; background: rgba(232,181,106,.18);
+}
+.price-slider .price-fill {
+  position: absolute; top: 50%; height: 6px; transform: translateY(-50%);
+  border-radius: 99px; background: linear-gradient(90deg, var(--amber), var(--amber-light));
+}
+.price-slider input[type="range"] {
+  position: absolute; inset: 0; width: 100%; height: 28px; margin: 0;
+  -webkit-appearance: none; appearance: none; background: transparent;
+  border: 0; padding: 0; pointer-events: none;
+}
+.price-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; pointer-events: auto; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--amber-light); border: 2px solid #231408;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5); cursor: grab;
+}
+.price-slider input[type="range"]::-moz-range-thumb {
+  pointer-events: auto; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--amber-light); border: 2px solid #231408;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5); cursor: grab;
+}
+.price-slider input[type="range"]::-moz-range-track { background: transparent; }
+.price-inputs { display: flex; gap: 10px; }
+.price-inputs .price-filter { flex: 1; min-width: 0; width: 100%; }
+.price-scale { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); }
+
 .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .product-card {
   background: var(--panel);
@@ -969,6 +1000,52 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
   background: var(--amber); color: #231408; font-weight: 800; margin-bottom: 10px;
 }
+
+/* Giá trị cốt lõi: 3 thẻ ĐỀU nhau, có ảnh bìa + link thật vào cửa hàng */
+.value-grid.values-even { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; }
+@media (max-width: 900px) { .value-grid.values-even { grid-template-columns: 1fr; } }
+.value-link-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; text-decoration: none; transition: 0.25s; }
+.value-link-card:hover { transform: translateY(-4px); border-color: rgba(232,181,106,.5); box-shadow: var(--shadow); }
+.value-thumb { display: block; aspect-ratio: 16/9; overflow: hidden; flex-shrink: 0; }
+.value-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.value-body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+.value-body .vicon { font-size: 1.6rem; }
+.value-more { margin-top: auto; padding-top: 14px; font-weight: 700; font-size: 0.85rem; color: var(--amber-light); }
+
+/* Quy trình chế tác: dải panel ảnh lướt ngang (snap) như gallery */
+.craft-strip {
+  display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 4px 2px 14px; scrollbar-width: none;
+}
+.craft-strip::-webkit-scrollbar { display: none; }
+.craft-panel {
+  flex: 0 0 min(520px, 88%); scroll-snap-align: start; overflow: hidden;
+  border-radius: 16px; display: flex; flex-direction: column;
+}
+.craft-photo { position: relative; aspect-ratio: 16/10; overflow: hidden; flex-shrink: 0; }
+.craft-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.craft-badge {
+  position: absolute; left: 14px; top: 14px; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--amber); color: #231408; font-weight: 800; display: grid; place-items: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.45);
+}
+.craft-body { padding: 18px 20px 20px; }
+.craft-count { color: var(--amber-light); font-weight: 800; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 6px; }
+.craft-body h3 { color: var(--cream); margin-bottom: 8px; }
+.craft-body p { color: var(--muted); font-size: 0.93rem; line-height: 1.6; }
+.craft-nav { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.craft-arrow {
+  width: 38px; height: 38px; border-radius: 50%; padding: 0;
+  border: 1px solid rgba(232,181,106,.4); background: rgba(232,181,106,.08);
+  color: var(--amber-light); font-size: 1.35rem; line-height: 1; cursor: pointer;
+}
+.craft-arrow:disabled { opacity: 0.35; cursor: default; }
+.craft-dots { display: flex; gap: 8px; }
+.craft-dots button {
+  width: 9px; height: 9px; border-radius: 99px; border: 0; padding: 0;
+  background: rgba(232,181,106,.3); cursor: pointer; transition: 0.25s;
+}
+.craft-dots button.on { width: 26px; background: var(--amber); }
 .blog-card .thumb { aspect-ratio: 16/10; }
 .blog-card .excerpt { color: var(--muted); font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .blog-card .date { font-size: 0.8rem; color: var(--muted); }

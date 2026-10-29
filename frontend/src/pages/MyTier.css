@@ -184,3 +184,22 @@ a.tier-badge { text-decoration: none; }
   background: var(--amber); color: #231408; font-size: .75rem; font-weight: 800;
 }
 .mytier-mypos { margin-top: 12px; color: var(--amber-light); font-weight: 600; }
+
+/* Nút xóa thẻ hết hạn (xác nhận inline 2 bước) */
+.mytier-card-del {
+  margin-left: 10px; align-self: center; flex-shrink: 0;
+  background: transparent; border: 1px solid rgba(232,112,95,.35); color: #e88;
+  border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 0.82rem; line-height: 1;
+}
+.mytier-card-del:hover { background: rgba(232,112,95,.12); }
+.mytier-card-del-confirm { margin-left: 10px; align-self: center; flex-shrink: 0; display: inline-flex; gap: 6px; }
+.mytier-del-yes {
+  background: #d43a26; color: #fff; border: 0; border-radius: 8px;
+  padding: 6px 13px; font-weight: 700; cursor: pointer; font-size: 0.8rem; font-family: inherit;
+}
+.mytier-del-no {
+  background: transparent; color: var(--muted); border: 1px solid var(--panel-border);
+  border-radius: 8px; padding: 6px 13px; cursor: pointer; font-size: 0.8rem; font-family: inherit;
+}
+.mytier-past-row .mytier-card-del { margin-left: 6px; padding: 3px 7px; }
+.mytier-past-row .mytier-card-del-confirm { margin-left: 6px; }

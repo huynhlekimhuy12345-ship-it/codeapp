@@ -41,7 +41,30 @@ function ProgressBar({ pct, text, remain }) {
   );
 }
 
-function DiscountCard({ card, t }) {
+/** Nút xóa thẻ ĐÃ HẾT HẠN: bấm 1 lần hiện xác nhận inline (Xóa / Hủy) ngay tại thẻ. */
+function DeleteCardBtn({ card, t, onDeleted }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (card.status !== 'expired') return null;
+  const doDelete = async () => {
+    setBusy(true);
+    try { await api.deleteMyCard(card.id); onDeleted && onDeleted(); }
+    catch (e) { setBusy(false); setConfirming(false); }
+  };
+  if (!confirming) {
+    return (
+      <button type="button" className="mytier-card-del" title={t('tier.deleteCard')} aria-label={t('tier.deleteCard')} onClick={() => setConfirming(true)}>🗑</button>
+    );
+  }
+  return (
+    <span className="mytier-card-del-confirm">
+      <button type="button" className="mytier-del-yes" disabled={busy} onClick={doDelete}>{t('tier.deleteYes')}</button>
+      <button type="button" className="mytier-del-no" disabled={busy} onClick={() => setConfirming(false)}>{t('tier.deleteNo')}</button>
+    </span>
+  );
+}
+
+function DiscountCard({ card, t, onDeleted }) {
   return (
     <div className={`mytier-card status-${card.status}`}>
       <div className="mytier-card-off">−{card.percent}%</div>
@@ -52,6 +75,7 @@ function DiscountCard({ card, t }) {
         <div className="mytier-card-expiry">{t('tier.cardExpiry', { date: fmtDay(card.expires_at) })}</div>
       </div>
       <span className={`mytier-status st-${card.status}`}>{t(`tier.${STATUS_KEY[card.status]}`)}</span>
+      <DeleteCardBtn card={card} t={t} onDeleted={onDeleted} />
     </div>
   );
 }
@@ -63,8 +87,10 @@ export default function MyTier() {
   const [error, setError] = useState('');
   const [showCards, setShowCards] = useState(false);
 
+  const loadData = () => api.getMyTier().then(setData).catch((e) => setError(e.message));
+
   useEffect(() => {
-    api.getMyTier().then(setData).catch((e) => setError(e.message));
+    loadData();
     api.getLeaderboard().then(setBoard).catch(() => {});
   }, []);
 
@@ -215,7 +241,7 @@ export default function MyTier() {
               <p className="muted">{t('tier.cardsEmpty')}</p>
             ) : (
               <div className="mytier-cards-grid">
-                {thisMonthCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
+                {thisMonthCards.map((c) => <DiscountCard key={c.id} card={c} t={t} onDeleted={loadData} />)}
               </div>
             )}
 
@@ -223,7 +249,7 @@ export default function MyTier() {
               <>
                 <h3 className="mytier-sub-title" style={{ marginTop: 22 }}>{t('tier.huntCardsTitle')}</h3>
                 <div className="mytier-cards-grid">
-                  {huntCards.map((c) => <DiscountCard key={c.id} card={c} t={t} />)}
+                  {huntCards.map((c) => <DiscountCard key={c.id} card={c} t={t} onDeleted={loadData} />)}
                 </div>
               </>
             )}
@@ -238,6 +264,7 @@ export default function MyTier() {
                       <span>−{c.percent}%</span>
                       <span className="muted">{c.period}</span>
                       <span className={`mytier-status st-${c.status}`}>{t(`tier.${STATUS_KEY[c.status]}`)}</span>
+                      <DeleteCardBtn card={c} t={t} onDeleted={loadData} />
                     </div>
                   ))}
                 </div>

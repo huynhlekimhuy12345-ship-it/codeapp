@@ -84,6 +84,7 @@ export const api = {
 
   // Hạng khách hàng & thẻ discount theo tháng
   getMyTier: () => request('/api/loyalty/me', { auth: true }),
+  deleteMyCard: (id) => request(`/api/loyalty/cards/${id}`, { method: 'DELETE', auth: true }),
   getLeaderboard: () => request('/api/loyalty/leaderboard', { auth: true }),
   loyaltyStats: (period) =>
     request(`/api/loyalty/admin/stats${period ? '?period=' + encodeURIComponent(period) : ''}`, { auth: true }),

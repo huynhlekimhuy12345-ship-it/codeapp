@@ -96,6 +96,18 @@ router.get('/me', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
+// DELETE /api/loyalty/cards/:id — khách tự xóa thẻ ĐÃ HẾT HẠN (chưa dùng) khỏi danh sách của mình
+router.delete('/cards/:id', auth, async (req, res) => {
+  try {
+    await sweepExpired();
+    const card = await db.prepare('SELECT id, status FROM discount_cards WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+    if (!card) return res.status(404).json({ error: 'Không tìm thấy thẻ' });
+    if (card.status !== 'expired') return res.status(400).json({ error: 'Chỉ xóa được thẻ đã hết hạn' });
+    await db.prepare('DELETE FROM discount_cards WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
+});
+
 // GET /api/loyalty/leaderboard — top 10 theo tổng chi, tên che một phần + vị trí của chính khách
 router.get('/leaderboard', auth, async (req, res) => {
   try {
