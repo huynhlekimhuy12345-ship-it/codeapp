@@ -963,8 +963,8 @@ function RolesTab() {
   const roleLabel = (r) => r === 'admin' ? 'Quản trị' : r === 'sale' ? 'Nhân viên sale' : 'Khách hàng';
   const roleBadgeClass = (r) => r === 'admin' ? 'status delivered' : r === 'sale' ? 'status shipping' : 'status pending';
   const renderSection = (title, list, emptyText) => (
-    <div style={{ marginBottom: 26 }}>
-      <h4 style={{ margin: '0 0 10px', fontSize: '1.02rem' }}>{title} ({list.length})</h4>
+    <div style={{ marginBottom: 42 }}>
+      <h4 style={{ margin: '0 0 14px', fontSize: '1.02rem' }}>{title} ({list.length})</h4>
       <div style={{ overflowX: 'auto' }}>
       <table className="data-table">
         <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Hạng</th><th>Số đơn</th><th>Tổng chi</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
@@ -995,7 +995,7 @@ function RolesTab() {
     </div>
   );
   return (
-    <div>
+    <div className="roles-tab">
       <h3 style={{ marginBottom: 6 }}>Vai trò</h3>
       <p style={{ color: 'var(--muted)', margin: '0 0 16px', fontSize: '0.92rem' }}>
         Bảng trên là những người có chức vụ, bảng dưới là khách hàng. Đổi vai trò sẽ chuyển người qua lại giữa 2 bảng.
