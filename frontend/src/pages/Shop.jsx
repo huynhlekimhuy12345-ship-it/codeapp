@@ -88,32 +88,32 @@ export default function Shop() {
           <option value="name">{t('shop.nameAZ')}</option>
         </select>
         <div className="price-group">
-          <div className="price-slider">
-            <div className="price-track" />
-            <div
-              className="price-fill"
-              style={{ left: `${(sMin / PRICE_CAP) * 100}%`, right: `${100 - (sMax / PRICE_CAP) * 100}%` }}
-            />
-            <input
-              type="range" min="0" max={PRICE_CAP} step="100000" value={sMin} aria-label={t('shop.minPriceLabel')}
-              onChange={(e) => { const v = Math.min(Number(e.target.value), sMax); setMinPrice(v === 0 ? '' : String(v)); setPage(1); }}
-            />
-            <input
-              type="range" min="0" max={PRICE_CAP} step="100000" value={sMax} aria-label={t('shop.maxPriceLabel')}
-              onChange={(e) => { const v = Math.max(Number(e.target.value), sMin); setMaxPrice(v === PRICE_CAP ? '' : String(v)); setPage(1); }}
-            />
+          <input
+            className="price-filter" type="number" min="0" placeholder={t('shop.priceFrom')} aria-label={t('shop.minPriceLabel')}
+            value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+          />
+          <div className="price-mid">
+            <div className="price-slider">
+              <div className="price-track" />
+              <div
+                className="price-fill"
+                style={{ left: `${(sMin / PRICE_CAP) * 100}%`, right: `${100 - (sMax / PRICE_CAP) * 100}%` }}
+              />
+              <input
+                type="range" min="0" max={PRICE_CAP} step="100000" value={sMin} aria-label={t('shop.minPriceLabel')}
+                onChange={(e) => { const v = Math.min(Number(e.target.value), sMax); setMinPrice(v === 0 ? '' : String(v)); setPage(1); }}
+              />
+              <input
+                type="range" min="0" max={PRICE_CAP} step="100000" value={sMax} aria-label={t('shop.maxPriceLabel')}
+                onChange={(e) => { const v = Math.max(Number(e.target.value), sMin); setMaxPrice(v === PRICE_CAP ? '' : String(v)); setPage(1); }}
+              />
+            </div>
+            <div className="price-scale"><span>{fmtVND(0)}</span><span>{fmtVND(PRICE_CAP)}</span></div>
           </div>
-          <div className="price-inputs">
-            <input
-              className="price-filter" type="number" min="0" placeholder={t('shop.priceFrom')} aria-label={t('shop.minPriceLabel')}
-              value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
-            />
-            <input
-              className="price-filter" type="number" min="0" placeholder={t('shop.priceTo')} aria-label={t('shop.maxPriceLabel')}
-              value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
-            />
-          </div>
-          <div className="price-scale"><span>{fmtVND(0)}</span><span>{fmtVND(PRICE_CAP)}</span></div>
+          <input
+            className="price-filter" type="number" min="0" placeholder={t('shop.priceTo')} aria-label={t('shop.maxPriceLabel')}
+            value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+          />
         </div>
       </div>
 

@@ -515,16 +515,23 @@ h1, h2, h3, .logo, .hero-title {
 .process-step p { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
 
 /* --- Thẻ sản phẩm --- */
-/* --- Bộ lọc giá: thanh kéo 2 núm 0 → 20 triệu, đồng bộ 2 ô nhập --- */
-.price-group { display: flex; flex-direction: column; gap: 6px; flex: 1 1 300px; min-width: 250px; }
+/* --- Bộ lọc giá: nằm NGANG full chiều rộng — [ô Giá từ] [thanh kéo 0→20tr] [ô Đến] --- */
+.price-group { display: flex; align-items: flex-start; gap: 16px; flex: 1 1 100%; padding-top: 4px; }
+.price-group > .price-filter { width: 180px; flex: 0 0 auto; }
+.price-mid { flex: 1; min-width: 0; padding-top: 9px; display: flex; flex-direction: column; gap: 2px; }
 .price-slider { position: relative; height: 28px; }
 .price-slider .price-track {
-  position: absolute; left: 0; right: 0; top: 50%; height: 6px; transform: translateY(-50%);
+  position: absolute; left: 0; right: 0; top: 50%; height: 7px; transform: translateY(-50%);
   border-radius: 99px; background: rgba(232,181,106,.18);
 }
 .price-slider .price-fill {
-  position: absolute; top: 50%; height: 6px; transform: translateY(-50%);
+  position: absolute; top: 50%; height: 7px; transform: translateY(-50%);
   border-radius: 99px; background: linear-gradient(90deg, var(--amber), var(--amber-light));
+}
+@media (max-width: 700px) {
+  .price-group { flex-wrap: wrap; }
+  .price-group > .price-filter { flex: 1 1 40%; width: auto; }
+  .price-mid { flex: 1 1 100%; order: 3; padding-top: 2px; }
 }
 .price-slider input[type="range"] {
   position: absolute; inset: 0; width: 100%; height: 28px; margin: 0;
@@ -532,18 +539,16 @@ h1, h2, h3, .logo, .hero-title {
   border: 0; padding: 0; pointer-events: none;
 }
 .price-slider input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; pointer-events: auto; width: 20px; height: 20px; border-radius: 50%;
+  -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; border-radius: 50%;
   background: var(--amber-light); border: 2px solid #231408;
   box-shadow: 0 2px 8px rgba(0,0,0,.5); cursor: grab;
 }
 .price-slider input[type="range"]::-moz-range-thumb {
-  pointer-events: auto; width: 18px; height: 18px; border-radius: 50%;
+  pointer-events: auto; width: 20px; height: 20px; border-radius: 50%;
   background: var(--amber-light); border: 2px solid #231408;
   box-shadow: 0 2px 8px rgba(0,0,0,.5); cursor: grab;
 }
 .price-slider input[type="range"]::-moz-range-track { background: transparent; }
-.price-inputs { display: flex; gap: 10px; }
-.price-inputs .price-filter { flex: 1; min-width: 0; width: 100%; }
 .price-scale { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); }
 
 .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
