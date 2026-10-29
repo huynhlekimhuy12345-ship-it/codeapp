@@ -245,7 +245,7 @@ router.get('/:id/messages', auth, async (req, res) => {
     const c = await getConv(Number(req.params.id));
     if (!c) return res.status(404).json({ error: 'Không tìm thấy cuộc trò chuyện' });
     const isParticipant = await myLastRead(c.id, req.user.id) !== null;
-    if (c.type === 'internal' && !isParticipant) return res.status(403).json({ error: 'Bạn không ở trong cuộc trò chuyện này' });
+    if (c.type === 'internal' && (!isParticipant || !isStaff(req.user))) return res.status(403).json({ error: 'Bạn không ở trong cuộc trò chuyện này' });
     if (c.type === 'customer' && !isParticipant && !(isStaff(req.user) || c.customer_id === req.user.id)) {
       return res.status(403).json({ error: 'Không có quyền xem' });
     }
@@ -269,7 +269,7 @@ router.post('/:id/messages', auth, async (req, res) => {
       } else if (c.customer_id !== req.user.id) {
         return res.status(403).json({ error: 'Không có quyền' });
       }
-    } else if (!isParticipant) {
+    } else if (!isParticipant || !isStaff(req.user)) {
       return res.status(403).json({ error: 'Bạn không ở trong cuộc trò chuyện này' });
     }
     await db.prepare('INSERT INTO chat_messages (conversation_id, sender_id, content) VALUES (?, ?, ?)').run(c.id, req.user.id, content);
@@ -285,6 +285,7 @@ router.post('/:id/read', auth, async (req, res) => {
     const c = await getConv(Number(req.params.id));
     if (!c) return res.status(404).json({ error: 'Không tìm thấy cuộc trò chuyện' });
     if (await myLastRead(c.id, req.user.id) === null) return res.status(403).json({ error: 'Bạn không ở trong cuộc trò chuyện này' });
+    if (c.type === 'internal' && !isStaff(req.user)) return res.status(403).json({ error: 'Bạn không ở trong cuộc trò chuyện này' });
     await markRead(c.id, req.user.id);
     res.json({ ok: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
