@@ -188,7 +188,7 @@ function PurchaseOrderForm({ suppliers, onSave, onCancel }) {
         <h4>Dòng hàng ({items.length})</h4>
         {items.length === 0
           ? <p className="empty">Chưa có dòng hàng nào</p>
-          : <table className="data-table">
+          : <div style={{ overflowX: 'auto' }}><table className="data-table">
               <thead><tr><th>Mặt hàng</th><th>SL</th><th>Giá nhập</th><th>Thành tiền</th><th></th></tr></thead>
               <tbody>
                 {items.map((i, idx) => (
@@ -201,7 +201,7 @@ function PurchaseOrderForm({ suppliers, onSave, onCancel }) {
                   </tr>
                 ))}
               </tbody>
-            </table>}
+            </table></div>}
         <p style={{ textAlign: 'right', fontWeight: 600, marginTop: 8 }}>
           Tổng dự kiến: {fmtVND(items.reduce((s, i) => s + i.quantity * i.unit_price, 0))}
         </p>
@@ -287,7 +287,7 @@ function PurchaseOrdersSection() {
           <div className="modal" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
             <h3>Phiếu nhập #{detail.purchase_order.id} — {detail.purchase_order.status_label}</h3>
             <p style={{ color: 'var(--muted)' }}>NCC: {detail.purchase_order.supplier_name || '—'} · Tổng: {fmtVND(detail.purchase_order.total)}</p>
-            <table className="data-table">
+            <div style={{ overflowX: 'auto' }}><table className="data-table">
               <thead><tr><th>Mặt hàng</th><th>SL</th><th>Giá nhập</th><th>Thành tiền</th></tr></thead>
               <tbody>
                 {detail.items.map((it) => (
@@ -299,7 +299,7 @@ function PurchaseOrdersSection() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setDetail(null)}>Đóng</button>
               {canAct(detail.purchase_order) && <>

@@ -53,7 +53,7 @@ function HeroSlide({ ann }) {
   );
 }
 
-/** Banner hero: trình chiếu xoay vòng mọi tin có show_on_banner (tự chuyển 5.5s, dừng khi rê chuột). */
+/** Banner hero: trình chiếu xoay vòng mọi tin có show_on_banner (tự chuyển 5s, dừng khi rê chuột hoặc chạm giữ). */
 function HeroBanner() {
   const { t } = useLang();
   const [list, setList] = useState([]);
@@ -68,7 +68,7 @@ function HeroBanner() {
 
   useEffect(() => {
     if (list.length < 2 || paused) return undefined;
-    const timer = setInterval(() => setIdx((i) => (i + 1) % list.length), 5500);
+    const timer = setInterval(() => setIdx((i) => (i + 1) % list.length), 5000);
     return () => clearInterval(timer);
   }, [list.length, paused]);
 
@@ -88,7 +88,13 @@ function HeroBanner() {
 
   const safeIdx = Math.min(idx, list.length - 1);
   return (
-    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
+      onTouchCancel={() => setPaused(false)}
+    >
       <HeroSlide ann={list[safeIdx]} />
       {list.length > 1 && (
         <div className="hero-nav">

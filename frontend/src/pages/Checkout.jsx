@@ -239,7 +239,7 @@ export default function Checkout() {
   return (
     <div className="container page">
       <h1 className="page-title">{t('checkout.title')}</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }} className="checkout-grid">
+      <div className="checkout-grid">
         <form className="form-card" style={{ maxWidth: 'none', margin: 0 }} onSubmit={submit}>
           <h2>{t('checkout.shippingInfo')}</h2>
           {error && <div className="form-error" ref={errorRef}>{error}</div>}

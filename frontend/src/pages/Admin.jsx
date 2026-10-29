@@ -360,6 +360,7 @@ function CategoriesTab() {
         <button className="btn btn-primary" onClick={save}>{editingId ? 'Cập nhật' : 'Thêm'}</button>
         {editingId && <button className="btn btn-outline" onClick={reset}>Hủy</button>}
       </div>
+      <div style={{ overflowX: 'auto' }}>
       <table className="data-table">
         <thead><tr><th>ID</th><th>Tên</th><th>Mô tả</th><th>Số sản phẩm</th><th>Thao tác</th></tr></thead>
         <tbody>
@@ -392,6 +393,7 @@ function CategoriesTab() {
           )}
         </tbody>
       </table>
+      </div>
 
       {deleting && (
         <ConfirmDialog
@@ -1049,6 +1051,96 @@ function CustomerRolesTab() {
   );
 }
 
+/* ---------- Tab Hạng thành viên ---------- */
+// Xem khách theo từng hạng + admin đặt hạng thủ công (tier_override, thắng hạng tự tính
+// theo chi tiêu cho tới khi trả về "Tự động"). Sale xem được; đặt hạng chỉ admin.
+function MemberTiersTab() {
+  const { user } = useStore();
+  const isAdmin = user?.role === 'admin';
+  const [users, setUsers] = useState([]);
+  const [loadError, setLoadError] = useState('');
+  const [tierTarget, setTierTarget] = useState(null);
+  const [newTier, setNewTier] = useState('auto');
+  const load = () => api.getUsers().then((d) => { setUsers(d.users.filter((u) => u.role === 'customer')); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách khách hàng'));
+  useEffect(() => { load(); }, []);
+  const openSetTier = (u) => { setTierTarget(u); setNewTier(u.tier_manual ? u.tier.key : 'auto'); };
+  const doSetTier = async () => {
+    try { await api.updateUserTier(tierTarget.id, newTier === 'auto' ? null : newTier); }
+    catch (e) { alert(e.message); return; }
+    setTierTarget(null);
+    load();
+  };
+  const ORDER = ['diamond', 'gold', 'silver', 'bronze', 'potential'];
+  const cfgOf = (key) => TIER_CONFIG.find((c) => c.key === key);
+  return (
+    <div>
+      <h3 style={{ marginBottom: 6 }}>Hạng thành viên</h3>
+      <p style={{ color: 'var(--muted)', margin: '0 0 16px', fontSize: '0.92rem' }}>
+        Hạng mặc định tự tính theo chi tiêu đã chốt điểm. Admin có thể <strong>đặt hạng thủ công</strong> cho từng khách —
+        hạng đặt tay thắng hạng tự tính ở mọi nơi (trang hạng, thẻ giảm giá) cho tới khi trả về Tự động.
+      </p>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
+      {ORDER.map((key) => {
+        const cfg = cfgOf(key);
+        const members = users.filter((u) => u.tier && u.tier.key === key);
+        return (
+          <div key={key} className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+              <TierBadge tier={{ key, name: cfg.name }} />
+              <strong>{members.length} khách</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Quyền lợi: {cfg.cards} thẻ giảm {cfg.percent}% mỗi tháng</span>
+            </div>
+            {members.length === 0 ? (
+              <p style={{ color: 'var(--muted)', margin: 0 }}>Chưa có khách nào ở hạng này.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead><tr><th>Họ tên</th><th>Email</th><th>Số đơn</th><th>Tổng chi</th><th>Nguồn hạng</th><th>Thao tác</th></tr></thead>
+                <tbody>
+                  {members.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td><td>{u.email}</td>
+                      <td>{u.order_count ?? 0}</td><td>{fmtVND(u.total_spent)}</td>
+                      <td>{u.tier_manual ? '📌 Đặt tay' : 'Tự động'}</td>
+                      <td>
+                        {isAdmin && (
+                          <button className="btn btn-small btn-outline" onClick={() => openSetTier(u)}>Đặt hạng</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {tierTarget && (
+        <div className="modal-overlay" onClick={() => setTierTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <h3>Đặt hạng thành viên</h3>
+            <p style={{ marginBottom: 12 }}>{tierTarget.name} • {tierTarget.email}</p>
+            <div className="field">
+              <label>Hạng</label>
+              <select value={newTier} onChange={(e) => setNewTier(e.target.value)}>
+                <option value="auto">Tự động theo chi tiêu</option>
+                {[...TIER_CONFIG].reverse().map((c) => (
+                  <option key={c.key} value={c.key}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setTierTarget(null)}>Hủy</button>
+              <button className="btn btn-primary" onClick={doSetTier}>Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const NAV = [
   { key: 'products', icon: '🛍️', label: 'Sản phẩm' },
   { key: 'categories', icon: '📂', label: 'Danh mục' },
@@ -1065,6 +1157,7 @@ const NAV = [
   { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
   { key: 'customerRoles', icon: '🎭', label: 'Vai trò khách hàng' },
+  { key: 'memberTiers', icon: '🏆', label: 'Hạng thành viên' },
   { key: 'posts', icon: '📝', label: 'Bài viết' },
   { key: 'customerChat', icon: '💬', label: 'Chat khách hàng' },
   { key: 'internalChat', icon: '🏢', label: 'Tin nhắn nội bộ' },
@@ -1387,7 +1480,7 @@ export default function Admin() {
   // NGOẠI LỆ: tab "Săn thẻ" chỉ Admin — quyền phát hành sự kiện săn thẻ chỉ thuộc Admin.
   const visibleNav = NAV.filter((n) => n.key !== 'hunt' || user?.role === 'admin');
   return (
-    <div className="container page admin-wide">
+    <div className="container page">
       <h1 className="page-title">Bảng quản trị</h1>
       <div className="admin-layout">
         <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
@@ -1436,6 +1529,7 @@ export default function Admin() {
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}
           {tab === 'customerRoles' && <CustomerRolesTab />}
+          {tab === 'memberTiers' && <MemberTiersTab />}
           {tab === 'posts' && <PostsTab />}
           {tab === 'customerChat' && <CustomerChatTab />}
           {tab === 'internalChat' && <InternalChatTab />}

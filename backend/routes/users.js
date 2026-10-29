@@ -2,7 +2,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, adminOnly, staffOnly } = require('../middleware/auth');
-const { computeTier, TIER_MAP, SETTLED_SQL } = require('../lib/tiers');
+const { computeTier, TIER_MAP, TIER_ORDER, SETTLED_SQL, overrideMap, overrideFor, tierInfo, checkTierUpgrade } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -55,11 +55,13 @@ router.get('/', auth, staffOnly, async (req, res) => {
       ORDER BY u.created_at DESC
     `).all();
     const tier_counts = { diamond: 0, gold: 0, silver: 0, bronze: 0, potential: 0 };
+    const overrides = await overrideMap();
     const users = rows.map((u) => {
-      if (u.role !== 'customer') return { ...u, tier: null };
-      const key = computeTier(u.order_count, u.total_spent);
+      if (u.role !== 'customer') return { ...u, tier: null, tier_manual: false };
+      const ov = overrides.get(u.id);
+      const key = ov || computeTier(u.order_count, u.total_spent);
       tier_counts[key]++;
-      return { ...u, tier: { key, name: TIER_MAP[key].name } };
+      return { ...u, tier: { key, name: TIER_MAP[key].name }, tier_manual: !!ov };
     });
     res.json({ users, tier_counts });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
@@ -97,8 +99,9 @@ router.get('/top-customers', auth, staffOnly, async (req, res) => {
       ORDER BY total_spent DESC, order_count DESC
       LIMIT 10
     `).all();
+    const overrides = await overrideMap();
     const customers = rows.map((c) => {
-      const key = computeTier(c.order_count, c.total_spent);
+      const key = overrides.get(c.id) || computeTier(c.order_count, c.total_spent);
       return { ...c, tier: { key, name: TIER_MAP[key].name } };
     });
     res.json({ customers });
@@ -133,7 +136,7 @@ router.get('/:id/purchases', auth, staffOnly, async (req, res) => {
       LIMIT 5
     `).all(req.params.id);
     const tierKey = customer.role === 'customer'
-      ? computeTier(summary.order_count, summary.total_spent)
+      ? ((await overrideFor(customer.id)) || computeTier(summary.order_count, summary.total_spent))
       : null;
     res.json({
       customer,
@@ -142,6 +145,30 @@ router.get('/:id/purchases', auth, staffOnly, async (req, res) => {
       top_products: topProducts,
       orders,
     });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
+});
+
+// PUT /api/users/:id/tier — admin đặt hạng thủ công cho 1 khách (tier_override).
+// tier = một trong 5 hạng, hoặc null = trả về tự động theo chi tiêu.
+// Hạng đặt tay thắng hạng tự tính ở mọi nơi (trang hạng, thẻ giảm giá, danh sách admin).
+router.put('/:id/tier', auth, adminOnly, async (req, res) => {
+  try {
+    const { tier } = req.body || {};
+    if (tier !== null && !TIER_ORDER.includes(tier))
+      return res.status(400).json({ error: 'Hạng không hợp lệ' });
+    const target = await db.prepare('SELECT id, role FROM users WHERE id = ?').get(req.params.id);
+    if (!target) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    if (target.role !== 'customer')
+      return res.status(400).json({ error: 'Chỉ đặt hạng cho tài khoản khách hàng' });
+    try {
+      await db.prepare('UPDATE users SET tier_override = ? WHERE id = ?').run(tier, req.params.id);
+    } catch (e) {
+      return res.status(500).json({ error: 'Chưa đặt được hạng: cơ sở dữ liệu thiếu cột tier_override — cần chạy SQL bổ sung trước' });
+    }
+    // Lên hạng thủ công cũng báo chuông cho khách như thăng hạng tự động (nếu đúng là lên hạng)
+    try { await checkTierUpgrade(parseInt(req.params.id)); } catch (e) { /* bỏ qua lỗi phụ */ }
+    const info = await tierInfo(parseInt(req.params.id));
+    res.json({ tier: info.tier, manual: info.manual });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 

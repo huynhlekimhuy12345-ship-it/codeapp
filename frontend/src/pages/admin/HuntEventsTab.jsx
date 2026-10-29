@@ -174,7 +174,7 @@ export default function HuntEventsTab() {
         {mode === 'manual' && (
           <div>
             {rows.map((r) => (
-              <div key={r._k} style={{ display: 'grid', gridTemplateColumns: '1.4fr .7fr .9fr .8fr auto', gap: 10, marginTop: 10, alignItems: 'end' }}>
+              <div key={r._k} className="hunt-type-row" style={{ display: 'grid', gridTemplateColumns: '1.4fr .7fr .9fr .8fr auto', gap: 10, marginTop: 10, alignItems: 'end' }}>
                 <div>
                   <FieldLabel tip="Tên gọi của loại thẻ, hiện cho khách thấy. Ví dụ: Cực hiếm, Hiếm, May mắn...">Nhãn loại thẻ</FieldLabel>
                   <input style={inputStyle} value={r.label} onChange={(e) => setRow(r._k, 'label', e.target.value)} placeholder="VD: Cực hiếm" />

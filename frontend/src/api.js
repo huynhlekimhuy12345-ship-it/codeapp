@@ -77,6 +77,8 @@ export const api = {
   getUsers: () => request('/api/users', { auth: true }),
   updateUserRole: (id, role) =>
     request(`/api/users/${id}/role`, { method: 'PUT', body: { role }, auth: true }),
+  updateUserTier: (id, tier) =>
+    request(`/api/users/${id}/tier`, { method: 'PUT', body: { tier }, auth: true }),
   getTopCustomers: () => request('/api/users/top-customers', { auth: true }),
   getUserPurchases: (id) => request(`/api/users/${id}/purchases`, { auth: true }),
 

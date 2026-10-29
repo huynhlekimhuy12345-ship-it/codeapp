@@ -104,13 +104,34 @@ async function userStats(userId) {
   };
 }
 
+// Hạng đặt tay (users.tier_override): admin đặt trực tiếp cho 1 khách, THẮNG hạng tự tính
+// theo chi tiêu. NULL = tự động như cũ. Cột có thể chưa tồn tại trên DB chưa chạy SQL bổ
+// sung → đọc phòng thủ: lỗi thì coi như không có đặt tay, hệ thống vẫn chạy bình thường.
+async function overrideFor(userId) {
+  try {
+    const r = await db.prepare('SELECT tier_override FROM users WHERE id = ?').get(userId);
+    return r && TIER_MAP[r.tier_override] ? r.tier_override : null;
+  } catch (e) { return null; }
+}
+async function overrideMap() {
+  try {
+    const rows = await db.prepare('SELECT id, tier_override FROM users WHERE tier_override IS NOT NULL').all();
+    const m = new Map();
+    for (const r of rows) if (TIER_MAP[r.tier_override]) m.set(r.id, r.tier_override);
+    return m;
+  } catch (e) { return new Map(); }
+}
+
 // Hạng hiện tại + khoảng còn thiếu để lên hạng kế tiếp (need.orders hoặc need.spent)
 async function tierInfo(userId) {
   const stats = await userStats(userId);
-  const tierKey = computeTier(stats.order_count, stats.total_spent);
-  const idx = TIER_ORDER.indexOf(tierKey);
+  const autoKey = computeTier(stats.order_count, stats.total_spent);
+  const override = await overrideFor(userId);
+  const manual = !!override;
+  const tierKey = manual ? override : autoKey;
+  const idx = TIER_ORDER.indexOf(autoKey);
   let next = null;
-  if (idx >= 0 && idx < TIER_ORDER.length - 1) {
+  if (!manual && idx >= 0 && idx < TIER_ORDER.length - 1) {
     const nextKey = TIER_ORDER[idx + 1];
     let need = {};
     if (nextKey === 'bronze') need = { orders: Math.max(0, BRONZE_MIN_ORDERS - stats.order_count) };
@@ -119,7 +140,7 @@ async function tierInfo(userId) {
     else if (nextKey === 'diamond') need = { spent: Math.max(0, DIAMOND_MIN_SPENT - stats.total_spent) };
     next = { key: nextKey, name: TIER_MAP[nextKey].name, need };
   }
-  return { tier: TIER_MAP[tierKey], stats, next };
+  return { tier: TIER_MAP[tierKey], stats, next, manual };
 }
 
 // Kiểm tra thăng hạng: so hạng hiện tại với hạng cao nhất đã ghi nhận (users.known_tier).
@@ -161,4 +182,4 @@ function maskName(name) {
   return [...parts.slice(0, -1), last.slice(0, 1) + '***'].join(' ');
 }
 
-module.exports = { TIERS, TIER_MAP, TIER_ORDER, computeTier, userStats, tierInfo, maskName, checkTierUpgrade, SETTLE_DAYS, SETTLED_SQL, deliveredAtOf, parseDbTime, settleInfo };
+module.exports = { TIERS, TIER_MAP, TIER_ORDER, computeTier, userStats, tierInfo, maskName, checkTierUpgrade, SETTLE_DAYS, SETTLED_SQL, deliveredAtOf, parseDbTime, settleInfo, overrideFor, overrideMap };

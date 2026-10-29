@@ -18,15 +18,28 @@ if (!process.env.JWT_SECRET) {
 }
 
 // Đọc token từ header Authorization: Bearer <token>
-function auth(req, res, next) {
+async function auth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Thiếu token xác thực' });
+  let payload;
   try {
-    req.user = jwt.verify(token, JWT_SECRET); // { id, email, role }
-    next();
+    payload = jwt.verify(token, JWT_SECRET); // { id, email, role }
   } catch (e) {
     return res.status(401).json({ error: 'Token không hợp lệ hoặc đã hết hạn' });
+  }
+  // Role luôn lấy từ DB, KHÔNG tin role ghi trong token: đổi vai trò (lên admin/sale
+  // hay hạ xuống khách) phải có hiệu lực ngay ở request kế tiếp, không cần đăng nhập lại.
+  if (process.env.DB_MOCK === '1') { req.user = payload; return next(); }
+  try {
+    const db = require('../db');
+    const row = await db.prepare('SELECT role FROM users WHERE id = ?').get(payload.id);
+    if (!row) return res.status(401).json({ error: 'Token không hợp lệ hoặc đã hết hạn' });
+    req.user = { ...payload, role: row.role };
+    return next();
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Lỗi máy chủ' });
   }
 }
 

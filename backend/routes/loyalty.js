@@ -6,7 +6,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, staffOnly } = require('../middleware/auth');
-const { TIERS, TIER_MAP, computeTier, userStats, tierInfo, maskName, checkTierUpgrade, SETTLED_SQL } = require('../lib/tiers');
+const { TIERS, TIER_MAP, computeTier, userStats, tierInfo, maskName, checkTierUpgrade, SETTLED_SQL, overrideMap } = require('../lib/tiers');
 
 const router = express.Router();
 
@@ -38,10 +38,9 @@ async function sweepExpired() {
     "UPDATE discount_cards SET status = 'expired' WHERE status = 'unused' AND expires_at < ?"
   ).run(nowStr());
 }
-// Cấu hình thẻ của 1 khách theo hạng hiện tại
+// Cấu hình thẻ của 1 khách theo hạng hiện tại (hạng đặt tay của admin thắng hạng tự tính)
 async function cardConfigFor(userId) {
-  const stats = await userStats(userId);
-  return TIER_MAP[computeTier(stats.order_count, stats.total_spent)];
+  return (await tierInfo(userId)).tier;
 }
 async function insertCard(userId, cfg, period, expires) {
   const ins = db.prepare(
@@ -109,10 +108,11 @@ router.get('/leaderboard', auth, async (req, res) => {
       GROUP BY u.id, u.name
       ORDER BY total_spent DESC, order_count DESC
     `).all();
+    const overrides = await overrideMap();
     const top = rows.slice(0, 10).map((r, i) => ({
       rank: i + 1,
       name: maskName(r.name),
-      tier: computeTier(r.order_count, r.total_spent),
+      tier: overrides.get(r.id) || computeTier(r.order_count, r.total_spent),
       total_spent: r.total_spent,
       is_me: r.id === req.user.id,
     }));
@@ -120,10 +120,10 @@ router.get('/leaderboard', auth, async (req, res) => {
     let me;
     if (myIdx >= 0) {
       const r = rows[myIdx];
-      me = { rank: myIdx + 1, total_spent: r.total_spent, order_count: r.order_count, tier: computeTier(r.order_count, r.total_spent) };
+      me = { rank: myIdx + 1, total_spent: r.total_spent, order_count: r.order_count, tier: overrides.get(r.id) || computeTier(r.order_count, r.total_spent) };
     } else {
       const s = await userStats(req.user.id);
-      me = { rank: null, total_spent: s.total_spent, order_count: s.order_count, tier: computeTier(s.order_count, s.total_spent) };
+      me = { rank: null, total_spent: s.total_spent, order_count: s.order_count, tier: (await tierInfo(req.user.id)).tier.key };
     }
     res.json({ top, me, total_customers: rows.length });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
