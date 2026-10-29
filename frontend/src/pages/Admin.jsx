@@ -891,7 +891,7 @@ function UsersTab() {
         <div className="modal-overlay" onClick={() => setRoleTarget(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <h3>Đổi vai trò</h3>
-            <p style={{ marginBottom: 12 }}>{roleTarget.email}</p>
+            <p style={{ marginBottom: 12 }}>{roleTarget.name} • {roleTarget.email}<br />Vai trò hiện tại: <strong>{roleLabel(roleTarget.role)}</strong></p>
             <div className="field">
               <label>Vai trò mới</label>
               <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
@@ -900,6 +900,11 @@ function UsersTab() {
                 <option value="admin">Quản trị viên</option>
               </select>
             </div>
+            {newRole !== roleTarget.role && (
+              <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 4 }}>
+                {newRole === 'customer' ? 'Người này sẽ mất chức vụ và trở thành khách hàng.' : 'Người này sẽ có quyền của chức vụ mới ngay lập tức.'}
+              </p>
+            )}
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setRoleTarget(null)}>Hủy</button>
               <button className="btn btn-primary" onClick={doChangeRole}>Lưu</button>
@@ -911,10 +916,11 @@ function UsersTab() {
   );
 }
 
-/* ---------- Tab Vai trò khách hàng ---------- */
-// Chỉ liệt kê khách hàng (role = customer): xem thông tin + đổi vai trò.
+/* ---------- Tab Vai trò ---------- */
+// Hai bảng: Người có chức vụ (admin + sale) ở trên, Khách hàng ở dưới.
+// Đổi vai trò = chuyển người qua lại giữa 2 bảng (lên chức vụ hoặc xuống khách hàng).
 // Xem được với cả sale; đổi vai trò chỉ admin (giữ đúng luật của tab Người dùng).
-function CustomerRolesTab() {
+function RolesTab() {
   const { user } = useStore();
   const isAdmin = user?.role === 'admin';
   const [users, setUsers] = useState([]);
@@ -926,10 +932,13 @@ function CustomerRolesTab() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [roleTarget, setRoleTarget] = useState(null);
   const [newRole, setNewRole] = useState('customer');
-  const load = () => api.getUsers().then((d) => { setUsers(d.users.filter((u) => u.role === 'customer')); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách khách hàng'));
+  const load = () => api.getUsers().then((d) => { setUsers(d.users); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
   useEffect(() => { load(); }, []);
   const q = query.trim().toLowerCase();
   const shown = q ? users.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) : users;
+  const staff = shown.filter((u) => u.role === 'admin' || u.role === 'sale')
+    .sort((a, b) => (a.role === b.role ? a.id - b.id : a.role === 'admin' ? -1 : 1));
+  const customers = shown.filter((u) => u.role === 'customer');
   const openDetail = async (u) => {
     setDetailFor(u);
     setDetailData(null);
@@ -952,28 +961,20 @@ function CustomerRolesTab() {
     load();
   };
   const roleLabel = (r) => r === 'admin' ? 'Quản trị' : r === 'sale' ? 'Nhân viên sale' : 'Khách hàng';
-  return (
-    <div>
-      <h3 style={{ marginBottom: 14 }}>Vai trò khách hàng ({users.length})</h3>
-      {loadError && <div className="alert alert-error">{loadError}</div>}
-      <div style={{ marginBottom: 14 }}>
-        <input
-          placeholder="Tìm theo tên hoặc email…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--panel-border)', background: 'var(--panel)', color: 'inherit', width: '100%', maxWidth: 360 }}
-        />
-      </div>
+  const roleBadgeClass = (r) => r === 'admin' ? 'status delivered' : r === 'sale' ? 'status shipping' : 'status pending';
+  const renderSection = (title, list, emptyText) => (
+    <div style={{ marginBottom: 26 }}>
+      <h4 style={{ margin: '0 0 10px', fontSize: '1.02rem' }}>{title} ({list.length})</h4>
       <div style={{ overflowX: 'auto' }}>
       <table className="data-table">
         <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Hạng</th><th>Số đơn</th><th>Tổng chi</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
         <tbody>
-          {shown.map((u) => (
+          {list.map((u) => (
             <tr key={u.id}>
-              <td>{u.id}</td><td>{u.name}</td><td>{u.email}</td><td>{u.phone || '—'}</td>
+              <td>{u.id}</td><td>{u.name}{user && u.id === user.id && <span style={{ color: 'var(--muted)' }}> (Bạn)</span>}</td><td>{u.email}</td><td>{u.phone || '—'}</td>
               <td><TierBadge tier={u.tier} /></td>
               <td>{u.order_count ?? 0}</td><td>{fmtVND(u.total_spent)}</td>
-              <td><span className="status pending">{roleLabel(u.role)}</span></td>
+              <td><span className={roleBadgeClass(u.role)}>{roleLabel(u.role)}</span></td>
               <td>{fmtDate(u.created_at)}</td>
               <td>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -988,13 +989,32 @@ function CustomerRolesTab() {
         </tbody>
       </table>
       </div>
-      {shown.length === 0 && !loadError && (
-        <p style={{ color: 'var(--muted)' }}>Không tìm thấy khách hàng nào.</p>
+      {list.length === 0 && !loadError && (
+        <p style={{ color: 'var(--muted)' }}>{emptyText}</p>
       )}
+    </div>
+  );
+  return (
+    <div>
+      <h3 style={{ marginBottom: 6 }}>Vai trò</h3>
+      <p style={{ color: 'var(--muted)', margin: '0 0 16px', fontSize: '0.92rem' }}>
+        Bảng trên là những người có chức vụ, bảng dưới là khách hàng. Đổi vai trò sẽ chuyển người qua lại giữa 2 bảng.
+      </p>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
+      <div style={{ marginBottom: 14 }}>
+        <input
+          placeholder="Tìm theo tên hoặc email…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--panel-border)', background: 'var(--panel)', color: 'inherit', width: '100%', maxWidth: 360 }}
+        />
+      </div>
+      {renderSection('🛡️ Người có chức vụ', staff, 'Chưa có người có chức vụ nào.')}
+      {renderSection('👥 Khách hàng', customers, 'Chưa có khách hàng nào.')}
       {detailFor && (
         <div className="modal-overlay" onClick={() => setDetailFor(null)}>
           <div className="modal purchase-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
-            <h3>🛍️ Thông tin khách hàng</h3>
+            <h3>👤 Thông tin người dùng</h3>
             {detailLoading ? (
               <p style={{ color: 'var(--muted)' }}>Đang tải…</p>
             ) : detailData ? (
@@ -1022,7 +1042,7 @@ function CustomerRolesTab() {
                 )}
               </>
             ) : (
-              <p style={{ color: 'var(--muted)' }}>Không tải được thông tin khách hàng.</p>
+              <p style={{ color: 'var(--muted)' }}>Không tải được thông tin người dùng.</p>
             )}
           </div>
         </div>
@@ -1031,7 +1051,7 @@ function CustomerRolesTab() {
         <div className="modal-overlay" onClick={() => setRoleTarget(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <h3>Đổi vai trò</h3>
-            <p style={{ marginBottom: 12 }}>{roleTarget.email}</p>
+            <p style={{ marginBottom: 12 }}>{roleTarget.name} • {roleTarget.email}<br />Vai trò hiện tại: <strong>{roleLabel(roleTarget.role)}</strong></p>
             <div className="field">
               <label>Vai trò mới</label>
               <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
@@ -1040,6 +1060,11 @@ function CustomerRolesTab() {
                 <option value="admin">Quản trị viên</option>
               </select>
             </div>
+            {newRole !== roleTarget.role && (
+              <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 4 }}>
+                {newRole === 'customer' ? 'Người này sẽ chuyển xuống bảng Khách hàng.' : 'Người này sẽ chuyển lên bảng Người có chức vụ.'}
+              </p>
+            )}
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setRoleTarget(null)}>Hủy</button>
               <button className="btn btn-primary" onClick={doChangeRole}>Lưu</button>
@@ -1156,7 +1181,7 @@ const NAV = [
   { key: 'reviews', icon: '⭐', label: 'Đánh giá' },
   { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
-  { key: 'customerRoles', icon: '🎭', label: 'Vai trò khách hàng' },
+  { key: 'customerRoles', icon: '🎭', label: 'Vai trò' },
   { key: 'memberTiers', icon: '🏆', label: 'Hạng thành viên' },
   { key: 'posts', icon: '📝', label: 'Bài viết' },
   { key: 'customerChat', icon: '💬', label: 'Chat khách hàng' },
@@ -1531,7 +1556,7 @@ export default function Admin() {
           {tab === 'reviews' && <ReviewsTab />}
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}
-          {tab === 'customerRoles' && <CustomerRolesTab />}
+          {tab === 'customerRoles' && <RolesTab />}
           {tab === 'memberTiers' && <MemberTiersTab />}
           {tab === 'posts' && <PostsTab />}
           {tab === 'customerChat' && <CustomerChatTab />}
