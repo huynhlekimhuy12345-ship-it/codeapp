@@ -73,7 +73,7 @@ h1, h2, h3, .logo, .hero-title {
 /* KHÔNG đặt z-index ở .container: nó sẽ tạo vùng xếp lớp riêng, khiến cửa sổ nổi (.modal-overlay)
    bên trong không bao giờ phủ lên được thanh menu — cửa sổ phải phủ trùm cả menu và làm mờ phía sau. */
 .container { max-width: none; margin: 0 auto; padding: 0 clamp(48px, 3vw, 64px); position: relative; }
-.page { min-height: 70vh; padding: 36px 0 48px; }
+.page { min-height: 70vh; padding-top: 36px; padding-bottom: 48px; }
 /* Tiêu đề trang quản trị: chữ gradient vàng + thanh nhấn bên trái + đường kẻ mờ,
    căn theo khung nội dung, cách viền ngoài một chút */
 .admin-title {
@@ -568,10 +568,14 @@ select option { background-color: #2b1d10; color: #f5e7cf; }
 select option:checked { background-color: #b97a1e; color: #fff; }
 
 /* Hàng nút đôi (Thêm giỏ / Mua ngay): 2 nút luôn bằng nhau */
-.btn-pair { display: flex; gap: 8px; align-items: stretch; }
+.btn-pair { display: flex; gap: 8px; align-items: stretch; margin-top: auto; }
 .btn-pair .btn {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center;
-  white-space: nowrap; text-align: center;
+  flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap; text-align: center; overflow: hidden; text-overflow: ellipsis;
+  padding-left: 8px; padding-right: 8px;
+}
+@media (max-width: 560px) {
+  .btn-pair { flex-direction: column; }
 }
 .cart-select-bar {
   display: flex; align-items: center; gap: 10px; padding: 12px 20px;
@@ -705,7 +709,7 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 .admin-layout { display: flex; gap: 22px; align-items: flex-start; }
 .admin-sidebar {
   width: 224px; flex-shrink: 0; position: sticky; top: 90px;
-  max-height: calc(100vh - 106px); overflow-y: auto; overscroll-behavior: contain;
+  max-height: calc(100vh - 106px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
   background: var(--panel); border: 1px solid var(--panel-border);
   border-radius: 18px; padding: 12px;
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
@@ -755,9 +759,16 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   font-size: 1.05rem; line-height: 1; transition: background 0.18s;
 }
 .sidebar-toggle:hover { background: rgba(232,181,106,.14); }
-.admin-sidebar.collapsed { width: 68px; padding: 12px 10px; }
+.admin-sidebar.collapsed { width: 68px; padding: 12px 10px; scrollbar-width: none; }
+.admin-sidebar.collapsed::-webkit-scrollbar { width: 0; }
 .admin-sidebar.collapsed .sidebar-head { justify-content: center; }
-.admin-sidebar.collapsed nav button { justify-content: center; padding: 10px 6px; }
+.admin-sidebar.collapsed nav button { justify-content: center; padding: 10px 6px; position: relative; }
+/* Thu gọn: ô số đỏ ghim gọn vào góc trên-phải của nút icon (kiểu huy hiệu app),
+   không chen ngang làm nút tràn và sinh thanh cuộn ngang ở đáy rail */
+.admin-sidebar.collapsed .nav-count {
+  position: absolute; top: 3px; right: 3px; margin: 0;
+  min-width: 17px; height: 17px; padding: 0 4px; font-size: 0.64rem;
+}
 .admin-content { flex: 1; min-width: 0; }
 /* Lịch sử trạng thái đơn hàng */
 .order-history { margin-top: 14px; border-top: 1px dashed var(--panel-border); padding-top: 12px; }
