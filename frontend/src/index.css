@@ -74,6 +74,44 @@ h1, h2, h3, .logo, .hero-title {
    bên trong không bao giờ phủ lên được thanh menu — cửa sổ phải phủ trùm cả menu và làm mờ phía sau. */
 .container { max-width: none; margin: 0 auto; padding: 0 clamp(48px, 3vw, 64px); position: relative; }
 .page { min-height: 70vh; padding: 36px 0 48px; }
+/* Tiêu đề trang quản trị: chữ gradient vàng + thanh nhấn bên trái + đường kẻ mờ,
+   căn theo khung nội dung, cách viền ngoài một chút */
+.admin-title {
+  display: flex; align-items: center; gap: 14px;
+  margin: 2px 2px 24px; padding: 4px 2px;
+  font-size: 2rem; font-weight: 800; letter-spacing: 0.4px;
+}
+.admin-title::before {
+  content: ''; width: 6px; height: 36px; border-radius: 3px; flex-shrink: 0;
+  background: linear-gradient(180deg, var(--amber-light), var(--amber));
+  box-shadow: 0 2px 12px rgba(232,181,106,.5);
+}
+.admin-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(232,181,106,.55), rgba(232,181,106,0));
+}
+.admin-title-text {
+  background: linear-gradient(100deg, #fff3d6 5%, var(--amber-light) 48%, var(--amber) 90%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* Ô nhập ảnh kéo-thả + dán link (component ImageField, dùng cho admin/sale) */
+.image-drop {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border: 1.5px dashed rgba(232,181,106,.45); border-radius: 12px; overflow: hidden;
+  background: rgba(0,0,0,.18); cursor: pointer; transition: border-color .18s, background .18s;
+}
+.image-drop:hover { border-color: rgba(232,181,106,.75); }
+.image-drop.drag { border-color: var(--amber); background: rgba(232,181,106,.12); }
+.image-drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.image-drop-hint {
+  position: relative; z-index: 1; margin: 12px; padding: 8px 14px; border-radius: 8px;
+  background: rgba(20,13,7,.62); color: var(--cream); font-size: 0.88rem; text-align: center;
+}
+.image-url-row { display: flex; gap: 8px; margin-top: 8px; }
+.image-url-row input { flex: 1; min-width: 0; }
+.image-note { color: var(--muted); font-size: 0.82rem; margin-top: 6px; }
+.image-err { color: #e5484d; font-size: 0.85rem; margin-top: 6px; }
 .page-title { margin-bottom: 22px; color: var(--cream); font-size: 1.8rem; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
 
 /* --- Kính mờ dùng chung --- */

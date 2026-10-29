@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
+import ImageField from '../components/ImageField';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, fmtDay, ORDER_STATUS, nextStatuses } from '../api';
 import { detectLang, translateToVietnamese } from '../i18n/autoTranslate';
@@ -259,7 +260,7 @@ function ProductsTab() {
               <div className="field"><label>Giá (VND) *</label><input type="number" min="0" value={form.price} onChange={(e) => set('price', e.target.value)} /></div>
               <div className="field"><label>Tồn kho</label><input type="number" min="0" value={form.stock} onChange={(e) => set('stock', e.target.value)} /></div>
             </div>
-            <div className="field"><label>URL ảnh</label><input value={form.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://..." /></div>
+            <ImageField label="Ảnh sản phẩm" value={form.image_url} onChange={(v) => set('image_url', v)} />
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Hủy</button>
               <button className="btn btn-primary" onClick={save}>Lưu</button>
@@ -1261,8 +1262,7 @@ function PostsTab() {
             <h3>{editing ? 'Sửa bài viết' : 'Viết bài mới'}</h3>
             <div className="field"><label>Tiêu đề *</label>
               <input value={form.title} onChange={set('title')} placeholder="Tiêu đề bài viết" /></div>
-            <div className="field"><label>Ảnh bìa (URL)</label>
-              <input value={form.cover_image_url} onChange={set('cover_image_url')} placeholder="https://..." /></div>
+            <ImageField label="Ảnh bìa" value={form.cover_image_url} onChange={(v) => setForm((f) => ({ ...f, cover_image_url: v }))} />
             <div className="field"><label>Tóm tắt</label>
               <textarea value={form.excerpt} onChange={set('excerpt')} rows={2} placeholder="Đoạn tóm tắt hiển thị ở danh sách" /></div>
             <div className="field"><label>Nội dung (mỗi đoạn cách nhau bằng một dòng trống)</label>
@@ -1506,7 +1506,7 @@ export default function Admin() {
   const visibleNav = NAV.filter((n) => n.key !== 'hunt' || user?.role === 'admin');
   return (
     <div className="container page">
-      <h1 className="page-title">Bảng quản trị</h1>
+      <h1 className="admin-title"><span className="admin-title-text">Bảng quản trị</span></h1>
       <div className="admin-layout">
         <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
           <div className="sidebar-head">
