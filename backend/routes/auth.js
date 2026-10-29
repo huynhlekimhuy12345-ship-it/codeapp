@@ -81,11 +81,14 @@ router.post('/register', registerRateLimit, async (req, res) => {
       return res.status(400).json({ error: 'Vui lòng nhập đầy đủ họ tên, email, mật khẩu' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))
       return res.status(400).json({ error: 'Email không đúng định dạng' });
-    if (password.length < 8)
-      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 8 ký tự' });
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(String(password)))
+      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số' });
 
     const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
     if (exists) return res.status(400).json({ error: 'Email đã được đăng ký' });
+
+    const nameTaken = await db.prepare('SELECT id FROM users WHERE LOWER(name) = LOWER(?)').get(name.trim());
+    if (nameTaken) return res.status(400).json({ error: 'Tên tài khoản này đã tồn tại' });
 
     const hash = bcrypt.hashSync(password, 10);
     const info = await db.prepare(

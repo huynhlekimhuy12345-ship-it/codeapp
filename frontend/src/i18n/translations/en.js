@@ -193,7 +193,7 @@ export default {
     register: 'Sign up',
     registerTitle: 'Create an account',
     password: 'Password',
-    passwordMin: 'Password (at least 6 characters)',
+    passwordMin: 'Password (at least 8 characters, with uppercase, lowercase and a number)',
     fullName: 'Full name',
     noAccount: "Don't have an account?",
     registerNow: 'Sign up now',

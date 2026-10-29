@@ -909,6 +909,146 @@ function UsersTab() {
   );
 }
 
+/* ---------- Tab Vai trò khách hàng ---------- */
+// Chỉ liệt kê khách hàng (role = customer): xem thông tin + đổi vai trò.
+// Xem được với cả sale; đổi vai trò chỉ admin (giữ đúng luật của tab Người dùng).
+function CustomerRolesTab() {
+  const { user } = useStore();
+  const isAdmin = user?.role === 'admin';
+  const [users, setUsers] = useState([]);
+  const [loadError, setLoadError] = useState('');
+  const [query, setQuery] = useState('');
+  const [detailFor, setDetailFor] = useState(null);
+  const [detailData, setDetailData] = useState(null);
+  const [detailCards, setDetailCards] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [roleTarget, setRoleTarget] = useState(null);
+  const [newRole, setNewRole] = useState('customer');
+  const load = () => api.getUsers().then((d) => { setUsers(d.users.filter((u) => u.role === 'customer')); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách khách hàng'));
+  useEffect(() => { load(); }, []);
+  const q = query.trim().toLowerCase();
+  const shown = q ? users.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) : users;
+  const openDetail = async (u) => {
+    setDetailFor(u);
+    setDetailData(null);
+    setDetailCards([]);
+    setDetailLoading(true);
+    try {
+      const d = await api.getUserPurchases(u.id);
+      setDetailData(d);
+    } catch (e) { /* detailData giữ null → modal hiện thông báo không tải được */ }
+    try {
+      const cd = await api.getUserCards(u.id);
+      setDetailCards(cd.cards || []);
+    } catch (e) { /* không có thẻ thì bỏ qua */ }
+    setDetailLoading(false);
+  };
+  const openRoleChange = (u) => { setRoleTarget(u); setNewRole(u.role); };
+  const doChangeRole = async () => {
+    try { await api.updateUserRole(roleTarget.id, newRole); } catch (e) { alert(e.message); }
+    setRoleTarget(null);
+    load();
+  };
+  const roleLabel = (r) => r === 'admin' ? 'Quản trị' : r === 'sale' ? 'Nhân viên sale' : 'Khách hàng';
+  return (
+    <div>
+      <h3 style={{ marginBottom: 14 }}>Vai trò khách hàng ({users.length})</h3>
+      {loadError && <div className="alert alert-error">{loadError}</div>}
+      <div style={{ marginBottom: 14 }}>
+        <input
+          placeholder="Tìm theo tên hoặc email…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--panel-border)', background: 'var(--panel)', color: 'inherit', width: '100%', maxWidth: 360 }}
+        />
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+      <table className="data-table">
+        <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Hạng</th><th>Số đơn</th><th>Tổng chi</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+        <tbody>
+          {shown.map((u) => (
+            <tr key={u.id}>
+              <td>{u.id}</td><td>{u.name}</td><td>{u.email}</td><td>{u.phone || '—'}</td>
+              <td><TierBadge tier={u.tier} /></td>
+              <td>{u.order_count ?? 0}</td><td>{fmtVND(u.total_spent)}</td>
+              <td><span className="status pending">{roleLabel(u.role)}</span></td>
+              <td>{fmtDate(u.created_at)}</td>
+              <td>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="btn btn-small btn-outline" onClick={() => openDetail(u)}>📦 Xem info</button>
+                  {isAdmin && (
+                    <button className="btn btn-small btn-outline" onClick={() => openRoleChange(u)} disabled={user && u.id === user.id} title={user && u.id === user.id ? 'Không thể đổi vai trò của chính mình' : ''}>Đổi vai trò</button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      </div>
+      {shown.length === 0 && !loadError && (
+        <p style={{ color: 'var(--muted)' }}>Không tìm thấy khách hàng nào.</p>
+      )}
+      {detailFor && (
+        <div className="modal-overlay" onClick={() => setDetailFor(null)}>
+          <div className="modal purchase-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
+            <h3>🛍️ Thông tin khách hàng</h3>
+            {detailLoading ? (
+              <p style={{ color: 'var(--muted)' }}>Đang tải…</p>
+            ) : detailData ? (
+              <>
+                <p className="purchase-customer">
+                  <strong>{detailData.customer.name}</strong> • {detailData.customer.email}
+                  {detailData.customer.phone ? ` • ${detailData.customer.phone}` : ''}
+                  {detailData.tier && <> • <TierBadge tier={detailData.tier} /></>}
+                </p>
+                <div className="purchase-summary">
+                  <span>🧾 {detailData.summary.order_count} đơn đã thanh toán</span>
+                  <span>💰 Tổng chi: <strong>{fmtVND(detailData.summary.total_spent)}</strong></span>
+                  {detailData.summary.last_order_at && <span>🕐 Mua gần nhất: {fmtDate(detailData.summary.last_order_at)}</span>}
+                </div>
+                {detailCards.length > 0 && (
+                  <>
+                    <div className="purchase-subtitle">🎟️ Thẻ discount ({detailCards.length})</div>
+                    {detailCards.map((c) => (
+                      <div key={c.id} className="purchase-row">
+                        <span><code>{c.code}</code> • giảm {c.percent}% • Kỳ {c.period}</span>
+                        <span>{CARD_STATUS_VI[c.status] || c.status} • HSD {fmtDay(c.expires_at)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            ) : (
+              <p style={{ color: 'var(--muted)' }}>Không tải được thông tin khách hàng.</p>
+            )}
+          </div>
+        </div>
+      )}
+      {roleTarget && (
+        <div className="modal-overlay" onClick={() => setRoleTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <h3>Đổi vai trò</h3>
+            <p style={{ marginBottom: 12 }}>{roleTarget.email}</p>
+            <div className="field">
+              <label>Vai trò mới</label>
+              <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
+                <option value="customer">Khách hàng</option>
+                <option value="sale">Nhân viên sale</option>
+                <option value="admin">Quản trị viên</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setRoleTarget(null)}>Hủy</button>
+              <button className="btn btn-primary" onClick={doChangeRole}>Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const NAV = [
   { key: 'products', icon: '🛍️', label: 'Sản phẩm' },
   { key: 'categories', icon: '📂', label: 'Danh mục' },
@@ -924,6 +1064,7 @@ const NAV = [
   { key: 'reviews', icon: '⭐', label: 'Đánh giá' },
   { key: 'reports', icon: '📊', label: 'Thống kê' },
   { key: 'users', icon: '👥', label: 'Người dùng' },
+  { key: 'customerRoles', icon: '🎭', label: 'Vai trò khách hàng' },
   { key: 'posts', icon: '📝', label: 'Bài viết' },
   { key: 'customerChat', icon: '💬', label: 'Chat khách hàng' },
   { key: 'internalChat', icon: '🏢', label: 'Tin nhắn nội bộ' },
@@ -1246,12 +1387,12 @@ export default function Admin() {
   // NGOẠI LỆ: tab "Săn thẻ" chỉ Admin — quyền phát hành sự kiện săn thẻ chỉ thuộc Admin.
   const visibleNav = NAV.filter((n) => n.key !== 'hunt' || user?.role === 'admin');
   return (
-    <div className="container page">
+    <div className="container page admin-wide">
       <h1 className="page-title">Bảng quản trị</h1>
       <div className="admin-layout">
         <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
-          <button className="sidebar-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Thu gọn menu">
-            {collapsed ? '☰' : '✕'}
+          <button className="sidebar-toggle" onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? 'Mở menu' : 'Thu gọn menu'} title={collapsed ? 'Mở menu' : 'Thu gọn menu'}>
+            {collapsed ? '»' : '«'}
           </button>
           <nav>
             {visibleNav.map((n) => (
@@ -1294,6 +1435,7 @@ export default function Admin() {
           {tab === 'reviews' && <ReviewsTab />}
           {tab === 'reports' && <ReportsTab />}
           {tab === 'users' && <UsersTab />}
+          {tab === 'customerRoles' && <CustomerRolesTab />}
           {tab === 'posts' && <PostsTab />}
           {tab === 'customerChat' && <CustomerChatTab />}
           {tab === 'internalChat' && <InternalChatTab />}

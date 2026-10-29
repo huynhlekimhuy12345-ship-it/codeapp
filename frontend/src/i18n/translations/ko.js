@@ -193,7 +193,7 @@ export default {
     register: '회원가입',
     registerTitle: '회원가입',
     password: '비밀번호',
-    passwordMin: '비밀번호 (최소 6자)',
+    passwordMin: '비밀번호 (최소 8자, 대문자, 소문자, 숫자 포함)',
     fullName: '이름',
     noAccount: '계정이 없으신가요?',
     registerNow: '지금 가입하기',

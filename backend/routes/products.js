@@ -121,6 +121,8 @@ router.post('/', auth, staffOnly, async (req, res) => {
   const stockNum = parseInt(stock) || 0;
   if (priceNum < 0 || stockNum < 0)
     return res.status(400).json({ error: 'Giá và tồn kho không được âm' });
+  const dup = await db.prepare('SELECT id FROM products WHERE LOWER(name) = LOWER(?)').get(String(name).trim());
+  if (dup) return res.status(409).json({ error: 'Tên sản phẩm đã tồn tại' });
   const info = await db.prepare(
     `INSERT INTO products (category_id, name, description, price, stock, image_url, name_norm)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -159,6 +161,8 @@ router.put('/:id', auth, staffOnly, async (req, res) => {
   const stockNum = parseInt(stock) || 0;
   if (priceNum < 0 || stockNum < 0)
     return res.status(400).json({ error: 'Giá và tồn kho không được âm' });
+  const dup = await db.prepare('SELECT id FROM products WHERE LOWER(name) = LOWER(?) AND id != ?').get(String(name).trim(), req.params.id);
+  if (dup) return res.status(409).json({ error: 'Tên sản phẩm đã tồn tại' });
   const info = await db.prepare(
     `UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, image_url = ?,
      name_norm = ? WHERE id = ?`

@@ -193,7 +193,7 @@ export default {
     register: 'Đăng ký',
     registerTitle: 'Đăng ký tài khoản',
     password: 'Mật khẩu',
-    passwordMin: 'Mật khẩu (ít nhất 6 ký tự)',
+    passwordMin: 'Mật khẩu (ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số)',
     fullName: 'Họ tên',
     noAccount: 'Chưa có tài khoản?',
     registerNow: 'Đăng ký ngay',

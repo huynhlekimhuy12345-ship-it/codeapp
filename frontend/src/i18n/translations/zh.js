@@ -193,7 +193,7 @@ export default {
     register: '注册',
     registerTitle: '注册账号',
     password: '登录密码',
-    passwordMin: '密码（至少6位）',
+    passwordMin: '密码（至少8位，含大写字母、小写字母和数字）',
     fullName: '姓名',
     noAccount: '还没有账号？',
     registerNow: '立即注册',

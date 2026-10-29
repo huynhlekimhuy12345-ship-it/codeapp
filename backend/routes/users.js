@@ -23,6 +23,8 @@ router.put('/me', auth, async (req, res) => {
     const { name, phone } = req.body || {};
     if (!name || !String(name).trim())
       return res.status(400).json({ error: 'Tên không được để trống' });
+    const nameTaken = await db.prepare('SELECT id FROM users WHERE LOWER(name) = LOWER(?) AND id != ?').get(String(name).trim(), req.user.id);
+    if (nameTaken) return res.status(400).json({ error: 'Tên tài khoản này đã tồn tại' });
     await db.prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?').run(
       String(name).trim(), String(phone || '').trim(), req.user.id
     );

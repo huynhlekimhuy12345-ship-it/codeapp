@@ -39,8 +39,8 @@ export default function Register() {
           <input id="register-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div className="field">
-          <label htmlFor="register-mat-khau-it-nhat-6-ky-tu">{t('auth.passwordMin')}</label>
-          <input id="register-mat-khau-it-nhat-6-ky-tu" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+          <label htmlFor="register-mat-khau">{t('auth.passwordMin')}</label>
+          <input id="register-mat-khau" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
         </div>
         <button className="btn btn-primary" style={{ width: '100%' }}>{t('auth.register')}</button>
         <div className="form-link">{t('auth.hasAccount')} <Link to="/dang-nhap">{t('nav.login')}</Link></div>
