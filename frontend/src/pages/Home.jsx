@@ -175,6 +175,14 @@ function catIcon(rawName) {
   return '🛍️';
 }
 
+/** Ảnh bìa cho cửa sổ quy trình của 4 thẻ lý do (đã kiểm chứng nội dung ảnh). */
+const REASON_IMAGES = [
+  '/images/process/da-that.jpg',
+  '/images/process/khau-tay.jpg',
+  '/images/bag-hero-cut.png',
+  '/images/process/cod.jpg',
+];
+
 /** Thẻ danh mục nổi bật: icon riêng + tên + mô tả (từ DB, dịch theo ngôn ngữ). */
 function CategoryCard({ c }) {
   const name = useTranslatedText(c.name);
@@ -272,15 +280,20 @@ export default function Home() {
       {activeReason !== null && (() => {
         const all = t('home.reasonSteps');
         const steps = Array.isArray(all) ? (all[activeReason] || []) : [];
+        const caps = t('home.reasonCaptions');
+        const caption = Array.isArray(caps) ? (caps[activeReason] || '') : '';
         const r = reasons[activeReason];
         return (
           <div className="modal-overlay" onClick={() => setActiveReason(null)}>
-            <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-head">
-                <h3>{r.icon} {r.title}</h3>
+            <div className="modal modal-lg reason-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              <div className="reason-modal-top">
+                <span className="reason-tag">{t('home.processTag')}</span>
                 <button className="modal-close" onClick={() => setActiveReason(null)} aria-label="Đóng">✕</button>
               </div>
+              <h3 className="reason-modal-title">{r.icon} {r.title}</h3>
               <p className="process-intro">{r.desc}</p>
+              <img className="reason-cover" src={REASON_IMAGES[activeReason]} alt={r.title} loading="lazy" />
+              {caption && <p className="reason-caption">{caption}</p>}
               <div className="process-steps">
                 {steps.map((s, i) => (
                   <div className="process-step" key={i}>

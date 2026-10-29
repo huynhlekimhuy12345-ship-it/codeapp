@@ -89,6 +89,13 @@ export default {
     reason4t: 'COD toàn quốc',
     reason4d: 'Thanh toán khi nhận hàng, kiểm tra trước',
     viewProcess: 'Xem quy trình',
+    processTag: 'Quy trình',
+    reasonCaptions: [
+      'Tấm da bò thật tại xưởng BI99',
+      'Chiếc túi khâu tay hoàn thiện tại xưởng Hội An',
+      'Sản phẩm được sửa chữa, đánh bóng tại xưởng',
+      'Giao tận nơi — kiểm tra hàng trước khi thanh toán',
+    ],
     reasonSteps: [
       [
         { t: 'Chọn lọc từng tấm da', d: 'Da bò thật 100% thuộc thảo mộc; mỗi tấm được kiểm tra vân da và độ dày trước khi nhập xưởng.' },

@@ -89,6 +89,13 @@ export default {
     reason4t: 'Nationwide COD',
     reason4d: 'Pay on delivery, inspect first',
     viewProcess: 'View process',
+    processTag: 'Process',
+    reasonCaptions: [
+      'A genuine cowhide hide at the BI99 workshop',
+      'A hand-stitched bag finished at our Hoi An workshop',
+      'Products are repaired and polished at the workshop',
+      'Delivered to your door — inspect before you pay',
+    ],
     reasonSteps: [
       [
         { t: 'Every hide hand-picked', d: '100% genuine vegetable-tanned cowhide; grain and thickness are checked before a hide enters the workshop.' },

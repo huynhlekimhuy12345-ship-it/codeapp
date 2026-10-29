@@ -89,6 +89,13 @@ export default {
     reason4t: '全国货到付款',
     reason4d: '收货时付款，可先验货',
     viewProcess: '查看流程',
+    processTag: '流程',
+    reasonCaptions: [
+      'BI99工坊的真牛皮皮料',
+      '在会安工坊完成的手工缝制包',
+      '产品在工坊维修与抛光',
+      '送货上门——先验货再付款',
+    ],
     reasonSteps: [
       [
         { t: '逐张精选皮料', d: '100%植鞣真牛皮，每张皮在入坊前都检查纹理与厚度。' },
