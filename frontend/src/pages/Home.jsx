@@ -161,14 +161,29 @@ function HomeNewsCard({ a }) {
   );
 }
 
-/** Thẻ danh mục nổi bật: tên + mô tả danh mục từ DB dịch theo ngôn ngữ. */
+/** Icon riêng cho từng loại danh mục (khớp theo tên tiếng Việt trong DB)
+ * để khách nhìn icon là nhận ra ngay, thay vì mọi thẻ đều một icon túi. */
+function catIcon(rawName) {
+  const n = (rawName || '').toLowerCase();
+  if (n.includes('áo') || n.includes('ao khoac')) return '🧥';
+  if (n.includes('giày') || n.includes('giay') || n.includes('dép')) return '👞';
+  if (n.includes('thắt lưng') || n.includes('that lung') || n.includes('dây nịt')) return '👖';
+  if (n.includes('balo')) return '🎒';
+  if (n.includes('túi') || n.includes('tui') || n.includes('cặp')) return '👜';
+  if (n.includes('ví') || n.startsWith('vi ')) return '👛';
+  if (n.includes('phụ kiện') || n.includes('phu kien') || n.includes('đồng hồ')) return '⌚';
+  return '🛍️';
+}
+
+/** Thẻ danh mục nổi bật: icon riêng + tên + mô tả (từ DB, dịch theo ngôn ngữ). */
 function CategoryCard({ c }) {
   const name = useTranslatedText(c.name);
   const desc = useTranslatedText(c.description || '');
   return (
     <Link to={`/cua-hang?category=${c.id}`} className="cat-card">
-      👜 {name}
-      <small>{desc.slice(0, 40)}</small>
+      <span className="cat-icon">{catIcon(c.name)}</span>
+      <span className="cat-name">{name}</span>
+      <small>{desc}</small>
     </Link>
   );
 }
