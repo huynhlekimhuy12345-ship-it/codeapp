@@ -653,25 +653,32 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 /* --- Quản trị: sidebar dọc + nội dung (sáng, gọn, ưu tiên thao tác) --- */
 .admin-layout { display: flex; gap: 22px; align-items: flex-start; }
 .admin-sidebar {
-  width: 216px; flex-shrink: 0; position: sticky; top: 90px;
+  width: 224px; flex-shrink: 0; position: sticky; top: 90px;
+  max-height: calc(100vh - 106px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--panel); border: 1px solid var(--panel-border);
-  border-radius: var(--radius); padding: 16px;
+  border-radius: 18px; padding: 12px;
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
+  scrollbar-width: thin; scrollbar-color: rgba(232,181,106,.28) transparent;
 }
-.admin-sidebar nav { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.admin-sidebar::-webkit-scrollbar { width: 5px; }
+.admin-sidebar::-webkit-scrollbar-thumb { background: rgba(232,181,106,.28); border-radius: 99px; }
+.admin-sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 10px; }
+.sidebar-caption { font-size: 0.68rem; font-weight: 700; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.admin-sidebar nav { display: flex; flex-direction: column; gap: 4px; }
 .admin-sidebar nav button {
-  display: flex; align-items: center; gap: 14px; width: 100%;
-  border: 1.5px solid transparent; background: transparent; border-radius: 12px;
-  padding: 13px 16px; cursor: pointer; font-weight: 600; color: var(--text); font-family: inherit;
-  font-size: 0.95rem; text-align: left; transition: background 0.18s, transform 0.18s;
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  border: 1.5px solid transparent; background: transparent; border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; font-weight: 600; color: var(--text); font-family: inherit;
+  font-size: 0.92rem; text-align: left; transition: background 0.18s, color 0.18s;
 }
-.admin-sidebar nav button:hover { background: rgba(232,181,106,.08); }
+.admin-sidebar nav button:hover { background: rgba(232,181,106,.07); }
 .admin-sidebar nav button.active {
   background: linear-gradient(135deg, var(--amber-light), var(--amber)); color: #231408;
   box-shadow: 0 4px 14px rgba(232,181,106,.25);
 }
-.admin-sidebar .nav-icon { font-size: 1.25rem; width: 28px; text-align: center; flex-shrink: 0; }
+.admin-sidebar .nav-icon { font-size: 1.18rem; width: 26px; text-align: center; flex-shrink: 0; }
 .admin-sidebar .nav-label { flex: 1; }
 /* Nhãn badge trên menu sidebar (VD: MỚI) */
 .nav-badge {
@@ -690,11 +697,16 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   box-shadow: 0 2px 8px rgba(212,58,38,.5);
 }
 .sidebar-toggle {
-  width: 100%; border: 1px solid var(--panel-border); background: rgba(0,0,0,.18);
-  color: var(--muted); border-radius: 8px; padding: 6px; cursor: pointer; font-size: 1rem;
+  width: 30px; height: 30px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--panel-border); background: rgba(232,181,106,.06);
+  color: var(--amber-light); border-radius: 9px; padding: 0; cursor: pointer;
+  font-size: 1.05rem; line-height: 1; transition: background 0.18s;
 }
-.admin-sidebar.collapsed { width: 64px; }
-.admin-sidebar.collapsed nav button { justify-content: center; padding: 11px 6px; }
+.sidebar-toggle:hover { background: rgba(232,181,106,.14); }
+.admin-sidebar.collapsed { width: 68px; padding: 12px 10px; }
+.admin-sidebar.collapsed .sidebar-head { justify-content: center; }
+.admin-sidebar.collapsed nav button { justify-content: center; padding: 10px 6px; }
 .admin-content { flex: 1; min-width: 0; }
 /* Lịch sử trạng thái đơn hàng */
 .order-history { margin-top: 14px; border-top: 1px dashed var(--panel-border); padding-top: 12px; }
@@ -840,10 +852,10 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   .filters select, .filters input { max-width: 100%; }
   .filters select { max-width: calc(100vw - 96px); }
   .admin-content .tip-star::after { left: auto; right: -6px; transform: none; max-width: 200px; }
-  .admin-sidebar { width: 100%; position: static; }
+  .admin-sidebar { width: 100%; position: static; max-height: none; overflow: visible; }
   .admin-sidebar nav { flex-direction: row; flex-wrap: wrap; margin-top: 10px; }
   .admin-sidebar nav button { width: auto; flex: 1 1 45%; }
-  .admin-sidebar .sidebar-toggle { display: none; }
+  .admin-sidebar .sidebar-head { display: none; }
 }
 
 /* --- Trang Giới thiệu / Blog / Liên hệ (port từ web artifact BI99) --- */

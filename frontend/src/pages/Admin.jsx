@@ -1484,9 +1484,12 @@ export default function Admin() {
       <h1 className="page-title">Bảng quản trị</h1>
       <div className="admin-layout">
         <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
-          <button className="sidebar-toggle" onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? 'Mở menu' : 'Thu gọn menu'} title={collapsed ? 'Mở menu' : 'Thu gọn menu'}>
-            {collapsed ? '»' : '«'}
-          </button>
+          <div className="sidebar-head">
+            {!collapsed && <span className="sidebar-caption">Menu quản trị</span>}
+            <button className="sidebar-toggle" onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? 'Mở menu' : 'Thu gọn menu'} title={collapsed ? 'Mở menu' : 'Thu gọn menu'}>
+              {collapsed ? '»' : '«'}
+            </button>
+          </div>
           <nav>
             {visibleNav.map((n) => (
               <button
