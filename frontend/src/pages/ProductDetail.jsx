@@ -137,18 +137,6 @@ export default function ProductDetail() {
   if (product === null) return <div className="container page"><div className="empty">{t('common.loading')}</div></div>;
   if (product === false) return <div className="container page"><div className="empty">{t('productDetail.notFound')} <Link to="/cua-hang" className="btn">{t('productDetail.backToShop')}</Link></div></div>;
 
-  // Loại sản phẩm (đoán từ tên + danh mục) — chọn bộ nội dung mô tả phù hợp ở cột phải
-  const specKind = (() => {
-    const h = `${product.name || ''} ${product.category_name || ''}`.toLowerCase();
-    if (h.includes('đồng hồ')) return 'watch';
-    if (h.includes('thắt lưng') || h.includes('dây lưng')) return 'belt';
-    if (h.includes('giày') || h.includes('dép')) return 'shoes';
-    if (h.includes('ví')) return 'wallet';
-    if (h.includes('túi') || h.includes('cặp')) return 'bag';
-    if (h.includes('phụ kiện')) return 'accessory';
-    return 'generic';
-  })();
-
   return (
     <div className="container page">
       <PageTitle title={t('productDetail.title')} />
@@ -187,16 +175,10 @@ export default function ProductDetail() {
             {catName}
           </span>
           <h1>{name}</h1>
-          {onSale ? (
-            <div className="price"><s className="old-price">{fmtVND(product.price)}</s> <span className="sale-price">{fmtVND(basePrice)}</span> <span className="card-badge" style={{ position: 'static' }}>-{product.discount_percent}%</span></div>
-          ) : (
-            <div className="price">{fmtVND(unitPrice)}</div>
-          )}
-          {hasVariants && selectedVariant && selectedVariant.price_delta !== 0 && (
-            <div style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
-              {t('productDetail.basePrice')} {fmtVND(product.price)}
-              {selectedVariant.price_delta > 0 ? ` + ${fmtVND(selectedVariant.price_delta)}` : ` − ${fmtVND(-selectedVariant.price_delta)}`}
-              {' '}({selectedVariant.sku})
+          {/* Mô tả riêng của sản phẩm — chữ lớn, truyền cảm xúc, là tâm điểm của cột phải */}
+          {desc && (
+            <div className="detail-desc-wrap">
+              <p className="detail-desc">{desc}</p>
             </div>
           )}
           {hasVariants && (
@@ -247,6 +229,20 @@ export default function ProductDetail() {
           <div style={{ color: maxStock > 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
             {maxStock > 0 ? t('productDetail.stockLeft', { count: maxStock }) : t('productCard.outOfStock')}
           </div>
+          {/* Khối mua hàng nằm DƯỚI CÙNG cột: giá + số lượng + nút thanh toán */}
+          <div className="detail-buy">
+          {onSale ? (
+            <div className="price"><s className="old-price">{fmtVND(product.price)}</s> <span className="sale-price">{fmtVND(basePrice)}</span> <span className="card-badge" style={{ position: 'static' }}>-{product.discount_percent}%</span></div>
+          ) : (
+            <div className="price">{fmtVND(unitPrice)}</div>
+          )}
+          {hasVariants && selectedVariant && selectedVariant.price_delta !== 0 && (
+            <div style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
+              {t('productDetail.basePrice')} {fmtVND(product.price)}
+              {selectedVariant.price_delta > 0 ? ` + ${fmtVND(selectedVariant.price_delta)}` : ` − ${fmtVND(-selectedVariant.price_delta)}`}
+              {' '}({selectedVariant.sku})
+            </div>
+          )}
           <div className="qty-row">
             <button onClick={() => setQty((q) => Math.max(1, q - 1))}>−</button>
             <span>{qty}</span>
@@ -268,29 +264,6 @@ export default function ProductDetail() {
               {t('common.buyNow')}
             </button>
           </div>
-
-          {/* Mô tả sản phẩm — nằm ngay trong cột phải dưới nút mua (không còn mục riêng phía dưới) */}
-          <div className="desc-block">
-            <h2 className="desc-title">📝 {t('productDetail.descTitle')}</h2>
-            {desc && <p className="desc-text">{desc}</p>}
-            <div className="spec-rows">
-              {[
-                ['🐄', 'materialT', t('productDetail.spec.material.' + specKind)],
-                ['📍', 'madeT', t('productDetail.spec.made')],
-                ['🧭', 'useT', t('productDetail.spec.use.' + specKind)],
-                ['🛡️', 'careT', t('productDetail.spec.care')],
-                ['✨', 'beautyT', t('productDetail.spec.beauty.' + specKind)],
-              ].map(([icon, tk, text]) => (
-                <div key={tk} className="spec-rowc">
-                  <span className="spec-icon" aria-hidden>{icon}</span>
-                  <div>
-                    <strong>{t('productDetail.spec.' + tk)}</strong>
-                    <span>{text}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Link to="/gioi-thieu" className="spec-link">{t('productDetail.spec.processLink')} ›</Link>
           </div>
         </div>
       </div>

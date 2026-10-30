@@ -631,6 +631,21 @@ h1, h2, h3, .logo, .hero-title {
 .spec-rowc:last-child { border-bottom: 0; }
 .spec-rowc strong { display: block; color: var(--cream); font-size: 0.92rem; margin-bottom: 2px; }
 .spec-rowc div > span { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+
+/* Mô tả sản phẩm truyền cảm xúc: chữ serif lớn, dấu trích dẫn trang trí */
+.detail-desc-wrap { position: relative; margin: 22px 0 10px; padding-left: 30px; }
+.detail-desc-wrap::before {
+  content: '“'; position: absolute; left: -2px; top: -22px;
+  font-family: 'Playfair Display', serif; font-size: 3.6rem; line-height: 1;
+  color: var(--amber); opacity: 0.5;
+}
+.detail-desc {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 1.14rem; line-height: 1.9; color: #ecdfc4; white-space: pre-line; margin: 0;
+}
+/* Khối giá + thanh toán ghim dưới cùng cột phải, thẳng hàng đáy ảnh */
+.detail-buy { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--panel-border); }
+.detail-buy .price { margin-top: 2px; }
 .detail .price { font-size: 1.8rem; font-weight: 800; color: var(--amber-light); margin: 18px 0; }
 .detail .desc { color: #d9c9ac; margin-bottom: 22px; }
 .qty-row { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
