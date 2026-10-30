@@ -1,100 +1,113 @@
 /* Ô chọn ngày giờ — đồng bộ theme nâu tối */
 .dt-field { position: relative; }
+/* Wrapper của react-datepicker mặc định inline-block theo bề ngang nội dung:
+   ô nhập không giãn hết cột và icon lịch (neo theo .dt-field) bị trôi xa khỏi
+   mép phải của ô. Ép wrapper giãn 100% cột thì ô và icon mới khít nhau. */
+.dt-field .react-datepicker-wrapper,
+.dt-field .react-datepicker__input-container { display: block; width: 100%; }
 .dt-field .dt-input {
-  width: 100%; padding: 11px 40px 11px 13px; border: 1.5px solid rgba(232,181,106,.22);
+  width: 100%; box-sizing: border-box; padding: 11px 40px 11px 13px; border: 1.5px solid rgba(232,181,106,.22);
   border-radius: 9px; font-size: 0.95rem; font-family: inherit;
   background: rgba(12, 8, 5, 0.6); color: var(--text); cursor: pointer;
 }
 .dt-field .dt-input:focus { outline: none; border-color: var(--amber); }
 .dt-icon {
   position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  font-size: 1.05rem; pointer-events: none; opacity: 0.8;
+  font-size: 1.05rem; pointer-events: none; opacity: 0.8; z-index: 2;
 }
+/* Nút xóa (×) khi đã có giá trị: đẩy sang trái icon lịch để không đè nhau */
+.dt-field .react-datepicker__close-icon { right: 34px; }
+.dt-field .react-datepicker__close-icon::after { background: rgba(232,181,106,.35); color: #231408; }
 
-/* Popup lịch react-datepicker — theme tối.
-   Bố cục flex: cột giờ nằm NGANG HÀNG phía trên cùng lịch (bản gốc dùng float,
-   khi tổng bề ngang vượt popup thì cột giờ bị rớt xuống dưới, trông rất xấu). */
+/* ===== Popup lịch — làm lại cho gọn đẹp (user chê bản cũ 2026-10-30) =====
+   - Bỏ dòng chữ tháng/năm bị trùng với 2 ô chọn tháng/năm; 2 ô chọn nằm trên
+     MỘT hàng ở giữa đầu lịch.
+   - Ô ngày đều nhau, hôm nay có vòng viền, ngày đang chọn tô hổ phách.
+   - Cột giờ mảnh, thanh cuộn mỏng màu hổ phách, không còn thanh cuộn xám mặc định. */
 .dt-calendar {
   background: #2b1d10 !important;
   border: 1px solid rgba(232, 181, 106, 0.35) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6) !important;
   font-family: inherit !important;
   color: var(--cream) !important;
   display: flex !important;
   align-items: stretch;
+  padding: 8px;
 }
-.dt-calendar .react-datepicker__month-container {
-  float: none !important;
+.dt-calendar .react-datepicker__month-container { float: none !important; }
+.dt-calendar .react-datepicker__header {
+  background: transparent !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  padding: 4px 2px 0 !important;
+  display: flex; flex-direction: column;
 }
+.dt-calendar .react-datepicker__current-month { display: none !important; }
+.dt-calendar .react-datepicker__header__dropdown {
+  display: flex; justify-content: center; gap: 6px; margin: 2px 0;
+}
+.dt-calendar .react-datepicker__month-dropdown-container,
+.dt-calendar .react-datepicker__year-dropdown-container { margin: 0 !important; }
+.dt-calendar select {
+  background: #221910; color: var(--cream);
+  border: 1px solid rgba(232, 181, 106, 0.35); border-radius: 8px;
+  padding: 5px 8px; font-size: 0.9rem; font-family: inherit; cursor: pointer;
+}
+.dt-calendar .react-datepicker__day-names {
+  display: flex; justify-content: center; margin: 6px 0 0 !important;
+}
+.dt-calendar .react-datepicker__day-name {
+  color: #f2c57c !important; width: 2rem; line-height: 1.5rem; margin: 0.1rem;
+  font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+}
+.dt-calendar .react-datepicker__month { margin: 2px 0 4px !important; }
+.dt-calendar .react-datepicker__week { display: flex; justify-content: center; }
+.dt-calendar .react-datepicker__day,
+.dt-calendar .react-datepicker__time-name {
+  color: var(--cream) !important; width: 2rem; line-height: 2rem; margin: 0.1rem;
+  border-radius: 8px !important; font-size: 0.88rem;
+}
+.dt-calendar .react-datepicker__day:hover { background: rgba(232, 181, 106, 0.18) !important; }
+.dt-calendar .react-datepicker__day--selected,
+.dt-calendar .react-datepicker__day--keyboard-selected {
+  background: var(--amber) !important; color: #231408 !important; font-weight: 700 !important;
+}
+.dt-calendar .react-datepicker__day--today { box-shadow: inset 0 0 0 1.5px var(--amber); font-weight: 700; }
+.dt-calendar .react-datepicker__day--disabled,
+.dt-calendar .react-datepicker__day--outside-month { color: #6b5a44 !important; box-shadow: none; }
+.dt-calendar .react-datepicker__navigation { top: 13px !important; }
+.dt-calendar .react-datepicker__navigation-icon::before { border-color: #f2c57c !important; }
+.dt-calendar .react-datepicker__triangle { fill: #2b1d10 !important; color: rgba(232, 181, 106, 0.35) !important; }
+/* Cột giờ */
 .dt-calendar .react-datepicker__time-container {
-  float: none !important;
-  width: 98px !important;
-  display: flex !important;
-  flex-direction: column;
+  float: none !important; width: 88px !important;
+  display: flex !important; flex-direction: column;
+  border-left: 1px solid rgba(232, 181, 106, 0.22) !important;
+  background: transparent !important; margin-left: 6px;
+}
+.dt-calendar .react-datepicker-time__header {
+  background: transparent !important; color: #f2c57c !important;
+  padding: 10px 0 6px !important; font-size: 0.82rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
 .dt-calendar .react-datepicker__time,
 .dt-calendar .react-datepicker__time-box {
-  flex: 1 1 auto;
-  display: flex !important;
-  flex-direction: column;
-  width: 100% !important;
+  flex: 1 1 auto; display: flex !important; flex-direction: column;
+  width: 100% !important; background: transparent !important;
 }
 .dt-calendar .react-datepicker__time-list {
-  flex: 1 1 auto;
-  overflow-y: auto;
+  flex: 1 1 auto; overflow-y: auto; background: transparent !important;
+  scrollbar-width: thin; scrollbar-color: rgba(232, 181, 106, 0.45) transparent;
 }
-.dt-calendar .react-datepicker__header {
-  background: #3a2412 !important;
-  border-bottom: 1px solid rgba(232, 181, 106, 0.25) !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-.dt-calendar .react-datepicker__current-month,
-.dt-calendar .react-datepicker__day-name,
-.dt-calendar .react-datepicker-time__header {
-  color: #f2c57c !important;
-}
-.dt-calendar .react-datepicker__day,
-.dt-calendar .react-datepicker__time-name {
-  color: var(--cream) !important;
-  border-radius: 8px !important;
-}
-.dt-calendar .react-datepicker__day:hover,
-.dt-calendar .react-datepicker__time-list-item:hover {
-  background: rgba(232, 181, 106, 0.18) !important;
-}
-.dt-calendar .react-datepicker__day--selected,
-.dt-calendar .react-datepicker__day--keyboard-selected,
-.dt-calendar .react-datepicker__time-list-item--selected {
-  background: var(--amber) !important;
-  color: #231408 !important;
-  font-weight: 700 !important;
-}
-.dt-calendar .react-datepicker__day--disabled,
-.dt-calendar .react-datepicker__day--outside-month {
-  color: #6b5a44 !important;
-}
-.dt-calendar .react-datepicker__navigation-icon::before {
-  border-color: #f2c57c !important;
-}
-.dt-calendar .react-datepicker__time-container {
-  border-left: 1px solid rgba(232, 181, 106, 0.25) !important;
-}
-.dt-calendar .react-datepicker__time-container,
-.dt-calendar .react-datepicker__time,
-.dt-calendar .react-datepicker__time-box,
-.dt-calendar .react-datepicker__time-list {
-  background: #2b1d10 !important;
-}
-.dt-calendar .react-datepicker-time__header {
-  background: #3a2412 !important;
-  padding: 8px 0 !important;
-}
+.dt-calendar .react-datepicker__time-list::-webkit-scrollbar { width: 6px; }
+.dt-calendar .react-datepicker__time-list::-webkit-scrollbar-thumb { background: rgba(232, 181, 106, 0.45); border-radius: 3px; }
+.dt-calendar .react-datepicker__time-list::-webkit-scrollbar-track { background: transparent; }
 .dt-calendar .react-datepicker__time-list-item {
-  color: var(--cream) !important;
-  padding: 6px 10px !important;
+  color: var(--cream) !important; padding: 6px 4px !important;
+  font-size: 0.86rem; text-align: center; border-radius: 6px;
 }
-.dt-calendar select {
-  background: #221910; color: var(--cream);
-  border: 1px solid rgba(232, 181, 106, 0.3); border-radius: 6px; padding: 2px 4px;
+.dt-calendar .react-datepicker__time-list-item:hover { background: rgba(232, 181, 106, 0.18) !important; }
+.dt-calendar .react-datepicker__time-list-item--selected {
+  background: var(--amber) !important; color: #231408 !important; font-weight: 700 !important;
 }
