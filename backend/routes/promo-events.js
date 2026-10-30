@@ -72,6 +72,37 @@ function withCodes(row) {
   return { ...row, voucher_codes: codes };
 }
 
+// Báo cho MỌI khách hàng khi sự kiện được BẬT (phát hành): chuông kèm link trang
+// Khuyến mãi + tin nhắn chat cho khách đang có cuộc trò chuyện mở với shop —
+// cùng nguyên tắc với sự kiện săn thẻ (trước đây khuyến mãi bật lên im lặng,
+// khách không hề hay biết). Lỗi thông báo không làm hỏng thao tác bật sự kiện.
+async function notifyPromoPublished(event, actorId) {
+  try {
+    const label = event.title || event.name;
+    const fmtD = (s) => String(s).slice(0, 10).split('-').reverse().join('/');
+    const when = event.start_at && event.end_at
+      ? ` Áp dụng từ ${fmtD(event.start_at)} đến ${fmtD(event.end_at)}.` : '';
+    const title = `🎉 Khuyến mãi mới: ${label}`;
+    const content = `Chương trình "${label}" đã bắt đầu!${when} Vào trang Khuyến mãi để xem sản phẩm giảm giá và nhận voucher nhé.`;
+    const customers = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+    const insNotif = db.prepare(
+      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+    );
+    await db.transaction(async () => {
+      for (const c of customers) await insNotif.run(c.id, 'promo_event', title, content, '/khuyen-mai');
+    })();
+    const { postChatNotice } = require('../lib/chatCard');
+    for (const c of customers) {
+      const conv = await db.prepare(
+        "SELECT id FROM conversations WHERE type = 'customer' AND customer_id = ? AND status IN ('waiting','active')"
+      ).get(c.id);
+      if (conv) {
+        try { await postChatNotice(c.id, actorId, `🎉 ${content}`); } catch (e) { /* bỏ qua từng khách */ }
+      }
+    }
+  } catch (e) { console.error('notifyPromoPublished:', e); }
+}
+
 // GET /api/promo-events — admin: danh sách (mới nhất trước)
 router.get('/', auth, staffOnly, async (req, res) => {
   try {
@@ -145,6 +176,7 @@ router.post('/', auth, staffOnly, async (req, res) => {
       clean.voucher_codes || '[]', clean.is_active || 0
     );
   const row = await db.prepare('SELECT * FROM promo_events WHERE id = ?').get(info.lastInsertRowid);
+  if (row.is_active) await notifyPromoPublished(row, req.user.id);
   res.status(201).json({ event: withCodes(row) });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
@@ -165,7 +197,9 @@ router.put('/:id', auth, staffOnly, async (req, res) => {
   sets.push(`updated_at = datetime('now')`);
   params.push(cur.id);
   await db.prepare(`UPDATE promo_events SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-  res.json({ event: withCodes(await db.prepare('SELECT * FROM promo_events WHERE id = ?').get(cur.id)) });
+  const updated = await db.prepare('SELECT * FROM promo_events WHERE id = ?').get(cur.id);
+  if (!cur.is_active && updated.is_active) await notifyPromoPublished(updated, req.user.id);
+  res.json({ event: withCodes(updated) });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
@@ -184,6 +218,7 @@ router.put('/:id/toggle', auth, staffOnly, async (req, res) => {
   });
   await txn();
   const row = withCodes(await db.prepare('SELECT * FROM promo_events WHERE id = ?').get(cur.id));
+  if (next === 1) await notifyPromoPublished(row, req.user.id);
   res.json({ event: row, vouchers_synced: codes });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });

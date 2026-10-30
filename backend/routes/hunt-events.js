@@ -268,7 +268,7 @@ router.post('/admin', auth, adminOnly, async (req, res) => {
           try { await postChatNotice(c.id, req.user.id, `🎯 ${content}`); } catch (e) { /* bỏ qua từng khách */ }
         }
       }
-    } catch (e) { /* lỗi thông báo không làm hỏng việc tạo sự kiện */ }
+    } catch (e) { console.error('hunt notify:', e); /* lỗi thông báo không làm hỏng việc tạo sự kiện, nhưng phải thấy trong log */ }
 
     res.status(201).json({ event: await eventWithTypes(event, null) });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }

@@ -53,6 +53,29 @@ router.get('/', auth, staffOnly, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
+// Gửi thông báo chuông cho MỌI khách hàng khi một tin được phát hành (tạo mới đang
+// bật / sửa từ tắt → bật / bật lại) và tin có tick "gửi thông báo" — trước đây cờ
+// send_notification chỉ lưu xuống DB mà không ai thực thi. Nguyên tắc user chốt:
+// có gì mới là báo trên chuông. Lỗi gửi không làm hỏng thao tác của staff.
+async function notifyAnnouncementPublished(ann) {
+  try {
+    // Link đích: nút CTA của tin nếu là link nội bộ; không thì mở thẳng trang
+    // chi tiết tin (/tin-tuc/:id hiển thị đúng thông báo này cho khách).
+    const link = ann.cta_link && String(ann.cta_link).startsWith('/')
+      ? ann.cta_link
+      : (ann.id ? `/tin-tuc/${ann.id}` : '/');
+    const customers = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+    const insNotif = db.prepare(
+      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+    );
+    await db.transaction(async () => {
+      for (const c of customers) {
+        await insNotif.run(c.id, 'announcement', `📣 ${ann.title}`, String(ann.content || '').slice(0, 300), link);
+      }
+    })();
+  } catch (e) { console.error('notifyAnnouncementPublished:', e); }
+}
+
 // POST /api/announcements — tạo tin mới, chỉ staff
 router.post('/', auth, staffOnly, async (req, res) => {
   try {
@@ -70,7 +93,9 @@ router.post('/', auth, staffOnly, async (req, res) => {
       show_on_banner === false ? 0 : 1, send_notification === false ? 0 : 1, is_active === false ? 0 : 1,
       req.user ? req.user.id : null, now, now
     );
-    res.status(201).json({ announcement: row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(r.lastInsertRowid)) });
+    const created = row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(r.lastInsertRowid));
+    if (created && created.is_active && created.send_notification) await notifyAnnouncementPublished(created);
+    res.status(201).json({ announcement: created });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
@@ -102,7 +127,9 @@ router.put('/:id', auth, staffOnly, async (req, res) => {
       is_active !== undefined ? (is_active ? 1 : 0) : cur.is_active,
       now, req.params.id
     );
-    res.json({ announcement: row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
+    const updated = row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id));
+    if (!cur.is_active && updated && updated.is_active && updated.send_notification) await notifyAnnouncementPublished(updated);
+    res.json({ announcement: updated });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
@@ -114,7 +141,9 @@ router.put('/:id/toggle', auth, staffOnly, async (req, res) => {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await db.prepare(`UPDATE announcements SET is_active = ?, updated_at = ? WHERE id = ?`)
       .run(cur.is_active ? 0 : 1, now, req.params.id);
-    res.json({ announcement: row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id)) });
+    const toggled = row(await db.prepare('SELECT a.*, u.name AS author_name, u.role AS author_role FROM announcements a LEFT JOIN users u ON u.id = a.created_by WHERE a.id = ?').get(req.params.id));
+    if (toggled && toggled.is_active && toggled.send_notification) await notifyAnnouncementPublished(toggled);
+    res.json({ announcement: toggled });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 

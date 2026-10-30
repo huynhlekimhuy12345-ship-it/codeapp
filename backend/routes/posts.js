@@ -84,6 +84,25 @@ router.get('/:slug', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
+// Báo chuông cho MỌI khách hàng khi có bài viết MỚI được xuất bản (tạo mới đã
+// published hoặc sửa từ nháp → published). Nguyên tắc user chốt: có gì mới là
+// báo trên chuông. Lỗi gửi không làm hỏng thao tác của staff.
+async function notifyPostPublished(post) {
+  try {
+    const customers = await db.prepare("SELECT id FROM users WHERE role = 'customer'").all();
+    const insNotif = db.prepare(
+      'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+    );
+    const content = String(post.excerpt || '').trim()
+      || 'Bài viết mới trên trang Blog của BI99 — bấm để đọc ngay.';
+    await db.transaction(async () => {
+      for (const c of customers) {
+        await insNotif.run(c.id, 'post', `📰 Bài viết mới: ${post.title}`, content, `/blog/${post.slug}`);
+      }
+    })();
+  } catch (e) { console.error('notifyPostPublished:', e); }
+}
+
 // POST /api/posts — admin
 router.post('/', auth, staffOnly, async (req, res) => {
   try {
@@ -97,6 +116,7 @@ router.post('/', auth, staffOnly, async (req, res) => {
       `INSERT INTO posts (title, slug, cover_image_url, excerpt, content, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(title.trim(), slug, safeImageUrl(cover_image_url), excerpt || '', content || '', st, now, now);
+    if (st === 'published') await notifyPostPublished({ title: title.trim(), slug, excerpt });
     res.status(201).json({ id: info.lastInsertRowid, slug });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
@@ -109,11 +129,15 @@ router.put('/:id', auth, staffOnly, async (req, res) => {
       return res.status(400).json({ error: 'Tiêu đề bài viết là bắt buộc' });
     const st = status === 'published' ? 'published' : 'draft';
     const now = new Date().toISOString();
+    const cur = await db.prepare('SELECT status, slug FROM posts WHERE id = ?').get(req.params.id);
     const info = await db.prepare(
       `UPDATE posts SET title = ?, cover_image_url = ?, excerpt = ?, content = ?,
        status = ?, updated_at = ? WHERE id = ?`
     ).run(title.trim(), safeImageUrl(cover_image_url), excerpt || '', content || '', st, now, req.params.id);
     if (!info.changes) return res.status(404).json({ error: 'Không tìm thấy bài viết' });
+    if (cur && cur.status !== 'published' && st === 'published') {
+      await notifyPostPublished({ title: title.trim(), slug: cur.slug, excerpt });
+    }
     res.json({ ok: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
