@@ -95,6 +95,34 @@ router.post('/register', registerRateLimit, async (req, res) => {
       "INSERT INTO users (name, email, password_hash, known_tier) VALUES (?, ?, ?, 'potential')"
     ).run(name.trim(), email.trim().toLowerCase(), hash);
     const user = await db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(info.lastInsertRowid);
+
+    // Quà chào mừng thành viên mới: voucher -15% dùng 1 lần (hạn 30 ngày) + báo chuông.
+    // Mã RIÊNG theo từng khách (chỉ khách đó biết) nên đặt usage_limit = 1 là đủ an toàn.
+    // Lỗi ở bước tặng quà không được làm hỏng việc đăng ký.
+    try {
+      let vcode = null;
+      for (let i = 0; i < 5 && !vcode; i++) {
+        const cand = `MOI15-${user.id}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        const dup = await db.prepare('SELECT id FROM vouchers WHERE code = ?').get(cand);
+        if (!dup) vcode = cand;
+      }
+      if (vcode) {
+        const expiry = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+        await db.prepare(
+          'INSERT INTO vouchers (code, type, value, min_order, expiry, usage_limit, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).run(vcode, 'percent', 15, 0, expiry, 1, 1);
+        await db.prepare(
+          'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+        ).run(
+          user.id,
+          'voucher',
+          '🎁 Quà chào mừng thành viên mới!',
+          `Chào ${user.name}! BI99 tặng bạn voucher giảm 15% cho đơn hàng đầu tiên. Mã của bạn: ${vcode} — dùng được 1 lần, hạn 30 ngày. Nhập mã ở bước thanh toán nhé!`,
+          '/cua-hang'
+        );
+      }
+    } catch (e) { console.error('welcome voucher:', e); }
+
     res.status(201).json({ user, token: signToken(user) });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });

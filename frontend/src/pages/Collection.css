@@ -147,10 +147,18 @@
 /* —— GĐ3: Gallery —— */
 .cl-gallery { position: relative; z-index: 1; padding: 72px 0 90px; }
 .cl-gallery .cl-sec-head { margin-bottom: 32px; }
-.cl-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 22px;
+/* Bộ sưu tập: dải lướt ngang (5 thẻ/khung máy tính), nút ‹ › hai bên */
+.cl-strip {
+  display: flex; gap: 22px; overflow-x: auto; scroll-snap-type: x mandatory;
+  scrollbar-width: none; padding: 4px 2px 12px;
 }
+.cl-strip::-webkit-scrollbar { display: none; }
+.cl-slide { flex: 0 0 calc((100% - 88px) / 5); scroll-snap-align: start; min-width: 0; }
+.cl-slide .cl-card { height: 100%; }
+@media (max-width: 1400px) { .cl-slide { flex-basis: calc((100% - 66px) / 4); } }
+@media (max-width: 1020px) { .cl-slide { flex-basis: calc((100% - 44px) / 3); } }
+@media (max-width: 700px) { .cl-slide { flex-basis: calc((100% - 22px) / 2); } }
+@media (max-width: 480px) { .cl-slide { flex-basis: 82%; } }
 .cl-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 .cl-card-thumb { display: block; aspect-ratio: 4 / 3; overflow: hidden; }
 .cl-card-thumb img {

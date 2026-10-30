@@ -155,6 +155,7 @@ export default function Collection() {
   const heroRef = useRef(null);
   const exploreRef = useRef(null);
   const galleryRef = useRef(null);
+  const galleryTrackRef = useRef(null);
   const pinRef = useRef(null);
   const trackRef = useRef(null);
 
@@ -327,8 +328,24 @@ export default function Collection() {
           {loading ? (
             <p className="cl-loading">{t('common.loading')}</p>
           ) : (
-            <div className="cl-grid">
-              {products.map((p) => <GalleryCard key={p.id} p={p} />)}
+            <div className="rel-wrap">
+              {products.length > 1 && (
+                <button
+                  type="button" className="rel-arrow rel-prev" aria-label="Trước"
+                  onClick={() => galleryTrackRef.current && galleryTrackRef.current.scrollBy({ left: -galleryTrackRef.current.clientWidth, behavior: 'smooth' })}
+                >‹</button>
+              )}
+              <div className="cl-strip" ref={galleryTrackRef}>
+                {products.map((p) => (
+                  <div key={p.id} className="cl-slide"><GalleryCard p={p} /></div>
+                ))}
+              </div>
+              {products.length > 1 && (
+                <button
+                  type="button" className="rel-arrow rel-next" aria-label="Tiếp"
+                  onClick={() => galleryTrackRef.current && galleryTrackRef.current.scrollBy({ left: galleryTrackRef.current.clientWidth, behavior: 'smooth' })}
+                >›</button>
+              )}
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, fmtVND } from '../api';
@@ -16,9 +16,14 @@ function CategoryOption({ c }) {
 
 export default function Shop() {
   const { t } = useLang();
+  const shopTrackRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  // Đổi trang / đổi bộ lọc → dải sản phẩm quay về vị trí đầu
+  useEffect(() => {
+    if (shopTrackRef.current) shopTrackRef.current.scrollTo({ left: 0 });
+  }, [products]);
   const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -124,10 +129,24 @@ export default function Shop() {
       ) : products.length === 0 ? (
         <div className="empty">{t('shop.empty')}</div>
       ) : (
-        <div className="product-grid">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+        <div className="rel-wrap">
+          {products.length > 1 && (
+            <button
+              type="button" className="rel-arrow rel-prev" aria-label="Trước"
+              onClick={() => shopTrackRef.current && shopTrackRef.current.scrollBy({ left: -shopTrackRef.current.clientWidth, behavior: 'smooth' })}
+            >‹</button>
+          )}
+          <div className="shop-strip" ref={shopTrackRef}>
+            {products.map((p) => (
+              <div key={p.id} className="shop-slide"><ProductCard product={p} /></div>
+            ))}
+          </div>
+          {products.length > 1 && (
+            <button
+              type="button" className="rel-arrow rel-next" aria-label="Tiếp"
+              onClick={() => shopTrackRef.current && shopTrackRef.current.scrollBy({ left: shopTrackRef.current.clientWidth, behavior: 'smooth' })}
+            >›</button>
+          )}
         </div>
       )}
 
