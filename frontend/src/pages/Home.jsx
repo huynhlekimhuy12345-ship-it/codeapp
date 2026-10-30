@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
@@ -198,6 +198,7 @@ function CategoryCard({ c }) {
 
 export default function Home() {
   const { t } = useLang();
+  const featuredRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeReason, setActiveReason] = useState(null);
@@ -248,8 +249,24 @@ export default function Home() {
             <h2>{t('home.featuredProducts')}</h2>
             <Link to="/cua-hang" className="link-more">{t('home.viewAll')}</Link>
           </div>
-          <div className="product-grid">
-            {products.map((p) => <ProductCard key={p.id} product={p} />)}
+          <div className="rel-wrap">
+            {products.length > 1 && (
+              <button
+                type="button" className="rel-arrow rel-prev" aria-label="Trước"
+                onClick={() => featuredRef.current && featuredRef.current.scrollBy({ left: -featuredRef.current.clientWidth, behavior: 'smooth' })}
+              >‹</button>
+            )}
+            <div className="home-strip" ref={featuredRef}>
+              {products.map((p) => (
+                <div key={p.id} className="home-slide"><ProductCard product={p} /></div>
+              ))}
+            </div>
+            {products.length > 1 && (
+              <button
+                type="button" className="rel-arrow rel-next" aria-label="Tiếp"
+                onClick={() => featuredRef.current && featuredRef.current.scrollBy({ left: featuredRef.current.clientWidth, behavior: 'smooth' })}
+              >›</button>
+            )}
           </div>
         </div>
 

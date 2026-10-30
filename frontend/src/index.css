@@ -666,17 +666,27 @@ h1, h2, h3, .logo, .hero-title {
 /* Khối giá + thanh toán ghim dưới cùng cột phải, thẳng hàng đáy ảnh */
 .detail-buy { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--panel-border); }
 
-/* Trang Sản phẩm: lưới đổi thành dải lướt ngang (5 thẻ/khung), nút ‹ › hai bên */
-.shop-strip {
+/* Trang Sản phẩm: lưới 2 HÀNG (6 cột ở màn hình rộng — 12 sản phẩm/trang = đúng 2 hàng),
+   không lướt ngang nữa (user chốt 2026-10-30). Màn hình hẹp tự giảm cột. */
+.shop-grid2 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
+.shop-grid2 .product-card { height: 100%; }
+@media (max-width: 1500px) { .shop-grid2 { grid-template-columns: repeat(5, 1fr); } }
+@media (max-width: 1200px) { .shop-grid2 { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 900px) { .shop-grid2 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .shop-grid2 { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
+
+/* Trang chủ — Sản phẩm nổi bật: đúng 1 HÀNG lướt ngang + nút ‹ › (user chốt 2026-10-30) */
+.home-strip {
   display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory;
   scrollbar-width: none; padding: 4px 2px 10px;
 }
-.shop-strip::-webkit-scrollbar { display: none; }
-.shop-slide { flex: 0 0 calc((100% - 72px) / 5); scroll-snap-align: start; min-width: 0; }
-@media (max-width: 1500px) { .shop-slide { flex-basis: calc((100% - 54px) / 4); } }
-@media (max-width: 1100px) { .shop-slide { flex-basis: calc((100% - 36px) / 3); } }
-@media (max-width: 760px) { .shop-slide { flex-basis: calc((100% - 18px) / 2); } }
-@media (max-width: 520px) { .shop-slide { flex-basis: 82%; } }
+.home-strip::-webkit-scrollbar { display: none; }
+.home-slide { flex: 0 0 calc((100% - 72px) / 5); scroll-snap-align: start; min-width: 0; }
+.home-slide .product-card { height: 100%; }
+@media (max-width: 1500px) { .home-slide { flex-basis: calc((100% - 54px) / 4); } }
+@media (max-width: 1100px) { .home-slide { flex-basis: calc((100% - 36px) / 3); } }
+@media (max-width: 760px) { .home-slide { flex-basis: calc((100% - 18px) / 2); } }
+@media (max-width: 520px) { .home-slide { flex-basis: 82%; } }
 
 /* Sản phẩm liên quan: dải lướt ngang 10 món, nút ‹ › hai bên như trang mẫu */
 .rel-wrap { position: relative; }
