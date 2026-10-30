@@ -1096,9 +1096,9 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 @media (max-width: 900px) { .value-grid.values-even { grid-template-columns: 1fr; } }
 .value-link-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; text-decoration: none; transition: 0.25s; }
 .value-link-card:hover { transform: translateY(-4px); border-color: rgba(232,181,106,.5); box-shadow: var(--shadow); }
-.value-thumb { display: block; aspect-ratio: 16/9; overflow: hidden; flex-shrink: 0; }
+.value-thumb { display: block; aspect-ratio: 21/10; overflow: hidden; flex-shrink: 0; }
 .value-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.value-body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+.value-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
 .value-body .vicon { font-size: 1.6rem; }
 .value-more { margin-top: auto; padding-top: 14px; font-weight: 700; font-size: 0.85rem; color: var(--amber-light); }
 
@@ -1135,20 +1135,20 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 }
 .craft-strip::-webkit-scrollbar { display: none; }
 .craft-panel {
-  flex: 0 0 min(520px, 88%); scroll-snap-align: start; overflow: hidden;
+  flex: 0 0 min(400px, 88%); scroll-snap-align: start; overflow: hidden;
   border-radius: 16px; display: flex; flex-direction: column;
 }
 .craft-photo { position: relative; aspect-ratio: 16/10; overflow: hidden; flex-shrink: 0; }
 .craft-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .craft-badge {
-  position: absolute; left: 14px; top: 14px; width: 38px; height: 38px; border-radius: 50%;
+  position: absolute; left: 12px; top: 12px; width: 34px; height: 34px; border-radius: 50%;
   background: var(--amber); color: #231408; font-weight: 800; display: grid; place-items: center;
   box-shadow: 0 4px 14px rgba(0,0,0,.45);
 }
-.craft-body { padding: 18px 20px 20px; }
-.craft-count { color: var(--amber-light); font-weight: 800; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 6px; }
-.craft-body h3 { color: var(--cream); margin-bottom: 8px; }
-.craft-body p { color: var(--muted); font-size: 0.93rem; line-height: 1.6; }
+.craft-body { padding: 14px 16px 16px; }
+.craft-count { color: var(--amber-light); font-weight: 800; font-size: 0.76rem; letter-spacing: 2px; margin-bottom: 5px; }
+.craft-body h3 { color: var(--cream); margin-bottom: 6px; font-size: 1.05rem; }
+.craft-body p { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
 .craft-nav { display: flex; align-items: center; justify-content: center; gap: 16px; }
 .craft-arrow {
   width: 38px; height: 38px; border-radius: 50%; padding: 0;
