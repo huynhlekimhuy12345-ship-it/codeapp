@@ -168,6 +168,7 @@ export default {
     notFound: '未找到该产品。',
     backToShop: '返回商店',
     descTitle: '产品描述',
+    reviewsCount: '条评价',
     basePrice: '原价',
     color: '颜色：',
     size: '尺码：',

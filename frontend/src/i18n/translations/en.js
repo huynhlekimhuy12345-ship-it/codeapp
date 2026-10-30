@@ -168,6 +168,7 @@ export default {
     notFound: 'Product not found.',
     backToShop: 'Back to shop',
     descTitle: 'Product description',
+    reviewsCount: 'reviews',
     basePrice: 'Base price',
     color: 'Color:',
     size: 'Size:',

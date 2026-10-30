@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api, fmtVND } from '../api';
@@ -18,6 +18,9 @@ export default function ProductDetail() {
   const [selColor, setSelColor] = useState('');
   const [selSize, setSelSize] = useState('');
   const [mainIdx, setMainIdx] = useState(0);
+  const [rating, setRating] = useState(null);
+  const [paused, setPaused] = useState(false);
+  const relTrackRef = useRef(null);
   const { addToCart, buyNowItem, user } = useStore();
   const navigate = useNavigate();
   const name = useProductName(product);
@@ -29,6 +32,9 @@ export default function ProductDetail() {
       setProduct(product);
       setQty(1);
       setMainIdx(0);
+      api.getReviews({ product_id: product.id })
+        .then((d) => setRating(d.summary || null))
+        .catch(() => {});
       // Chọn mặc định biến thể đầu tiên (nếu SP có variant)
       const vs = product.variants || [];
       if (vs.length > 0) {
@@ -39,8 +45,8 @@ export default function ProductDetail() {
         setSelSize('');
       }
       if (product.category_id) {
-        api.getProducts({ category: product.category_id, limit: 4 })
-          .then((d) => setRelated(d.products.filter((p) => p.id !== product.id).slice(0, 4)))
+        api.getProducts({ category: product.category_id, limit: 10 })
+          .then((d) => setRelated(d.products.filter((p) => p.id !== product.id).slice(0, 10)))
           .catch(() => {});
       }
     }).catch(() => setProduct(false));
@@ -97,6 +103,13 @@ export default function ProductDetail() {
   }, [product, selectedVariant]);
   const mainImage = galleryImages[Math.min(mainIdx, galleryImages.length - 1)] || PLACEHOLDER;
 
+  // Tự lướt sang ảnh tiếp theo mỗi 3 giây; rê chuột vào ảnh thì dừng, bấm thumbnail thì tính lại 3 giây
+  useEffect(() => {
+    if (galleryImages.length <= 1 || paused) return undefined;
+    const iv = setInterval(() => setMainIdx((i) => (i + 1) % galleryImages.length), 3000);
+    return () => clearInterval(iv);
+  }, [galleryImages.length, paused, mainIdx]);
+
   // ===== Thêm vào giỏ =====
   // SP có variant → gửi object mở rộng theo contract W1/W3:
   // { product_id, variant_id, variant_sku, name, price (đã gồm delta), image, quantity }
@@ -148,7 +161,7 @@ export default function ProductDetail() {
         {t('shop.back')}
       </button>
       <div className="detail">
-        <div className="detail-media">
+        <div className="detail-media" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
           <img src={mainImage} alt={name}
             onError={(e) => { e.target.src = PLACEHOLDER; }} />
           {galleryImages.length > 1 && (
@@ -175,6 +188,12 @@ export default function ProductDetail() {
             {catName}
           </span>
           <h1>{name}</h1>
+          {rating && rating.count > 0 && (
+            <div className="detail-rating">
+              <span className="dr-stars">{'★'.repeat(Math.round(rating.avg_rating))}{'☆'.repeat(5 - Math.round(rating.avg_rating))}</span>
+              {' '}<strong>{rating.avg_rating}/5</strong> · {rating.count} {t('productDetail.reviewsCount')}
+            </div>
+          )}
           {/* Mô tả riêng của sản phẩm — chữ lớn, truyền cảm xúc, là tâm điểm của cột phải */}
           {desc && (
             <div className="detail-desc-wrap">
@@ -273,8 +292,24 @@ export default function ProductDetail() {
       {related.length > 0 && (
         <div className="section">
           <div className="section-head"><h2>{t('productDetail.related')}</h2></div>
-          <div className="product-grid">
-            {related.map((p) => <ProductCard key={p.id} product={p} />)}
+          <div className="rel-wrap">
+            {related.length > 1 && (
+              <button
+                type="button" className="rel-arrow rel-prev" aria-label="Trước"
+                onClick={() => relTrackRef.current && relTrackRef.current.scrollBy({ left: -relTrackRef.current.clientWidth, behavior: 'smooth' })}
+              >‹</button>
+            )}
+            <div className="rel-track" ref={relTrackRef}>
+              {related.map((p) => (
+                <div key={p.id} className="rel-slide"><ProductCard product={p} /></div>
+              ))}
+            </div>
+            {related.length > 1 && (
+              <button
+                type="button" className="rel-arrow rel-next" aria-label="Tiếp"
+                onClick={() => relTrackRef.current && relTrackRef.current.scrollBy({ left: relTrackRef.current.clientWidth, behavior: 'smooth' })}
+              >›</button>
+            )}
           </div>
         </div>
       )}

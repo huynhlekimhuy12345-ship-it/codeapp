@@ -168,6 +168,7 @@ export default {
     notFound: '상품을 찾을 수 없어요.',
     backToShop: '쇼핑으로 돌아가기',
     descTitle: '제품 설명',
+    reviewsCount: '개 리뷰',
     basePrice: '기본 가격',
     color: '색상:',
     size: '사이즈:',

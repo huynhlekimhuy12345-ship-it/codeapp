@@ -168,6 +168,7 @@ export default {
     notFound: 'Không tìm thấy sản phẩm.',
     backToShop: 'Về cửa hàng',
     descTitle: 'Mô tả sản phẩm',
+    reviewsCount: 'đánh giá',
     basePrice: 'Giá gốc',
     color: 'Màu sắc:',
     size: 'Kích thước:',
