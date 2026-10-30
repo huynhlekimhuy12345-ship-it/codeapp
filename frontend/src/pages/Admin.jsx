@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import ImageField from '../components/ImageField';
+import ProductImagesSection from './admin/ProductImagesSection';
 import { useStore } from '../context/StoreContext';
 import { api, fmtVND, fmtDate, fmtDay, ORDER_STATUS, nextStatuses } from '../api';
 import { detectLang, translateToVietnamese } from '../i18n/autoTranslate';
@@ -261,6 +262,13 @@ function ProductsTab() {
               <div className="field"><label>Tồn kho</label><input type="number" min="0" value={form.stock} onChange={(e) => set('stock', e.target.value)} /></div>
             </div>
             <ImageField label="Ảnh sản phẩm" value={form.image_url} onChange={(v) => set('image_url', v)} />
+            {editing ? (
+              <ProductImagesSection productId={editing.id} />
+            ) : (
+              <p className="muted" style={{ fontSize: '0.85rem', margin: '2px 0 4px' }}>
+                🖼️ Ảnh phụ: lưu sản phẩm trước, sau đó bấm Sửa sản phẩm để thêm ảnh phụ.
+              </p>
+            )}
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Hủy</button>
               <button className="btn btn-primary" onClick={save}>Lưu</button>
@@ -422,7 +430,7 @@ function OrdersTab() {
   const [menuFor, setMenuFor] = useState(null);
 
   const [loadError, setLoadError] = useState('');
-  const load = () => api.getOrders(filter || undefined).then((d) => { setOrders(d.orders); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách đơn hàng'));
+  const load = () => api.getOrders(filter || undefined, true).then((d) => { setOrders(d.orders); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách đơn hàng'));
   useEffect(() => { load(); }, [filter]);
 
   const refreshDetail = async (id) => {
@@ -607,6 +615,49 @@ function TierBadge({ tier }) {
   );
 }
 
+/* Sắp xếp bảng người dùng (dùng chung tab Người dùng + tab Vai trò).
+   Vai trò: admin "lớn nhất" (đứng đầu khi tăng dần); Hạng: theo bậc kim cương → tiềm năng. */
+const ROLE_RANK = { admin: 0, sale: 1, customer: 2 };
+const TIER_RANK = { potential: 0, bronze: 1, silver: 2, gold: 3, diamond: 4 };
+const SORT_DEFAULT_DIR = { id: 'desc', name: 'asc', email: 'asc', phone: 'asc', role: 'asc', tier: 'desc', orders: 'desc', spent: 'desc', created: 'desc' };
+
+function sortUsers(list, key, dir) {
+  const m = dir === 'desc' ? -1 : 1;
+  const val = (u) => {
+    switch (key) {
+      case 'name': return (u.name || '').toLowerCase();
+      case 'email': return (u.email || '').toLowerCase();
+      case 'phone': return u.phone || '';
+      case 'role': return ROLE_RANK[u.role] ?? 9;
+      case 'tier': return u.tier ? (TIER_RANK[u.tier.key] ?? -1) : -1;
+      case 'orders': return u.order_count ?? 0;
+      case 'spent': return u.total_spent ?? 0;
+      case 'created': return new Date(u.created_at).getTime() || 0;
+      default: return u.id;
+    }
+  };
+  return [...list].sort((a, b) => {
+    const va = val(a); const vb = val(b);
+    const cmp = typeof va === 'string' ? va.localeCompare(vb, 'vi') : va - vb;
+    return cmp !== 0 ? cmp * m : a.id - b.id;
+  });
+}
+
+function makeOnSort(setSort) {
+  return (k) => setSort((s) => (s.key === k
+    ? { key: k, dir: s.dir === 'asc' ? 'desc' : 'asc' }
+    : { key: k, dir: SORT_DEFAULT_DIR[k] || 'asc' }));
+}
+
+function SortTh({ label, k, sort, onSort }) {
+  const active = sort.key === k;
+  return (
+    <th onClick={() => onSort(k)} className={`sortable${active ? ' sorted' : ''}`} title="Bấm để sắp xếp">
+      {label} <span className="sort-arrow">{active ? (sort.dir === 'asc' ? '▲' : '▼') : '⇅'}</span>
+    </th>
+  );
+}
+
 function UsersTab() {
   const { user } = useStore();
   const isAdmin = user?.role === 'admin';
@@ -649,6 +700,9 @@ function UsersTab() {
 
   const tierOfUser = (id) => users.find((x) => x.id === id)?.tier || null;
   const shownUsers = tierFilter === 'all' ? users : users.filter((u) => u.tier?.key === tierFilter);
+  const [sort, setSort] = useState({ key: 'role', dir: 'asc' });
+  const onSort = makeOnSort(setSort);
+  const sortedUsers = sortUsers(shownUsers, sort.key, sort.dir);
   const customerTotal = users.filter((u) => u.role === 'customer').length;
 
   const periodLabel = loyalty?.period ? `${loyalty.period.slice(5)}/${loyalty.period.slice(0, 4)}` : '';
@@ -770,9 +824,19 @@ function UsersTab() {
 
       <div style={{ overflowX: 'auto' }}>
       <table className="data-table">
-        <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Hạng</th><th>Số đơn</th><th>Tổng chi</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+        <thead><tr>
+          <SortTh label="ID" k="id" sort={sort} onSort={onSort} />
+          <SortTh label="Họ tên" k="name" sort={sort} onSort={onSort} />
+          <SortTh label="Email" k="email" sort={sort} onSort={onSort} />
+          <SortTh label="Vai trò" k="role" sort={sort} onSort={onSort} />
+          <SortTh label="Hạng" k="tier" sort={sort} onSort={onSort} />
+          <SortTh label="Số đơn" k="orders" sort={sort} onSort={onSort} />
+          <SortTh label="Tổng chi" k="spent" sort={sort} onSort={onSort} />
+          <SortTh label="Ngày tạo" k="created" sort={sort} onSort={onSort} />
+          <th>Thao tác</th>
+        </tr></thead>
         <tbody>
-          {shownUsers.map((u) => (
+          {sortedUsers.map((u) => (
             <tr key={u.id}>
               <td>{u.id}</td><td>{u.name}</td><td>{u.email}</td>
               <td><span className={`status ${u.role === 'customer' ? 'pending' : 'confirmed'}`}>
@@ -935,6 +999,8 @@ function RolesTab() {
   const [newRole, setNewRole] = useState('customer');
   const load = () => api.getUsers().then((d) => { setUsers(d.users); setLoadError(''); }).catch(() => setLoadError('Không tải được danh sách người dùng'));
   useEffect(() => { load(); }, []);
+  const [sort, setSort] = useState({ key: 'role', dir: 'asc' });
+  const onSort = makeOnSort(setSort);
   const q = query.trim().toLowerCase();
   const shown = q ? users.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) : users;
   const staff = shown.filter((u) => u.role === 'admin' || u.role === 'sale')
@@ -968,9 +1034,20 @@ function RolesTab() {
       <h4 style={{ margin: '0 0 14px', fontSize: '1.02rem' }}>{title} ({list.length})</h4>
       <div style={{ overflowX: 'auto' }}>
       <table className="data-table">
-        <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Hạng</th><th>Số đơn</th><th>Tổng chi</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+        <thead><tr>
+          <SortTh label="ID" k="id" sort={sort} onSort={onSort} />
+          <SortTh label="Họ tên" k="name" sort={sort} onSort={onSort} />
+          <SortTh label="Email" k="email" sort={sort} onSort={onSort} />
+          <SortTh label="Số điện thoại" k="phone" sort={sort} onSort={onSort} />
+          <SortTh label="Hạng" k="tier" sort={sort} onSort={onSort} />
+          <SortTh label="Số đơn" k="orders" sort={sort} onSort={onSort} />
+          <SortTh label="Tổng chi" k="spent" sort={sort} onSort={onSort} />
+          <SortTh label="Vai trò" k="role" sort={sort} onSort={onSort} />
+          <SortTh label="Ngày tạo" k="created" sort={sort} onSort={onSort} />
+          <th>Thao tác</th>
+        </tr></thead>
         <tbody>
-          {list.map((u) => (
+          {sortUsers(list, sort.key, sort.dir).map((u) => (
             <tr key={u.id}>
               <td>{u.id}</td><td>{u.name}{user && u.id === user.id && <span style={{ color: 'var(--muted)' }}> (Bạn)</span>}</td><td>{u.email}</td><td>{u.phone || '—'}</td>
               <td><TierBadge tier={u.tier} /></td>
@@ -1441,7 +1518,12 @@ function MessagesTab({ onUnreadChange }) {
 }
 
 export default function Admin() {
-  const [tab, setTab] = useState('products');
+  // Link sâu từ chuông thông báo (vd /admin?tab=reviews khi có đánh giá mới) mở đúng tab
+  const [tab, setTab] = useState(() => {
+    const q = new URLSearchParams(window.location.search).get('tab');
+    return q && NAV.some((n) => n.key === q) ? q : 'products';
+  });
+  const [pendingReviews, setPendingReviews] = useState(0);
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [chatSummary, setChatSummary] = useState({ waiting: 0, internal_unread: 0, customer_unread: 0 });
   const [newOrders, setNewOrders] = useState(0);
@@ -1449,6 +1531,7 @@ export default function Admin() {
   const refreshBadges = () => {
     api.getNewOrderCount().then((d) => setNewOrders(d.count || 0)).catch(() => {});
     api.getPayments().then((d) => setPendingPays((d.payments || []).filter((p) => p.status === 'pending').length)).catch(() => {});
+    api.getPendingReviews().then((d) => setPendingReviews((d.reviews || []).length)).catch(() => {});
   };
   useEffect(() => {
     armStaffNotifications();
@@ -1480,7 +1563,7 @@ export default function Admin() {
     if (tab === 'orders') {
       api.markOrdersSeen().then(() => setNewOrders(0)).catch(() => {});
     }
-    api.getPayments().then((d) => setPendingPays((d.payments || []).filter((p) => p.status === 'pending').length)).catch(() => {});
+    refreshBadges();
   }, [tab]);
   // Đổi tab quản trị → về đầu trang (đổi tab không đổi địa chỉ nên App không tự cuộn)
   useEffect(() => { window.scrollTo(0, 0); }, [tab]);
@@ -1533,6 +1616,7 @@ export default function Admin() {
                     internalChat: chatSummary.internal_unread,
                     orders: newOrders,
                     payments: pendingPays,
+                    reviews: pendingReviews,
                   };
                   const n2 = counts[n.key] || 0;
                   return n2 > 0 ? <span className="nav-count">{n2 > 99 ? '99+' : n2}</span> : null;

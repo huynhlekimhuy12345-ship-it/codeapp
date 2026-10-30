@@ -63,7 +63,11 @@ export const api = {
 
   // Đơn hàng
   createOrder: (o) => request('/api/orders', { method: 'POST', body: o, auth: true }),
-  getOrders: (status) => request(`/api/orders${status ? '?status=' + status : ''}`, { auth: true }),
+  // Mặc định: chỉ đơn của chính mình. Tab quản trị truyền all=true → ?scope=all (backend chỉ cho staff).
+  getOrders: (status, all) => {
+    const qs = [status ? `status=${encodeURIComponent(status)}` : '', all ? 'scope=all' : ''].filter(Boolean).join('&');
+    return request(`/api/orders${qs ? '?' + qs : ''}`, { auth: true });
+  },
   getNewOrderCount: () => request('/api/orders/new-count', { auth: true }),
   markOrdersSeen: () => request('/api/orders/mark-seen', { method: 'POST', auth: true }),
   getNotifications: (all) => request(`/api/notifications${all ? '?all=1' : ''}`, { auth: true }),
@@ -200,6 +204,7 @@ export const api = {
   approveReview: (id, is_approved) => request(`/api/reviews/${id}/approve`, { method: 'PUT', body: { is_approved }, auth: true }),
   deleteReview: (id) => request(`/api/reviews/${id}`, { method: 'DELETE', auth: true }),
   getPendingReviews: () => request('/api/reviews/pending', { auth: true }),
+  getApprovedReviews: () => request('/api/reviews/approved', { auth: true }),
 
   // Hồ sơ khách hàng
   getMe: () => request('/api/users/me', { auth: true }),

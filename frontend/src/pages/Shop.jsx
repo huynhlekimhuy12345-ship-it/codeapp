@@ -88,10 +88,6 @@ export default function Shop() {
           <option value="name">{t('shop.nameAZ')}</option>
         </select>
         <div className="price-group">
-          <input
-            className="price-filter" type="number" min="0" placeholder={t('shop.priceFrom')} aria-label={t('shop.minPriceLabel')}
-            value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
-          />
           <div className="price-mid">
             <div className="price-slider">
               <div className="price-track" />
@@ -110,10 +106,16 @@ export default function Shop() {
             </div>
             <div className="price-scale"><span>{fmtVND(0)}</span><span>{fmtVND(PRICE_CAP)}</span></div>
           </div>
-          <input
-            className="price-filter" type="number" min="0" placeholder={t('shop.priceTo')} aria-label={t('shop.maxPriceLabel')}
-            value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
-          />
+          <div className="price-nums">
+            <input
+              className="price-filter" type="number" min="0" placeholder={t('shop.priceFrom')} aria-label={t('shop.minPriceLabel')}
+              value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+            />
+            <input
+              className="price-filter" type="number" min="0" placeholder={t('shop.priceTo')} aria-label={t('shop.maxPriceLabel')}
+              value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+            />
+          </div>
         </div>
       </div>
 

@@ -6,10 +6,10 @@ import { useLang } from '../i18n/LanguageContext';
 import { countWords, detectLang, translateToVietnamese } from '../i18n/autoTranslate';
 
 const INFO = [
-  ['📞', 'phone', '0901 234 567'],
-  ['✉️', 'email', 'lienhe@leatherhouse.vn'],
-  ['📍', 'address', 'contact.addressValue'],
-  ['🕗', 'hours', 'contact.hoursValue'],
+  ['📞', 'phone', '0935 468 662', 'tel:+84935468662'],
+  ['✉️', 'email', 'lienhe@leatherhouse.vn', 'mailto:lienhe@leatherhouse.vn'],
+  ['📍', 'address', 'contact.addressValue', 'https://www.google.com/maps/search/?api=1&query=BI%2099%20Leather%20Shoes%20and%20Handbags%2C%202B%20Phan%20B%E1%BB%99i%20Ch%C3%A2u%2C%20H%E1%BB%99i%20An'],
+  ['🕗', 'hours', 'contact.hoursValue', null],
 ];
 
 export default function Contact() {
@@ -69,17 +69,28 @@ export default function Contact() {
       </p>
 
       <div className="contact-info-grid" style={{ marginBottom: 26 }}>
-        {INFO.map(([icon, tk, s]) => (
-          <div key={tk} className="cat-card contact-info-card" style={{ textAlign: 'left', padding: 18 }}>
-            <span style={{ fontSize: '1.6rem' }} aria-hidden>{icon}</span>
-            <strong style={{ display: 'block', marginTop: 8, color: 'var(--cream)' }}>{t('contact.' + tk)}</strong>
-            <small style={{ fontSize: '0.9rem' }}>{(tk === 'hours' || tk === 'address') ? t(s) : s}</small>
-          </div>
-        ))}
+        {INFO.map(([icon, tk, s, href]) => {
+          const inner = (
+            <>
+              <span className="cinfo-icon" aria-hidden>{icon}</span>
+              <strong>{t('contact.' + tk)}</strong>
+              <small>{(tk === 'hours' || tk === 'address') ? t(s) : s}</small>
+              {href && <span className="cinfo-go" aria-hidden>›</span>}
+            </>
+          );
+          return href ? (
+            <a
+              key={tk} className="cinfo-card glass" href={href}
+              {...(href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}
+            >{inner}</a>
+          ) : (
+            <div key={tk} className="cinfo-card glass">{inner}</div>
+          );
+        })}
       </div>
 
       <div className="contact-grid">
-        <div className="glass" style={{ padding: 26 }}>
+        <div className="glass contact-panel">
           <h2 style={{ color: 'var(--cream)', marginBottom: 16 }}>{t('contact.sendMessage')}</h2>
           {sent ? (
             <div className="empty" style={{ padding: '40px 20px' }}>
@@ -124,7 +135,7 @@ export default function Contact() {
           )}
         </div>
 
-        <div className="glass" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="glass contact-map-wrap">
           <iframe
             title={t('contact.mapTitle')}
             src="https://maps.google.com/maps?q=BI%2099%20Leather%20Shoes%20and%20Handbags%2C%202B%20Phan%20B%E1%BB%99i%20Ch%C3%A2u%2C%20H%E1%BB%99i%20An&t=&z=16&ie=UTF8&iwloc=&output=embed"
@@ -132,6 +143,14 @@ export default function Contact() {
             loading="lazy"
             allowFullScreen
           />
+          <div className="contact-map-bar">
+            <span>📍 {t('contact.addressValue')}</span>
+            <a
+              className="btn btn-small btn-primary"
+              href="https://www.google.com/maps/dir/?api=1&destination=BI%2099%20Leather%20Shoes%20and%20Handbags%2C%202B%20Phan%20B%E1%BB%99i%20Ch%C3%A2u%2C%20H%E1%BB%99i%20An"
+              target="_blank" rel="noreferrer"
+            >🧭 {t('contact.directions')}</a>
+          </div>
         </div>
       </div>
     </div>

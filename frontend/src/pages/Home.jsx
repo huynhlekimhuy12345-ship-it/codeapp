@@ -175,11 +175,11 @@ function catIcon(rawName) {
   return '🛍️';
 }
 
-/** Ảnh bìa cho cửa sổ quy trình của 4 thẻ lý do (đã kiểm chứng nội dung ảnh). */
+/** Ảnh bìa cho cửa sổ quy trình của 4 thẻ lý do — mỗi ảnh chỉ dùng 1 chỗ trên toàn web (đã kiểm chứng nội dung). */
 const REASON_IMAGES = [
-  '/images/process/da-that.jpg',
+  '/images/process/texture.jpg',
   '/images/process/khau-tay.jpg',
-  '/images/bag-hero-cut.png',
+  '/images/process/repair.jpg',
   '/images/process/cod.jpg',
 ];
 

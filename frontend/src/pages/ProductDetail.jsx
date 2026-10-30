@@ -261,6 +261,47 @@ export default function ProductDetail() {
         </div>
       </div>
 
+      {/* Hồ sơ sản phẩm: chất liệu / nơi chế tác / cách dùng / bảo hành / vẻ đẹp — nội dung theo loại SP */}
+      {(() => {
+        const h = `${product.name || ''} ${product.category_name || ''}`.toLowerCase();
+        const kind = h.includes('đồng hồ') ? 'watch'
+          : (h.includes('thắt lưng') || h.includes('dây lưng')) ? 'belt'
+          : (h.includes('giày') || h.includes('dép')) ? 'shoes'
+          : h.includes('ví') ? 'wallet'
+          : (h.includes('túi') || h.includes('cặp')) ? 'bag'
+          : h.includes('phụ kiện') ? 'accessory' : 'generic';
+        const items = [
+          ['🐄', 'materialT', t('productDetail.spec.material.' + kind)],
+          ['📍', 'madeT', t('productDetail.spec.made')],
+          ['🧭', 'useT', t('productDetail.spec.use.' + kind)],
+          ['🛡️', 'careT', t('productDetail.spec.care')],
+        ];
+        return (
+          <section className="spec-section glass">
+            <h2 className="spec-title">📋 {t('productDetail.spec.title')}</h2>
+            <div className="spec-grid">
+              {items.map(([icon, tk, text]) => (
+                <div key={tk} className="spec-item">
+                  <span className="spec-icon" aria-hidden>{icon}</span>
+                  <div>
+                    <h3>{t('productDetail.spec.' + tk)}</h3>
+                    <p>{text}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="spec-item spec-wide">
+                <span className="spec-icon" aria-hidden>✨</span>
+                <div>
+                  <h3>{t('productDetail.spec.beautyT')}</h3>
+                  <p>{t('productDetail.spec.beauty.' + kind)}</p>
+                </div>
+              </div>
+            </div>
+            <Link to="/gioi-thieu" className="spec-link">{t('productDetail.spec.processLink')} ›</Link>
+          </section>
+        );
+      })()}
+
       <ProductReviews productId={product.id} />
 
       {related.length > 0 && (

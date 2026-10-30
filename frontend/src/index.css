@@ -516,9 +516,10 @@ h1, h2, h3, .logo, .hero-title {
 
 /* --- Thẻ sản phẩm --- */
 /* --- Bộ lọc giá: nằm NGANG full chiều rộng — [ô Giá từ] [thanh kéo 0→20tr] [ô Đến] --- */
-.price-group { display: flex; align-items: flex-start; gap: 16px; flex: 1 1 100%; padding-top: 4px; }
-.price-group > .price-filter { width: 180px; flex: 0 0 auto; }
-.price-mid { flex: 1; min-width: 0; padding-top: 9px; display: flex; flex-direction: column; gap: 2px; }
+.price-group { display: flex; align-items: flex-start; gap: 20px; flex: 1 1 100%; padding-top: 4px; }
+.price-mid { flex: 1 1 50%; min-width: 0; padding-top: 9px; display: flex; flex-direction: column; gap: 2px; }
+.price-nums { flex: 1 1 50%; min-width: 0; display: flex; gap: 12px; }
+.price-nums .price-filter { flex: 1; min-width: 0; width: 100%; }
 .price-slider { position: relative; height: 28px; }
 .price-slider .price-track {
   position: absolute; left: 0; right: 0; top: 50%; height: 7px; transform: translateY(-50%);
@@ -530,8 +531,8 @@ h1, h2, h3, .logo, .hero-title {
 }
 @media (max-width: 700px) {
   .price-group { flex-wrap: wrap; }
-  .price-group > .price-filter { flex: 1 1 40%; width: auto; }
-  .price-mid { flex: 1 1 100%; order: 3; padding-top: 2px; }
+  .price-mid { flex: 1 1 100%; padding-top: 2px; }
+  .price-nums { flex: 1 1 100%; }
 }
 .price-slider input[type="range"] {
   position: absolute; inset: 0; width: 100%; height: 28px; margin: 0;
@@ -855,6 +856,27 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 }
 .data-table th, .data-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid rgba(232,181,106,.12); }
 .data-table th { background: rgba(30, 21, 12, 0.95); color: var(--amber-light); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.data-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.data-table th.sortable:hover { color: var(--cream); }
+.data-table th.sortable.sorted { color: var(--amber); }
+.data-table th .sort-arrow { font-size: 0.72rem; opacity: 0.85; }
+
+/* Link sản phẩm trong tab Đánh giá admin */
+.review-prod-link { color: var(--amber-light); font-weight: 600; text-decoration: none; }
+.review-prod-link:hover { text-decoration: underline; }
+
+/* Hồ sơ sản phẩm ở trang chi tiết: chất liệu / nơi làm / cách dùng / bảo hành / vẻ đẹp */
+.spec-section { margin-top: 28px; padding: 24px 26px; }
+.spec-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.35rem; margin-bottom: 18px; }
+.spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 26px; }
+@media (max-width: 760px) { .spec-grid { grid-template-columns: 1fr; } }
+.spec-item { display: flex; gap: 12px; }
+.spec-item.spec-wide { grid-column: 1 / -1; }
+.spec-icon { font-size: 1.45rem; line-height: 1.2; flex-shrink: 0; }
+.spec-item h3 { color: var(--cream); font-size: 0.98rem; margin-bottom: 4px; }
+.spec-item p { color: var(--muted); font-size: 0.92rem; line-height: 1.65; margin: 0; }
+.spec-link { display: inline-block; margin-top: 18px; font-weight: 700; font-size: 0.88rem; color: var(--amber-light); text-decoration: none; }
+.spec-link:hover { text-decoration: underline; }
 /* Tab Vai trò: bố cục thoáng hơn một chút (ô rộng, 2 bảng cách nhau xa hơn) */
 .roles-tab .data-table th, .roles-tab .data-table td { padding: 15px 18px; }
 .data-table tr:hover td { background: rgba(232,181,106,.08); }
@@ -1017,6 +1039,32 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 .value-body .vicon { font-size: 1.6rem; }
 .value-more { margin-top: auto; padding-top: 14px; font-weight: 700; font-size: 0.85rem; color: var(--amber-light); }
 
+/* Ảnh phụ sản phẩm trong form admin: lưới thumbnail + xóa xác nhận inline */
+.pimg-section { border-top: 1px dashed rgba(232,181,106,.25); margin-top: 14px; padding-top: 12px; }
+.pimg-head { font-weight: 700; color: var(--cream); margin-bottom: 10px; font-size: 0.92rem; }
+.pimg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.pimg-item { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 1; border: 1px solid var(--panel-border); }
+.pimg-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pimg-badge {
+  position: absolute; left: 4px; bottom: 4px; background: rgba(20,12,6,.85); color: var(--amber-light);
+  font-size: 0.62rem; font-weight: 700; padding: 2px 6px; border-radius: 99px;
+}
+.pimg-del {
+  position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0;
+  background: rgba(20,12,6,.85); color: #ffb4a2; cursor: pointer; font-size: 0.72rem; line-height: 1;
+  display: grid; place-items: center; padding: 0;
+}
+.pimg-del:hover { background: #d43a26; color: #fff; }
+.pimg-confirm { position: absolute; left: 4px; right: 4px; bottom: 4px; display: flex; gap: 4px; }
+.pimg-yes {
+  flex: 1; background: #d43a26; color: #fff; border: 0; border-radius: 6px; padding: 4px 0;
+  font-size: 0.72rem; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.pimg-no {
+  flex: 1; background: rgba(20,12,6,.88); color: var(--cream); border: 1px solid var(--panel-border);
+  border-radius: 6px; padding: 4px 0; font-size: 0.72rem; cursor: pointer; font-family: inherit;
+}
+
 /* Quy trình chế tác: dải panel ảnh lướt ngang (snap) như gallery */
 .craft-strip {
   display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
@@ -1069,6 +1117,34 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
 @media (max-width: 1020px) { .contact-info-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .contact-info-grid { grid-template-columns: 1fr; } }
 .map-frame { border: 0; width: 100%; height: 420px; border-radius: 14px; display: block; }
+
+/* Trang Liên hệ nổi bật: thẻ thông tin có huy hiệu icon + bấm gọi/mở map, panel viền vàng, thanh chỉ đường */
+.cinfo-card {
+  position: relative; display: block; padding: 22px 20px; border-radius: 16px;
+  text-decoration: none; overflow: hidden; height: 100%; transition: 0.25s;
+}
+.cinfo-card::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg, var(--amber), rgba(232,181,106,0));
+}
+a.cinfo-card:hover { transform: translateY(-4px); border-color: rgba(232,181,106,.55); box-shadow: var(--shadow); }
+.cinfo-icon {
+  display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%;
+  font-size: 1.5rem; margin-bottom: 12px;
+  background: radial-gradient(circle at 32% 30%, #f7d774, var(--amber) 62%, #9a6a1f);
+  box-shadow: 0 6px 16px rgba(0,0,0,.35);
+}
+.cinfo-card strong { display: block; color: var(--cream); font-size: 1.02rem; margin-bottom: 5px; }
+.cinfo-card small { color: var(--muted); font-size: 0.92rem; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-line; }
+.cinfo-go { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.5rem; color: var(--amber); opacity: 0.65; }
+.contact-panel { padding: 26px; border-top: 3px solid var(--amber); }
+.contact-map-wrap { padding: 0; overflow: hidden; }
+.contact-map-wrap .map-frame { border-radius: 0; }
+.contact-map-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 16px; border-top: 1px solid rgba(232,181,106,.16);
+  color: var(--cream); font-size: 0.9rem;
+}
 .back-link { color: var(--amber-light); font-weight: 600; display: inline-block; margin-bottom: 14px; }
 .back-link:hover { text-decoration: underline; }
 @media (max-width: 860px) {

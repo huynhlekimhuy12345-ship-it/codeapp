@@ -9,20 +9,20 @@ import { BlogCard } from './Blog';
 
 const VALUES = [
   ['🐄', 'v1t', 'v1d', '/images/process/da-that.jpg', '/cua-hang', 'v1link'],
-  ['✋', 'v2t', 'v2d', '/images/process/khau-tay.jpg', '/bo-suu-tap', 'v2link'],
-  ['🛡️', 'v3t', 'v3d', '/images/bag-hero-cut.png', '/don-hang', 'v3link'],
+  ['✋', 'v2t', 'v2d', '/images/process/bench.jpg', '/bo-suu-tap', 'v2link'],
+  ['🛡️', 'v3t', 'v3d', '/images/process/care.jpg', '/don-hang', 'v3link'],
 ];
 
 const STEPS = ['s1', 's2', 's3', 's4', 's5', 's6'];
 
 /** Ảnh từng công đoạn chế tác (đã kiểm chứng nội dung, lưu local trong web). */
 const STEP_IMAGES = [
-  '/images/process/da-that.jpg',
+  '/images/process/hides.jpg',
   '/images/process/step2.jpg',
   '/images/process/step3.jpg',
   '/images/process/step4.jpg',
   '/images/process/step5.jpg',
-  '/images/process/khau-tay.jpg',
+  '/images/process/step6.jpg',
 ];
 
 export default function About() {
