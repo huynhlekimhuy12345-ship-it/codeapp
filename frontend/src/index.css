@@ -622,6 +622,20 @@ h1, h2, h3, .logo, .hero-title {
 
 /* Mô tả sản phẩm nằm trong cột phải trang chi tiết; cột ảnh dính theo khi cột chữ dài */
 .detail-media { position: sticky; top: 92px; align-self: start; }
+/* Nút lướt ‹ › trên ảnh chính — khách bấm xem lại/tới ảnh phụ bất cứ lúc nào */
+.gal-main { position: relative; }
+.gal-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(232,181,106,.45); background: rgba(20, 12, 4, 0.55);
+  color: #fff; font-size: 1.45rem; line-height: 1; display: grid; place-items: center;
+  opacity: 0; transition: 0.25s;
+}
+.detail-media:hover .gal-arrow { opacity: 1; }
+.gal-arrow:hover { background: var(--amber); color: #231303; }
+.gal-prev { left: 12px; }
+.gal-next { right: 12px; }
+@media (hover: none) { .gal-arrow { opacity: 0.85; } }
 @media (max-width: 980px) { .detail-media { position: static; } }
 .desc-block { margin-top: 26px; border-top: 1px solid var(--panel-border); padding-top: 20px; }
 .desc-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.15rem; margin-bottom: 10px; }

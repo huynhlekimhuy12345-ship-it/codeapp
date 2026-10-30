@@ -162,8 +162,22 @@ export default function ProductDetail() {
       </button>
       <div className="detail">
         <div className="detail-media" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-          <img src={mainImage} alt={name}
-            onError={(e) => { e.target.src = PLACEHOLDER; }} />
+          <div className="gal-main">
+            <img src={mainImage} alt={name}
+              onError={(e) => { e.target.src = PLACEHOLDER; }} />
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button" className="gal-arrow gal-prev" aria-label="Ảnh trước"
+                  onClick={() => setMainIdx((i) => (i - 1 + galleryImages.length) % galleryImages.length)}
+                >‹</button>
+                <button
+                  type="button" className="gal-arrow gal-next" aria-label="Ảnh tiếp"
+                  onClick={() => setMainIdx((i) => (i + 1) % galleryImages.length)}
+                >›</button>
+              </>
+            )}
+          </div>
           {galleryImages.length > 1 && (
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               {galleryImages.map((src, i) => (
