@@ -136,7 +136,7 @@ h1, h2, h3, .logo, .hero-title {
 .navbar .container { display: flex; align-items: center; gap: 24px; height: 66px; }
 .logo { font-size: 1.45rem; font-weight: 800; color: var(--amber-light); letter-spacing: 1px; }
 .logo span { color: #fff; }
-.nav-links { display: flex; gap: 2px; margin-left: 8px; align-items: center; flex: 1; justify-content: space-evenly; }
+.nav-links { display: flex; gap: 2px; margin-left: 8px; align-items: center; }
 .nav-links a {
   position: relative; display: inline-block;
   font-weight: 500; font-size: 0.93rem; white-space: nowrap;
@@ -1040,7 +1040,7 @@ input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
   .container { padding: 0 24px; }
 }
 @media (max-width: 1180px) and (min-width: 769px) {
-  .nav-links { gap: 12px; margin-left: 4px; justify-content: flex-start; }
+  .nav-links { gap: 12px; margin-left: 4px; }
   .nav-links a { font-size: 0.85rem; }
   .navbar .container { gap: 12px; }
   .logo { font-size: 1.2rem; }
