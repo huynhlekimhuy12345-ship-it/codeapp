@@ -609,6 +609,16 @@ h1, h2, h3, .logo, .hero-title {
 }
 .detail img { border-radius: var(--radius); width: 100%; aspect-ratio: 1; object-fit: cover; }
 .detail h1 { font-size: 2rem; color: var(--cream); margin-bottom: 10px; }
+/* Cột thông tin SP: khối cam kết tự dạt xuống đáy cho thẳng hàng với ảnh (hết khoảng trống) */
+.detail-info { display: flex; flex-direction: column; }
+.detail-trust { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; gap: 11px; }
+.trust-row {
+  display: flex; gap: 11px; align-items: flex-start; padding: 11px 13px;
+  border: 1px solid var(--panel-border); border-radius: 12px; background: rgba(0, 0, 0, 0.18);
+}
+.trust-icon { font-size: 1.15rem; line-height: 1.35; flex-shrink: 0; }
+.trust-row strong { display: block; color: var(--cream); font-size: 0.9rem; margin-bottom: 2px; }
+.trust-row div > span { color: var(--muted); font-size: 0.84rem; line-height: 1.5; }
 .detail .price { font-size: 1.8rem; font-weight: 800; color: var(--amber-light); margin: 18px 0; }
 .detail .desc { color: #d9c9ac; margin-bottom: 22px; }
 .qty-row { display: flex; align-items: center; gap: 12px; margin: 18px 0; }

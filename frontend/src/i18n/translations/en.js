@@ -213,6 +213,16 @@ export default {
         accessory: 'A small accessory that makes a statement — genuine leather and fine hand stitching make the whole look feel more valuable.',
       },
     },
+    trust: {
+      codT: 'Nationwide delivery',
+      cod: 'Cash on delivery — check your item first, then pay; bank transfer and MoMo accepted.',
+      warT: 'Warranty & repairs',
+      war: '1-month warranty on stitching, zippers and hardware; lifetime repair and leather-care support.',
+      retT: '7-day returns',
+      ret: 'Return or exchange within 7 days of delivery for workshop defects.',
+      handT: 'Handmade in Hoi An',
+      hand: '100% genuine leather, two-needle hand stitching at our workshop — every piece is one of a kind.',
+    },
   },
   checkout: {
     title: 'Checkout',

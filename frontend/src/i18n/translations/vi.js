@@ -213,6 +213,16 @@ export default {
         accessory: 'Món phụ kiện nhỏ nhưng là điểm nhấn có gu — chất da thật và đường khâu tay tinh tế khiến tổng thể trông đắt giá hơn.',
       },
     },
+    trust: {
+      codT: 'Giao hàng toàn quốc',
+      cod: 'Nhận hàng, kiểm tra rồi mới thanh toán (COD) hoặc chuyển khoản / MoMo.',
+      warT: 'Bảo hành & sửa chữa',
+      war: 'Bảo hành 1 tháng đường chỉ, khóa kéo, phụ kiện; hỗ trợ sửa chữa, dưỡng da trọn đời.',
+      retT: 'Đổi/trả 7 ngày',
+      ret: 'Đổi/trả trong 7 ngày kể từ ngày nhận nếu có lỗi do xưởng.',
+      handT: 'Thủ công Hội An',
+      hand: 'Da thật 100%, khâu tay hai kim tại xưởng — mỗi sản phẩm là một chiếc duy nhất.',
+    },
   },
   checkout: {
     title: 'Thanh toán',

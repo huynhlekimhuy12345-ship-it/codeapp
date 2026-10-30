@@ -170,7 +170,7 @@ export default function ProductDetail() {
             </div>
           )}
         </div>
-        <div>
+        <div className="detail-info">
           <span className="cat" style={{ fontSize: '.85rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
             {catName}
           </span>
@@ -257,6 +257,24 @@ export default function ProductDetail() {
             >
               {t('common.buyNow')}
             </button>
+          </div>
+
+          {/* Khối cam kết — lấp đầy cột phải, đáy khối thẳng hàng với đáy ảnh */}
+          <div className="detail-trust">
+            {[
+              ['🚚', 'codT', 'cod'],
+              ['🛡️', 'warT', 'war'],
+              ['↩️', 'retT', 'ret'],
+              ['✋', 'handT', 'hand'],
+            ].map(([icon, tk, xk]) => (
+              <div key={tk} className="trust-row">
+                <span className="trust-icon" aria-hidden>{icon}</span>
+                <div>
+                  <strong>{t('productDetail.trust.' + tk)}</strong>
+                  <span>{t('productDetail.trust.' + xk)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
