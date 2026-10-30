@@ -5,6 +5,10 @@ WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+# Client ID Google được nhúng vào bản build frontend (truyền từ .env ở thư mục gốc
+# qua docker-compose build args) — file frontend/.env không vào được Docker build.
+ARG VITE_GOOGLE_CLIENT_ID=""
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build
 
 # Run backend (Express + mssql), serving frontend/dist on the same origin
