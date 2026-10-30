@@ -34,15 +34,22 @@ export function StoreProvider({ children }) {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const login = async (email, password) => {
-    const { user, token } = await api.login({ email, password });
+  const login = async (identifier, password) => {
+    const { user, token } = await api.login({ identifier, password });
     localStorage.setItem('token', token);
     setUser(user);
     return user;
   };
 
-  const register = async (name, email, password) => {
-    const { user, token } = await api.register({ name, email, password });
+  const register = async (name, identifier, password) => {
+    const { user, token } = await api.register({ name, identifier, password });
+    localStorage.setItem('token', token);
+    setUser(user);
+    return user;
+  };
+
+  const googleLogin = async (credential) => {
+    const { user, token } = await api.googleAuth({ credential });
     localStorage.setItem('token', token);
     setUser(user);
     return user;
@@ -140,7 +147,7 @@ export function StoreProvider({ children }) {
 
   return (
     <StoreContext.Provider
-      value={{ user, setUser, login, register, logout, cart, addToCart, updateQty, removeFromCart, clearCart, cartCount, cartTotal, toggleSelect, setAllSelected, selectedItems, selectedTotal, removePurchased, buyNowItem }}
+      value={{ user, setUser, login, register, googleLogin, logout, cart, addToCart, updateQty, removeFromCart, clearCart, cartCount, cartTotal, toggleSelect, setAllSelected, selectedItems, selectedTotal, removePurchased, buyNowItem }}
     >
       {children}
     </StoreContext.Provider>

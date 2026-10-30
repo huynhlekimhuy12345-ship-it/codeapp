@@ -17,7 +17,7 @@ function LangSwitcher() {
         aria-expanded={open}
         title={t('nav.language')}
       >
-        <span>{current.flag}</span>
+        <img className="lang-flag-img" src={current.img} alt={current.label} />
         <span className="lang-code">{current.short}</span>
         <span className="lang-caret">▾</span>
       </button>
@@ -32,8 +32,8 @@ function LangSwitcher() {
                 className={`lang-item${l.code === lang ? ' active' : ''}`}
                 onClick={() => { setLang(l.code); setOpen(false); }}
               >
-                <span>{l.flag}</span>
-                <span>{l.label}</span>
+                <img className="lang-flag-img" src={l.img} alt={l.label} />
+                <span>{l.short}</span>
                 {l.code === lang && <span className="lang-check">✓</span>}
               </button>
             ))}

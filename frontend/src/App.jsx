@@ -21,6 +21,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import MyOrders from './pages/MyOrders';
 import Notifications from './pages/Notifications';
 import MyTier from './pages/MyTier';
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="/gio-hang" element={<Cart />} />
           <Route path="/dang-nhap" element={<Login />} />
           <Route path="/dang-ky" element={<Register />} />
+          <Route path="/quen-mat-khau" element={<ForgotPassword />} />
           <Route path="/thanh-toan" element={<RequireAuth><Checkout /></RequireAuth>} />
           <Route path="/don-hang" element={<RequireAuth><MyOrders /></RequireAuth>} />
           <Route path="/thong-bao" element={<RequireAuth><Notifications /></RequireAuth>} />

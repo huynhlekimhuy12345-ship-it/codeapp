@@ -3,9 +3,10 @@ import PageTitle from '../components/PageTitle';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { useLang } from '../i18n/LanguageContext';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
@@ -17,7 +18,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      const user = await login(email, password);
+      const user = await login(identifier, password);
       navigate(user.role === 'admin' ? '/admin' : '/');
     } catch (err) {
       setError(err.message);
@@ -31,8 +32,8 @@ export default function Login() {
         <h2>{t('auth.login')}</h2>
         {error && <div className="form-error">{error}</div>}
         <div className="field">
-          <label htmlFor="login-email">Email</label>
-          <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <label htmlFor="login-email">{t('auth.loginId')}</label>
+          <input id="login-email" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required autoComplete="username" />
         </div>
         <div className="field">
           <label htmlFor="login-mat-khau">{t('auth.password')}</label>
@@ -41,7 +42,14 @@ export default function Login() {
             <button type="button" className="pw-eye" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} title={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>{showPw ? '🙈' : '👁'}</button>
           </div>
         </div>
-        <button className="btn btn-primary" style={{ width: '100%' }}>{t('auth.login')}</button>
+        <div className="forgot-row"><Link to="/quen-mat-khau">{t('auth.forgot')}</Link></div>
+        <div className="auth-divider"><span>{t('auth.or')}</span></div>
+        <GoogleAuthButton
+          label={t('auth.googleLogin')}
+          onUnavailable={(m) => setError(m)}
+          onError={(m) => setError(m)}
+        />
+        <button className="btn btn-primary" style={{ width: '100%', marginTop: 14 }}>{t('auth.login')}</button>
         <div className="form-link">{t('auth.noAccount')} <Link to="/dang-ky">{t('auth.registerNow')}</Link></div>
       </form>
     </div>

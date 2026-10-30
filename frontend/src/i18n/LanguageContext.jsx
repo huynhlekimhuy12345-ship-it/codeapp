@@ -7,10 +7,10 @@ import ko from './translations/ko';
 const dicts = { vi, en, zh, ko };
 
 export const LANGS = [
-  { code: 'vi', label: 'Tiếng Việt', short: 'VI', flag: '🇻🇳' },
-  { code: 'en', label: 'English', short: 'EN', flag: '🇬🇧' },
-  { code: 'zh', label: '中文', short: '中文', flag: '🇨🇳' },
-  { code: 'ko', label: '한국어', short: 'KO', flag: '🇰🇷' },
+  { code: 'vi', label: 'Tiếng Việt', short: 'VI', flag: '🇻🇳', img: '/images/flags/vn.png' },
+  { code: 'en', label: 'English', short: 'EN', flag: '🇬🇧', img: '/images/flags/gb.png' },
+  { code: 'zh', label: '中文', short: '中文', flag: '🇨🇳', img: '/images/flags/cn.png' },
+  { code: 'ko', label: '한국어', short: 'KO', flag: '🇰🇷', img: '/images/flags/kr.png' },
 ];
 
 function get(obj, path) {

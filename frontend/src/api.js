@@ -38,6 +38,9 @@ export const api = {
   // Auth
   register: (payload) => request('/api/auth/register', { method: 'POST', body: payload }),
   login: (payload) => request('/api/auth/login', { method: 'POST', body: payload }),
+  googleAuth: (payload) => request('/api/auth/google', { method: 'POST', body: payload }),
+  forgotPassword: (payload) => request('/api/auth/forgot', { method: 'POST', body: payload }),
+  resetPassword: (payload) => request('/api/auth/reset', { method: 'POST', body: payload }),
   me: () => request('/api/auth/me', { auth: true }),
 
   // Sản phẩm
