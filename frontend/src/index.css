@@ -619,6 +619,18 @@ h1, h2, h3, .logo, .hero-title {
 .trust-icon { font-size: 1.15rem; line-height: 1.35; flex-shrink: 0; }
 .trust-row strong { display: block; color: var(--cream); font-size: 0.9rem; margin-bottom: 2px; }
 .trust-row div > span { color: var(--muted); font-size: 0.84rem; line-height: 1.5; }
+
+/* Mô tả sản phẩm nằm trong cột phải trang chi tiết; cột ảnh dính theo khi cột chữ dài */
+.detail-media { position: sticky; top: 92px; align-self: start; }
+@media (max-width: 980px) { .detail-media { position: static; } }
+.desc-block { margin-top: 26px; border-top: 1px solid var(--panel-border); padding-top: 20px; }
+.desc-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.15rem; margin-bottom: 10px; }
+.desc-text { color: #d9c9ac; line-height: 1.7; white-space: pre-line; margin-bottom: 6px; }
+.spec-rows { display: flex; flex-direction: column; }
+.spec-rowc { display: flex; gap: 11px; padding: 11px 0; border-bottom: 1px dashed rgba(232,181,106,.14); }
+.spec-rowc:last-child { border-bottom: 0; }
+.spec-rowc strong { display: block; color: var(--cream); font-size: 0.92rem; margin-bottom: 2px; }
+.spec-rowc div > span { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
 .detail .price { font-size: 1.8rem; font-weight: 800; color: var(--amber-light); margin: 18px 0; }
 .detail .desc { color: #d9c9ac; margin-bottom: 22px; }
 .qty-row { display: flex; align-items: center; gap: 12px; margin: 18px 0; }

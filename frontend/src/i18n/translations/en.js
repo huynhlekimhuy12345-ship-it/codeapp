@@ -167,6 +167,7 @@ export default {
     title: 'Product details',
     notFound: 'Product not found.',
     backToShop: 'Back to shop',
+    descTitle: 'Product description',
     basePrice: 'Base price',
     color: 'Color:',
     size: 'Size:',
@@ -186,7 +187,7 @@ export default {
       made: "100% handcrafted at the BI99 workshop in Hoi An — from hide selection and pattern cutting to two-needle saddle stitching and finishing, every piece passes through skilled artisans' hands; each one is unique.",
       care: '1-month warranty on stitching, zippers and hardware; lifetime support for repairs, polishing and conditioning. Store in a dry, airy place; avoid soaking and harsh sun; condition with leather cream every 2–3 months.',
       material: {
-        generic: '100% genuine cowhide, vegetable-tanned, keeping its natural grain and pores. Firm and substantial, it develops a rich patina that is uniquely yours.',
+        generic: '100% genuine leather, vegetable-tanned, keeping its natural grain and pores. Firm and substantial, it develops a rich patina that is uniquely yours.',
         wallet: '100% vegetable-tanned cowhide with a soft natural-leather lining. Edges are skived thin and hand-burnished; two-needle saddle stitching stays tight for years.',
         bag: '100% vegetable-tanned cowhide — structured yet supple. Cast brass hardware, with stress points reinforced by double stitching.',
         belt: 'A single piece of genuine cowhide about 3.5–4mm thick — never laminated or glued. The buckle is solid cast brass that will not peel like industrial leather.',

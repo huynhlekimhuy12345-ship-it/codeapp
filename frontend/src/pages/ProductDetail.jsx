@@ -137,6 +137,18 @@ export default function ProductDetail() {
   if (product === null) return <div className="container page"><div className="empty">{t('common.loading')}</div></div>;
   if (product === false) return <div className="container page"><div className="empty">{t('productDetail.notFound')} <Link to="/cua-hang" className="btn">{t('productDetail.backToShop')}</Link></div></div>;
 
+  // Loại sản phẩm (đoán từ tên + danh mục) — chọn bộ nội dung mô tả phù hợp ở cột phải
+  const specKind = (() => {
+    const h = `${product.name || ''} ${product.category_name || ''}`.toLowerCase();
+    if (h.includes('đồng hồ')) return 'watch';
+    if (h.includes('thắt lưng') || h.includes('dây lưng')) return 'belt';
+    if (h.includes('giày') || h.includes('dép')) return 'shoes';
+    if (h.includes('ví')) return 'wallet';
+    if (h.includes('túi') || h.includes('cặp')) return 'bag';
+    if (h.includes('phụ kiện')) return 'accessory';
+    return 'generic';
+  })();
+
   return (
     <div className="container page">
       <PageTitle title={t('productDetail.title')} />
@@ -148,7 +160,7 @@ export default function ProductDetail() {
         {t('shop.back')}
       </button>
       <div className="detail">
-        <div>
+        <div className="detail-media">
           <img src={mainImage} alt={name}
             onError={(e) => { e.target.src = PLACEHOLDER; }} />
           {galleryImages.length > 1 && (
@@ -187,8 +199,6 @@ export default function ProductDetail() {
               {' '}({selectedVariant.sku})
             </div>
           )}
-          <p className="desc">{desc}</p>
-
           {hasVariants && (
             <>
               {colors.length > 0 && (
@@ -259,66 +269,31 @@ export default function ProductDetail() {
             </button>
           </div>
 
-          {/* Khối cam kết — lấp đầy cột phải, đáy khối thẳng hàng với đáy ảnh */}
-          <div className="detail-trust">
-            {[
-              ['🚚', 'codT', 'cod'],
-              ['🛡️', 'warT', 'war'],
-              ['↩️', 'retT', 'ret'],
-              ['✋', 'handT', 'hand'],
-            ].map(([icon, tk, xk]) => (
-              <div key={tk} className="trust-row">
-                <span className="trust-icon" aria-hidden>{icon}</span>
-                <div>
-                  <strong>{t('productDetail.trust.' + tk)}</strong>
-                  <span>{t('productDetail.trust.' + xk)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Hồ sơ sản phẩm: chất liệu / nơi chế tác / cách dùng / bảo hành / vẻ đẹp — nội dung theo loại SP */}
-      {(() => {
-        const h = `${product.name || ''} ${product.category_name || ''}`.toLowerCase();
-        const kind = h.includes('đồng hồ') ? 'watch'
-          : (h.includes('thắt lưng') || h.includes('dây lưng')) ? 'belt'
-          : (h.includes('giày') || h.includes('dép')) ? 'shoes'
-          : h.includes('ví') ? 'wallet'
-          : (h.includes('túi') || h.includes('cặp')) ? 'bag'
-          : h.includes('phụ kiện') ? 'accessory' : 'generic';
-        const items = [
-          ['🐄', 'materialT', t('productDetail.spec.material.' + kind)],
-          ['📍', 'madeT', t('productDetail.spec.made')],
-          ['🧭', 'useT', t('productDetail.spec.use.' + kind)],
-          ['🛡️', 'careT', t('productDetail.spec.care')],
-        ];
-        return (
-          <section className="spec-section glass">
-            <h2 className="spec-title">📋 {t('productDetail.spec.title')}</h2>
-            <div className="spec-grid">
-              {items.map(([icon, tk, text]) => (
-                <div key={tk} className="spec-item">
+          {/* Mô tả sản phẩm — nằm ngay trong cột phải dưới nút mua (không còn mục riêng phía dưới) */}
+          <div className="desc-block">
+            <h2 className="desc-title">📝 {t('productDetail.descTitle')}</h2>
+            {desc && <p className="desc-text">{desc}</p>}
+            <div className="spec-rows">
+              {[
+                ['🐄', 'materialT', t('productDetail.spec.material.' + specKind)],
+                ['📍', 'madeT', t('productDetail.spec.made')],
+                ['🧭', 'useT', t('productDetail.spec.use.' + specKind)],
+                ['🛡️', 'careT', t('productDetail.spec.care')],
+                ['✨', 'beautyT', t('productDetail.spec.beauty.' + specKind)],
+              ].map(([icon, tk, text]) => (
+                <div key={tk} className="spec-rowc">
                   <span className="spec-icon" aria-hidden>{icon}</span>
                   <div>
-                    <h3>{t('productDetail.spec.' + tk)}</h3>
-                    <p>{text}</p>
+                    <strong>{t('productDetail.spec.' + tk)}</strong>
+                    <span>{text}</span>
                   </div>
                 </div>
               ))}
-              <div className="spec-item spec-wide">
-                <span className="spec-icon" aria-hidden>✨</span>
-                <div>
-                  <h3>{t('productDetail.spec.beautyT')}</h3>
-                  <p>{t('productDetail.spec.beauty.' + kind)}</p>
-                </div>
-              </div>
             </div>
             <Link to="/gioi-thieu" className="spec-link">{t('productDetail.spec.processLink')} ›</Link>
-          </section>
-        );
-      })()}
+          </div>
+        </div>
+      </div>
 
       <ProductReviews productId={product.id} />
 

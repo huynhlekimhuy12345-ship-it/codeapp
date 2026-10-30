@@ -167,6 +167,7 @@ export default {
     title: 'Chi tiết sản phẩm',
     notFound: 'Không tìm thấy sản phẩm.',
     backToShop: 'Về cửa hàng',
+    descTitle: 'Mô tả sản phẩm',
     basePrice: 'Giá gốc',
     color: 'Màu sắc:',
     size: 'Kích thước:',
@@ -186,7 +187,7 @@ export default {
       made: 'Chế tác thủ công 100% tại xưởng BI99 ở Hội An — từ chọn da, cắt rập, khâu tay hai kim đến hoàn thiện đều qua tay thợ da lành nghề; mỗi sản phẩm là một chiếc duy nhất.',
       care: 'Bảo hành 1 tháng cho đường chỉ, khóa kéo và phụ kiện; hỗ trợ sửa chữa, đánh bóng, dưỡng da trọn đời sản phẩm. Bảo quản nơi khô thoáng, tránh ngâm nước và nắng gắt; dưỡng da bằng kem chuyên dụng mỗi 2–3 tháng.',
       material: {
-        generic: 'Da bò thật 100%, thuộc thảo mộc, giữ nguyên vân và lỗ chân lông tự nhiên. Da đanh, dày dặn, càng dùng càng lên nước bóng patina rất riêng.',
+        generic: 'Da thật 100%, thuộc thảo mộc, giữ nguyên vân và lỗ chân lông tự nhiên. Da đanh, dày dặn, càng dùng càng lên nước bóng patina rất riêng.',
         wallet: 'Da bò thật 100% thuộc thảo mộc, lót trong da mộc mềm. Mép da lạng mỏng, đánh bóng thủ công; đường khâu tay hai kim chắc chắn, dùng lâu không bung.',
         bag: 'Da bò thật 100% thuộc thảo mộc, form đứng mà vẫn mềm tay. Khóa và phụ kiện bằng đồng thau đúc, các điểm chịu lực được gia cố khâu kép.',
         belt: 'Một tấm da bò thật nguyên miếng, dày khoảng 3,5–4mm, không ghép, không ép keo. Mặt khóa đồng thau đúc nguyên khối — bền đẹp, không bong tróc như da công nghiệp.',
