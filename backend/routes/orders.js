@@ -311,13 +311,16 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// GET /api/orders — khách xem đơn của mình, admin xem tất cả (?status= để lọc)
+// GET /api/orders — MẶC ĐỊNH chỉ trả đơn của CHÍNH người đang đăng nhập (mọi vai trò:
+// trang "Đơn hàng" phía khách không bao giờ thấy đơn của người khác, kể cả khi đăng nhập bằng tài khoản admin).
+// Tab Đơn hàng trong quản trị gọi kèm ?scope=all — chỉ staff (admin/sale) mới được xem tất cả.
 router.get('/', auth, async (req, res) => {
   try {
     const { status } = req.query;
+    const wantAll = req.query.scope === 'all' && (req.user.role === 'admin' || req.user.role === 'sale');
     const conds = [];
     const params = [];
-    if (req.user.role !== 'admin') { conds.push('o.user_id = ?'); params.push(req.user.id); }
+    if (!wantAll) { conds.push('o.user_id = ?'); params.push(req.user.id); }
     if (status) { conds.push('o.status = ?'); params.push(status); }
     const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
     const orders = await db.prepare(
@@ -326,8 +329,8 @@ router.get('/', auth, async (req, res) => {
        FROM orders o LEFT JOIN users u ON u.id = o.user_id
        ${where} ORDER BY o.created_at DESC`
     ).all(...params);
-    // Khách xem đơn của mình: kèm thông tin chốt điểm hạng (ngày giao, hạn đổi/trả, đã ghi điểm chưa)
-    if (req.user.role === 'customer') {
+    // Xem đơn của mình: kèm thông tin chốt điểm hạng (ngày giao, hạn đổi/trả, đã ghi điểm chưa)
+    if (!wantAll) {
       for (const o of orders) Object.assign(o, await settleInfo(o));
     }
     res.json({ orders });
@@ -386,12 +389,12 @@ router.post('/mark-seen', auth, staffOnly, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
-// GET /api/orders/:id — chủ đơn hoặc admin
+// GET /api/orders/:id — chủ đơn hoặc staff (admin/sale xem chi tiết phục vụ quản trị)
 router.get('/:id', auth, async (req, res) => {
   try {
     const order = await getOrderWithItems(req.params.id);
     if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-    if (req.user.role !== 'admin' && order.user_id !== req.user.id)
+    if (req.user.role !== 'admin' && req.user.role !== 'sale' && order.user_id !== req.user.id)
       return res.status(403).json({ error: 'Bạn không có quyền xem đơn hàng này' });
     res.json({ order });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }

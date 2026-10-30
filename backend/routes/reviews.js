@@ -81,6 +81,19 @@ router.get('/pending', auth, staffOnly, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
 
+// GET /api/reviews/approved — admin: danh sách review ĐÃ duyệt (đang hiện công khai), mới nhất trước
+router.get('/approved', auth, staffOnly, async (req, res) => {
+  try {
+    const reviews = await db.prepare(
+      `SELECT ${REVIEW_COLS}, p.name AS product_name
+       FROM reviews r LEFT JOIN users u ON u.id = r.user_id
+       LEFT JOIN products p ON p.id = r.product_id
+       WHERE r.is_approved = 1 ORDER BY r.created_at DESC LIMIT 200`
+    ).all();
+    res.json({ reviews });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
+});
+
 // POST /api/reviews — cần đăng nhập: {product_id, rating 1-5, comment}
 // Mỗi user chỉ 1 review / 1 sản phẩm (409 nếu đã tồn tại)
 router.post('/', auth, async (req, res) => {
@@ -113,6 +126,22 @@ router.post('/', auth, async (req, res) => {
     const review = await db.prepare(
       `SELECT ${REVIEW_COLS} FROM reviews r LEFT JOIN users u ON u.id = r.user_id WHERE r.id = ?`
     ).get(info.lastInsertRowid);
+    // Báo chuông cho toàn bộ staff (admin + sale): có đánh giá mới chờ duyệt ở tab Đánh giá
+    try {
+      const prod = await db.prepare('SELECT name FROM products WHERE id = ?').get(product_id);
+      const staff = await db.prepare("SELECT id FROM users WHERE role IN ('admin','sale') AND id != ?").all(req.user.id);
+      for (const s of staff) {
+        await db.prepare(
+          'INSERT INTO user_notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)'
+        ).run(
+          s.id,
+          'review',
+          `⭐ Đánh giá mới: ${prod ? prod.name : 'Sản phẩm #' + product_id}`,
+          `${review.user_name || 'Khách hàng'} vừa đánh giá ${r}★ cho sản phẩm "${prod ? prod.name : ''}". Vào mục Đánh giá để duyệt (giữ) hoặc xóa.`,
+          '/admin?tab=reviews'
+        );
+      }
+    } catch (e) { /* lỗi chuông không làm hỏng gửi đánh giá */ }
     res.status(201).json({ review });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Lỗi máy chủ' }); }
 });
