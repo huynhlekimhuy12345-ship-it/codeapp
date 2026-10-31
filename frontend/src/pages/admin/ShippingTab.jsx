@@ -32,13 +32,16 @@ const SHIP_STATUS = {
   shipped: 'Đã gửi hàng',
   delivered: 'Đã giao hàng',
   failed: 'Giao thất bại',
+  cancelled: 'Đã hủy',
 };
-// Luồng chuyển trạng thái hợp lệ của vận đơn (khớp backend)
+// Luồng chuyển trạng thái hợp lệ của vận đơn (khớp backend).
+// 'cancelled' do hủy đơn đồng bộ sang — không có nút chuyển tay tới.
 const SHIP_FLOW = {
   preparing: ['shipped', 'failed'],
   shipped: ['delivered', 'failed'],
   delivered: [],
   failed: [],
+  cancelled: [],
 };
 
 const emptyMethodForm = { name: '', fee: '', eta_days: '3', is_active: true };

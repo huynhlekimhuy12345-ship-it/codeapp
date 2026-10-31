@@ -74,6 +74,48 @@ async function failPendingPayment(orderId) {
   ).run(orderId);
 }
 
+// Cột orders.voucher_code chỉ có sau migration 2026-10-31-huy-don-voucher-va-van-don.sql.
+// Kiểm tra 1 lần rồi nhớ lại (cùng mẫu hasProviderColumn ở auth): chưa có cột thì
+// đặt hàng chạy như cũ (không lưu mã → đơn đó hủy sẽ không hoàn voucher được).
+let _hasVoucherCodeCol = null;
+async function hasVoucherCodeColumn() {
+  if (_hasVoucherCodeCol !== null) return _hasVoucherCodeCol;
+  try {
+    const r = await db.prepare(
+      "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'voucher_code'"
+    ).get();
+    _hasVoucherCodeCol = !!(r && Number(r.c) > 0);
+  } catch {
+    _hasVoucherCodeCol = false;
+  }
+  return _hasVoucherCodeCol;
+}
+
+// Hoàn 1 lượt dùng voucher cho đơn bị hủy, theo mã đã lưu trong orders.voucher_code
+// (user duyệt 2026-10-31). Không trừ xuống dưới 0; đơn không có mã (đặt trước bản
+// sửa hoặc không dùng voucher) thì bỏ qua. Lỗi ở đây không làm hỏng thao tác hủy.
+async function refundVoucherUsage(order) {
+  try {
+    if (!order || !order.voucher_code) return;
+    const v = await db.prepare('SELECT id, used_count FROM vouchers WHERE code = ?').get(order.voucher_code);
+    if (v && Number(v.used_count) > 0) {
+      await db.prepare('UPDATE vouchers SET used_count = ? WHERE id = ?').run(Number(v.used_count) - 1, v.id);
+    }
+  } catch (e) { console.error('refundVoucherUsage:', e); }
+}
+
+// Đồng bộ vận đơn khi đơn bị hủy: dòng shippings còn 'preparing'/'failed' thì
+// chuyển 'cancelled' để khỏi treo như còn sống trong tab Vận chuyển. Cần DB đã
+// nới CHECK constraint CK_shippings_1 (migration 2026-10-31) — chưa nới thì
+// UPDATE bị DB từ chối: bắt lỗi ghi log, KHÔNG làm hỏng việc hủy đơn.
+async function syncShippingCancelled(orderId) {
+  try {
+    await db.prepare(
+      "UPDATE shippings SET status = 'cancelled' WHERE order_id = ? AND status IN ('preparing','failed')"
+    ).run(orderId);
+  } catch (e) { console.error('syncShippingCancelled (DB chưa nới CK_shippings_1?):', e.message); }
+}
+
 // Nhãn tiếng Việt cho phương thức thanh toán (hiển thị trong lịch sử đơn)
 const PAYMENT_LABELS = {
   cod: 'Thanh toán khi nhận hàng (COD)',
@@ -234,16 +276,28 @@ router.post('/', auth, async (req, res) => {
     // 3. Tổng đơn = tạm tính + phí ship - giảm giá (không âm)
     const total = Math.max(0, subtotal + shipping_fee - discount_total);
 
-    // 4. INSERT orders với các cột mới
-    const info = await db.prepare(
-      `INSERT INTO orders (user_id, customer_name, phone, address, total,
-                            payment_method, payment_status, shipping_fee, discount_total,
-                            shipping_method_id)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`
-    ).run(
-      req.user.id, customer_name.trim(), phone.trim(), address.trim(), total,
-      pm, shipping_fee, discount_total, method.id
-    );
+    // 4. INSERT orders với các cột mới — lưu kèm mã voucher đã dùng vào
+    // orders.voucher_code (khi DB đã có cột) để hủy đơn còn hoàn lượt được.
+    const withVoucherCol = await hasVoucherCodeColumn();
+    const info = withVoucherCol
+      ? await db.prepare(
+          `INSERT INTO orders (user_id, customer_name, phone, address, total,
+                                payment_method, payment_status, shipping_fee, discount_total,
+                                shipping_method_id, voucher_code)
+           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`
+        ).run(
+          req.user.id, customer_name.trim(), phone.trim(), address.trim(), total,
+          pm, shipping_fee, discount_total, method.id, voucherRow ? voucherRow.code : null
+        )
+      : await db.prepare(
+          `INSERT INTO orders (user_id, customer_name, phone, address, total,
+                                payment_method, payment_status, shipping_fee, discount_total,
+                                shipping_method_id)
+           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`
+        ).run(
+          req.user.id, customer_name.trim(), phone.trim(), address.trim(), total,
+          pm, shipping_fee, discount_total, method.id
+        );
     const orderId = info.lastInsertRowid;
 
     // 5. INSERT order_items + trừ kho + ghi movement OUT cho mỗi dòng
@@ -426,10 +480,12 @@ router.put('/:id/status', auth, staffOnly, async (req, res) => {
     if (status === 'cancelled' && !(reason || '').trim())
       throw new Error('Hủy đơn hàng phải ghi rõ lý do');
     await db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, order.id);
-    // Hủy đơn → hoàn lại toàn bộ tồn kho đã trừ + trả thẻ hạng + đánh dấu payment treo
+    // Hủy đơn → hoàn lại toàn bộ tồn kho đã trừ + trả thẻ hạng + hoàn lượt voucher
+    // + đánh dấu payment treo
     if (status === 'cancelled') {
       await restoreStock(order.id, `Hủy đơn #${order.id} — hoàn kho`);
       await restoreCard(order.id);
+      await refundVoucherUsage(order);
       await failPendingPayment(order.id);
     }
     // GAP-10: đồng bộ trạng thái vận đơn theo đơn (chỉ các chuyển hợp lệ của vận đơn)
@@ -449,6 +505,9 @@ router.put('/:id/status', auth, staffOnly, async (req, res) => {
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
+  // Hủy đơn xong thì vận đơn đi kèm cũng sang 'cancelled' (best-effort sau khi
+  // đơn đã hủy thành công — DB chưa nới constraint thì chỉ ghi log, xem helper).
+  if (status === 'cancelled') await syncShippingCancelled(req.params.id);
   let order;
   try {
     order = await getOrderWithItems(req.params.id);
@@ -491,8 +550,11 @@ router.delete('/:id', auth, staffOnly, async (req, res) => {
   const remove = db.transaction(async () => {
     const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return null;
-    // Đơn chưa hủy → hoàn tồn kho trước khi xóa (đơn đã hủy kho đã hoàn)
-    if (order.status !== 'cancelled') await restoreStock(order.id, `Xóa đơn #${order.id} — hoàn kho`);
+    // Đơn chưa hủy → hoàn tồn kho + hoàn lượt voucher trước khi xóa (đơn đã hủy đã hoàn ở bước hủy)
+    if (order.status !== 'cancelled') {
+      await restoreStock(order.id, `Xóa đơn #${order.id} — hoàn kho`);
+      await refundVoucherUsage(order);
+    }
     await db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
     return order;
   });
@@ -536,9 +598,11 @@ router.put('/:id/cancel', auth, async (req, res) => {
       throw e;
     }
     await db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(order.id);
-    // Hoàn lại toàn bộ tồn kho đã trừ (hỗ trợ cả variant) + trả thẻ hạng + đánh dấu payment treo
+    // Hoàn lại toàn bộ tồn kho đã trừ (hỗ trợ cả variant) + trả thẻ hạng + hoàn
+    // lượt voucher + đánh dấu payment treo
     await restoreStock(order.id, `Hủy đơn #${order.id} — hoàn kho`);
     await restoreCard(order.id);
+    await refundVoucherUsage(order);
     await failPendingPayment(order.id);
     await writeHistory(order.id, 'pending', 'cancelled', req, reason.trim());
   });
@@ -548,6 +612,7 @@ router.put('/:id/cancel', auth, async (req, res) => {
   } catch (e) {
     return res.status(e.statusCode || 400).json({ error: e.message });
   }
+  if (!notFound) await syncShippingCancelled(req.params.id);
   if (!notFound) {
     // GAP-07: báo cho staff khi khách tự hủy (trước đây staff chỉ biết khi tự mở danh sách)
     try {
@@ -584,11 +649,13 @@ router.post('/expire-unpaid', auth, staffOnly, async (req, res) => {
         await db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(order.id);
         await restoreStock(order.id, `Quá hạn thanh toán — hoàn kho đơn #${order.id}`);
         await restoreCard(order.id);
+        await refundVoucherUsage(order);
         await failPendingPayment(order.id);
         await writeHistory(order.id, order.status, 'cancelled', req, 'Quá hạn thanh toán (tự động)');
       });
       try {
         await run();
+        await syncShippingCancelled(order.id);
         expired.push(order.id);
         if (order.user_id) {
           try {

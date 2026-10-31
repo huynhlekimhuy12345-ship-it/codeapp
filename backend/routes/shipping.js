@@ -17,6 +17,9 @@ const STATUS_FLOW = {
   delivered: [],
   // GAP-04: giao thất bại được giao lại (failed -> shipped), không còn là ngõ cụt
   failed: ['shipped'],
+  // 'cancelled' là trạng thái cuối do HỦY ĐƠN đồng bộ sang (routes/orders.js),
+  // staff không tự chuyển tay tới — chỉ để hiển thị đúng nhãn.
+  cancelled: [],
 };
 
 // Nhãn tiếng Việt cho trạng thái vận đơn
@@ -25,6 +28,7 @@ const STATUS_LABELS = {
   shipped: 'Đã gửi hàng',
   delivered: 'Đã giao hàng',
   failed: 'Giao thất bại',
+  cancelled: 'Đã hủy',
 };
 
 // Lấy 1 bản ghi vận chuyển kèm tên phương thức
